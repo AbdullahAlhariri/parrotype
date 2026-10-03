@@ -116,7 +116,7 @@ export default function AboutPage() {
           </dd>
           <dt>Only the right spelling, repeated</dt>
           <dd>
-            Looking at a misspelling makes it stick, so Kees never repeats your mistake. He repeats the correct word instead: <span lang="nl">wordt. wordt. wordt.</span>
+            Looking at a misspelling makes it stick, so Kees never repeats your mistake. He repeats the correct word instead: <span lang="nl" className="about-nowrap">wordt. wordt. wordt.</span>
           </dd>
         </dl>
       </section>

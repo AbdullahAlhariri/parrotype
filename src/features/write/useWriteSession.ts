@@ -3,7 +3,7 @@ import type { Issue, Lang } from '@/types'
 import { useSettings } from '@/state/settings'
 import { findPrompt, randomPrompt, type PromptKind, type WritingPrompt } from '@/content/prompts'
 import { addWordToDictionary, localPersonalWords, preloadChecker, runCheck } from './lib/checker'
-import { listDrafts, newDraft, saveDraft, deleteDraft as removeDraft, type Draft } from './lib/drafts'
+import { listDrafts, newDraft, saveDraft, deleteDraft as removeDraft, type Draft, type Recorded } from './lib/drafts'
 import { ParagraphCache, diffRange, planCheck, reId, remapIssues, shiftIssues, splitParagraphs } from './lib/paragraphs'
 import { drawableIssues } from './lib/segments'
 import { isSpelling } from './lib/report'
@@ -26,6 +26,10 @@ const ignoreKey = (i: Pick<Issue, 'ruleId' | 'text'>) => `${i.ruleId}|${i.text.t
 /** Key used to tell whether a mistake survived self-review: rule + the fix it wants. */
 const fixKey = (i: Issue) => `${i.ruleId}|${(i.replacements[0] ?? i.text).toLowerCase()}`
 const byOffset = (a: Issue, b: Issue) => a.offset - b.offset || a.length - b.length
+
+/** A newer check, a draft switch or a language switch replaced this check: not an error, just ignore it. */
+export const STALE = 'stale' as const
+type CheckOutcome = Issue[] | null | typeof STALE
 
 function startDraft(lang: Lang, kind: PromptKind | 'all'): { draft: Draft; resumed: boolean } {
   const last = listDrafts(lang)[0]
@@ -57,7 +61,8 @@ export function useWriteSession(lang: Lang) {
   const cacheRef = useRef(new ParagraphCache())
   const checkedRef = useRef<string | null>(null)
   const reviewKeysRef = useRef<Issue[]>([])
-  const editedInReviewRef = useRef(0)
+  /** ids of flagged words the user edited during self-review (a Set, so StrictMode's double updaters count once) */
+  const editedInReviewRef = useRef(new Set<string>())
   draftRef.current = draft
   phaseRef.current = phase
   issuesRef.current = issues
@@ -102,10 +107,10 @@ export function useWriteSession(lang: Lang) {
   /**
    * Check the text. 'full' checks it in one go (optionally with LanguageTool); 'paragraphs' only
    * checks paragraphs it has not seen. Results are moved onto the current text if the user kept
-   * typing meanwhile. Returns null when the checker failed or a newer check replaced this one.
+   * typing meanwhile. Returns null when the checker failed and STALE when something newer replaced it.
    */
   const check = useCallback(
-    async (text: string, how: { full: boolean; lt?: boolean }): Promise<Issue[] | null> => {
+    async (text: string, how: { full: boolean; lt?: boolean }): Promise<CheckOutcome> => {
       const seq = ++seqRef.current
       let result: Issue[] | null
       if (how.full) {
@@ -124,7 +129,8 @@ export function useWriteSession(lang: Lang) {
         // all paragraph checks failing means the checker is broken; some failing just leaves gaps
         result = plan.todo.length && fresh.every((f) => f === null) ? null : reId([...plan.known, ...fresh.flatMap((f) => f ?? [])].sort(byOffset))
       }
-      if (!result || seq !== seqRef.current) return null
+      if (seq !== seqRef.current) return STALE
+      if (!result) return null
       // Keep LanguageTool's verdicts when this round did not ask it.
       if (!(how.full && how.lt && languageTool)) {
         const lt = issuesRef.current.filter((i) => i.source === 'languagetool')
@@ -153,7 +159,7 @@ export function useWriteSession(lang: Lang) {
     setIssues((cur) => {
       if (!cur.length) return cur
       const r = remapIssues(cur, prev, next)
-      if (phaseRef.current === 'review') editedInReviewRef.current += r.dropped.length
+      if (phaseRef.current === 'review') for (const d of r.dropped) editedInReviewRef.current.add(d.id)
       return r.kept
     })
   }, [])
@@ -165,7 +171,7 @@ export function useWriteSession(lang: Lang) {
     if (text === checkedText) return
     const t = setTimeout(async () => {
       const res = await check(text, { full: false })
-      if (res && phaseRef.current !== 'report') {
+      if (Array.isArray(res) && phaseRef.current !== 'report') {
         setIssues(res)
         if (phaseRef.current !== 'revealed') setPhase('revealed')
       }
@@ -181,6 +187,7 @@ export function useWriteSession(lang: Lang) {
     if (!text.trim()) return true
     setPhase('checking')
     const res = await check(text, { full: true, lt: true })
+    if (res === STALE) return true
     if (!res) {
       setPhase(issuesRef.current.length ? 'revealed' : 'writing')
       return false
@@ -192,7 +199,7 @@ export function useWriteSession(lang: Lang) {
       return true
     }
     reviewKeysRef.current = res
-    editedInReviewRef.current = 0
+    editedInReviewRef.current = new Set()
     setFound(null)
     setReviewEndsAt(Date.now() + REVIEW_MS)
     setPhase('review')
@@ -203,9 +210,12 @@ export function useWriteSession(lang: Lang) {
     if (phaseRef.current !== 'review') return
     const text = textRef.current
     let next = issuesRef.current
-    if (editedInReviewRef.current > 0) {
+    const edited = editedInReviewRef.current.size
+    if (edited > 0) {
       setPhase('checking')
-      next = (await check(text, { full: true })) ?? next
+      const res = await check(text, { full: true })
+      if (res === STALE) return
+      next = res ?? next
       setIssues(next)
       // A mistake counts as found when the user edited it and the fix it wanted is no longer asked for.
       const before = new Map<string, number>()
@@ -213,7 +223,7 @@ export function useWriteSession(lang: Lang) {
       for (const i of next) if (before.has(fixKey(i))) before.set(fixKey(i), before.get(fixKey(i))! - 1)
       let n = 0
       for (const v of before.values()) n += Math.max(0, v)
-      setFound({ found: Math.min(n, editedInReviewRef.current), total: reviewKeysRef.current.length })
+      setFound({ found: Math.min(n, edited), total: reviewKeysRef.current.length })
     }
     setPhase('revealed')
   }, [check])
@@ -270,22 +280,34 @@ export function useWriteSession(lang: Lang) {
 
   /* ---------------- finishing ---------------- */
 
-  const finish = useCallback(async (): Promise<Issue[] | null> => {
+  /**
+   * Final full check for the report. Resolves null (and goes back to where it was) when the checker
+   * failed, STALE when the user moved on to another draft or language meanwhile.
+   */
+  const finish = useCallback(async (): Promise<CheckOutcome> => {
     const text = textRef.current
-    if (!text.trim()) return null
+    if (!text.trim()) return STALE
+    const before = phaseRef.current
     setPhase('checking')
     const res = await check(text, { full: true, lt: true })
-    const final = res ?? issuesRef.current
-    setIssues(final)
+    if (res === STALE) return STALE
+    if (!res) {
+      // never show a clean report for a text nobody could read
+      setPhase(before === 'checking' || before === 'report' ? 'writing' : before)
+      return null
+    }
+    setIssues(res)
     setPhase('report')
-    return final
+    return res
   }, [check])
 
-  const markFinished = useCallback(() => {
-    setDraft((d) => ({ ...d, finished: true }))
+  const markFinished = useCallback((recorded: Recorded) => {
+    setDraft((d) => ({ ...d, finished: true, recorded }))
   }, [])
 
   const keepWriting = useCallback(() => {
+    // an open draft is unfinished again, so it reopens after a reload
+    setDraft((d) => (d.finished ? { ...d, finished: false } : d))
     setPhase(issuesRef.current.length || mode === 'live' ? 'revealed' : 'writing')
   }, [mode])
 

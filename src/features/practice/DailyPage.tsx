@@ -3,13 +3,14 @@ import { navigate } from '@/lib/router'
 import { useSettings } from '@/state/settings'
 import { currentStreak, useStats } from '@/state/stats'
 import { dayKey } from '@/lib/id'
-import { LANG_NAMES, type TypingResult } from '@/types'
+import type { TypingResult } from '@/types'
 import { Stat } from '@/components/ui'
 import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
 import { DAILY_MS, dailyChallenge, dailyConfig, dailyMoreWords, dailyRuns, formatDay } from './daily'
 import { repairHref } from './repair'
+import { LANG_IN_ENGLISH } from './parts'
 import './practice.css'
 
 type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; before: number | undefined }
@@ -51,14 +52,14 @@ export default function DailyPage() {
           <p className="daily-date muted tabular">{formatDay(day)}</p>
           <h1 className="page-title">Daily challenge</h1>
           <p className="page-lede">
-            45 seconds of {LANG_NAMES[lang]}, the same text all day, so a second go is a fair rematch. It opens with a line from one of the stories.
+            45 seconds of {LANG_IN_ENGLISH[lang]}, the same text all day, so a second go is a fair rematch. It opens with a line from one of the stories.
           </p>
         </div>
         <div className="daily-stats">
           <Stat label="streak" value={`${streak} ${streak === 1 ? 'day' : 'days'}`} sub={streakSub} />
           <Stat
             label="today’s best"
-            value={best?.wpm !== undefined ? `${Math.round(best.wpm)} wpm` : 'none yet'}
+            value={best?.wpm !== undefined ? `${Math.round(best.wpm)} wpm` : <span className="daily-none">none yet</span>}
             sub={best ? `${Math.round(best.accuracy ?? 0)}% accuracy, ${runs.length} ${runs.length === 1 ? 'try' : 'tries'}` : 'nothing to beat'}
           />
         </div>

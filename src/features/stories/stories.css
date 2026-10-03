@@ -95,6 +95,13 @@
   transform: scaleX(var(--done, 0));
   transform-origin: left center;
 }
+/* Arabic rows read from the right: title at the right edge, numbers on the left */
+.story-row[dir='rtl'] .story-row-meta {
+  justify-items: start;
+}
+.story-row[dir='rtl'] .story-row-bar {
+  transform-origin: right center;
+}
 @media (hover: hover) and (pointer: fine) {
   .story-row:hover .story-row-title {
     color: var(--main);
@@ -190,6 +197,17 @@ body[data-typing]:not([data-focus-mode='off']) .story-reader.is-typing .story-he
   opacity: 1;
 }
 
+/* Typing text: Recursive Mono turns i+j into one ĳ cell under lang=nl ('locl'), but ij is two keys */
+.story-reader .mono-text:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+
+/* A page is about 60 words: the result keeps the numbers, the chart and the words to practise,
+   and drops the details grid (ResultView has no compact prop yet) */
+.story-result .tr-details {
+  display: none;
+}
+
 .story-next {
   display: flex;
   align-items: center;
@@ -248,6 +266,9 @@ body[data-typing]:not([data-focus-mode='off']) .story-reader.is-typing .story-he
     justify-content: start;
     gap: var(--s-4);
     padding-top: 0;
+  }
+  .story-row[dir='rtl'] .story-row-meta {
+    justify-content: end;
   }
   .story-head {
     grid-template-columns: minmax(0, 1fr);

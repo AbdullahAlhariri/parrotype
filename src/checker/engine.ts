@@ -85,12 +85,14 @@ function foldCapitalization(issues: Issue[]): Issue[] {
     const cap = caps.find((c) => c.offset === is.offset && c.length === is.length && !drop.has(c))
     if (!cap) return is
     drop.add(cap)
-    const cased = (r: string) => (cap.replacements[0] === capitalize(cap.text) ? capitalize(r) : r)
+    // the capital issue either adds a capital ("wordt" -> "Word") or removes one ("Ik" -> "ik")
+    const up = cap.replacements[0] === capitalize(cap.text)
+    const cased = (r: string) => (up ? capitalize(r) : uncapitalize(r))
     return {
       ...is,
       replacements: is.replacements.map(cased),
-      message: `${is.message} (and a capital letter)`,
-      messageLocal: is.messageLocal ? `${is.messageLocal} (en een hoofdletter)` : is.messageLocal,
+      message: `${is.message} (and ${up ? 'a capital letter' : 'no capital letter'})`,
+      messageLocal: is.messageLocal ? `${is.messageLocal} (${up ? 'en een hoofdletter' : 'en geen hoofdletter'})` : is.messageLocal,
     }
   })
   return out.filter((i) => !drop.has(i))
@@ -191,6 +193,14 @@ export function capitalize(s: string) {
   const skip = m ? m[1].length : 0
   for (let i = skip; i < s.length; i++) {
     if (LETTER.test(s[i])) return s.slice(0, i) + s[i].toUpperCase() + s.slice(i + 1)
+  }
+  return s
+}
+
+/** Lower-case the first letter (used only when a capital-letter issue says the capital is wrong). */
+function uncapitalize(s: string) {
+  for (let i = 0; i < s.length; i++) {
+    if (LETTER.test(s[i])) return s.slice(0, i) + s[i].toLowerCase() + s.slice(i + 1)
   }
   return s
 }

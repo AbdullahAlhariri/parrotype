@@ -398,6 +398,43 @@ body[data-typing] .app-main {
   .not-found {
     grid-template-columns: 1fr;
     justify-items: start;
+    gap: var(--s-5);
+    margin-top: var(--s-7);
+  }
+  .not-found .kees-wrap {
+    --kees-size: 104px !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* a page that failed to load                                          */
+/* ------------------------------------------------------------------ */
+
+.page-error {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s-6);
+  max-width: 38rem;
+  margin: var(--s-9) auto;
+}
+.page-error h1 {
+  font-size: var(--fs-lg);
+  margin-top: var(--s-4);
+}
+.page-error p {
+  margin-top: var(--s-3);
+  color: var(--sub);
+}
+.page-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+@media (max-width: 560px) {
+  .page-error {
+    grid-template-columns: minmax(0, 1fr);
     margin-top: var(--s-7);
   }
 }

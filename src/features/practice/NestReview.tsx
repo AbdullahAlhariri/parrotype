@@ -123,7 +123,8 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
 
   const onRecall = (e: FormEvent) => {
     e.preventDefault()
-    submit(typed)
+    // an empty enter (often the second press after covering) is not an answer; "No idea" is
+    if (typed.trim()) submit(typed)
   }
 
   const onRetype = (e: FormEvent) => {

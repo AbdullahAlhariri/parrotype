@@ -245,7 +245,8 @@
 
 /* Dutch typing text: no ĳ ligature (Recursive maps i+j to one glyph under lang=nl via locl) */
 .practice .mono-text:not(:lang(ar)),
-.nest-review .mono-text:not(:lang(ar)) {
+.daily .mono-text:not(:lang(ar)),
+.weak-chip:not(:lang(ar)) .kbd {
   font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
 }
 .practice-subhead .page-lede {
@@ -391,7 +392,7 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
   transform-origin: left center;
   animation: nest-timer linear forwards;
 }
-.nest-target[dir='rtl'] + .nest-timer {
+.nest-target.is-sentence[dir='rtl'] + .nest-timer {
   transform-origin: right center;
 }
 @keyframes nest-timer {
@@ -561,6 +562,9 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
 }
 .daily-stats .stat-value {
   font-size: var(--fs-lg);
+}
+.daily-stats .daily-none {
+  color: var(--sub);
 }
 .daily .daily-note {
   color: var(--text);

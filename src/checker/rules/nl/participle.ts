@@ -47,6 +47,23 @@ const participleMessage = (wrong: string, right: string, dstem: boolean) => ({
   learnMore: LINKS.participle,
 })
 
+const NU_SUBJ = set('ik jij je hij zij ze wij we jullie u het men er de een dit deze mijn zijn haar onze hun')
+/** nominative-only pronouns: one of these mid-clause is a new subject (iemand/iedereen can be objects) */
+const NOMINATIVE = set('ik jij hij zij wij we men')
+
+/**
+ * Something between the auxiliary at a and the verb at b starts a new clause the splitter missed:
+ * "nu het klimaat verandert", or a second subject ("Ik ben blij hij betaalt nooit").
+ */
+function clauseBreakBetween(ctx: RuleContext, a: number, b: number): boolean {
+  for (let k = a + 1; k < b; k++) {
+    const w = lw(ctx, k)
+    if (w === 'nu' && NU_SUBJ.has(lw(ctx, k + 1))) return true
+    if (NOMINATIVE.has(w) && !isAux(ctx, k - 1)) return true
+  }
+  return false
+}
+
 function participleAfterAux(ctx: RuleContext, map: ReadonlyMap<string, string>, dstem: boolean): RuleHit[] {
   const out: RuleHit[] = []
   ctx.words.forEach((w, i) => {
@@ -56,7 +73,7 @@ function participleAfterAux(ctx: RuleContext, map: ReadonlyMap<string, string>, 
     if (!c) return
     let confidence: 'high' | 'medium' | undefined
     if (endsClause(ctx, i)) {
-      for (let k = c.from; k < i; k++) if (isAux(ctx, k)) confidence = 'high'
+      for (let k = c.from; k < i; k++) if (isAux(ctx, k) && !clauseBreakBetween(ctx, k, i)) confidence = 'high'
     }
     // verb-final cluster: "...dat het al betaalt is"
     const n = next(ctx, i)
@@ -143,12 +160,16 @@ export const pronounParticiple: Rule = {
       const right = presentFor(lw(ctx, v))
       if (!right) return
       if (auxInClause(ctx, s, v)) return
-      if (nounFollows(ctx, v)) return // "Het verteld verhaal"
+      if (nounFollows(ctx, v) || nounLike(ctx, next(ctx, v))) return // "Het verteld verhaal", "het bepaald lidwoord"
       out.push(hitWord(ctx, v, [right], presentMessage(lw(ctx, v), right, subj)))
     })
     return out
   },
 }
+
+/** a lowercase word that looks like a noun by its ending: the participle is used as an adjective */
+const NOUN_ENDING = /(?:woord|gebied|heid|ing|schap|teken|getal|geval|systeem|beleid|bedrijf|onderwijs)$/
+const nounLike = (ctx: RuleContext, n: number) => n >= 0 && n < ctx.words.length && NOUN_ENDING.test(lw(ctx, n))
 
 const PART03_Q = set('wat wie hoe waar wanneer waarom')
 const PART03_NEXT = set('er hier daar nu dan toch eigenlijk precies vandaag morgen nou allemaal')
@@ -228,7 +249,7 @@ export const zijnVerb: Rule = {
       if (ADJECTIVAL_PARTICIPLES.has(part) && n >= 0 && isKnownNoun(lw(ctx, n))) return
       let aux = trailingAux ? n : -1
       if (aux < 0) for (let k = c.from; k < p; k++) if (HEBBEN_FORMS.has(lw(ctx, k))) aux = k
-      if (aux < 0) return
+      if (aux < 0 || (aux < p && clauseBreakBetween(ctx, aux, p))) return
       // another participle between (Ik heb het boek gekregen dat ...) means hebben belongs to that one
       for (let k = Math.min(aux, p) + 1; k < Math.max(aux, p); k++) if (/^ge\S+[dtn]$/.test(lw(ctx, k)) && lw(ctx, k) !== part) return
       const right = HEBBEN_TO_ZIJN[lw(ctx, aux)]

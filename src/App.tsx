@@ -11,6 +11,7 @@ import { Footer } from '@/components/shell/Footer'
 import { CommandPalette } from '@/components/shell/CommandPalette'
 import { Toaster } from '@/components/shell/Toaster'
 import { NotFound } from '@/components/shell/NotFound'
+import { PageErrorBoundary } from '@/components/shell/PageErrorBoundary'
 import { toast } from '@/components/ui/toast'
 import { takeFlash } from '@/features/settings/data'
 import { isRtl } from '@/types'
@@ -55,7 +56,9 @@ export default function App() {
       </a>
       <Header />
       <main className="app-main" id="main" tabIndex={-1} key={path}>
-        <Suspense fallback={<div className="page-loading" aria-busy="true" />}>{Page ? <Page /> : <NotFound />}</Suspense>
+        <PageErrorBoundary>
+          <Suspense fallback={<div className="page-loading" aria-busy="true" />}>{Page ? <Page /> : <NotFound />}</Suspense>
+        </PageErrorBoundary>
       </main>
       <Footer />
       <CommandPalette />

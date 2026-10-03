@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
 import { THEMES, TEXT_TOKENS, getTheme, resolveTheme, themeName, THEME_CHOICES } from './themes'
 
@@ -86,5 +87,14 @@ describe('themes', () => {
     expect(['kea-dark', 'kea-light']).toContain(resolveTheme('auto').id)
     expect(themeName('auto')).toMatch(/^auto, kea (dark|light)$/)
     expect(themeName('lorikeet-light')).toBe('lorikeet light')
+  })
+
+  test('index.html paints the same first background as themes.ts (no flash on load)', () => {
+    const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8')
+    const map = html.match(/var bg = (\{[^}]*\})/)
+    expect(map, 'inline theme map in index.html').not.toBeNull()
+    const bg = JSON.parse(map![1].replace(/'/g, '"')) as Record<string, string>
+    for (const t of THEMES) expect(bg[t.id]?.toLowerCase(), t.id).toBe(t.colors['--bg'].toLowerCase())
+    expect(Object.keys(bg).sort()).toEqual(THEMES.map((t) => t.id).sort())
   })
 })

@@ -112,6 +112,7 @@ function PaletteDialog({ initialQuery, onClose }: { initialQuery: string; onClos
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return
     const ctrl = e.ctrlKey || e.metaKey
     if (e.key === 'ArrowDown' || (ctrl && (e.key === 'j' || e.key === 'n')) || (e.key === 'Tab' && !e.shiftKey)) {
       e.preventDefault()

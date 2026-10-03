@@ -9,6 +9,8 @@ interface Props {
   issues: Issue[]
   /** false while feedback is hidden (writing, self-review) */
   revealed: boolean
+  /** "as I type": the text is still being written, so a clean check is only clean so far */
+  live?: boolean
   activeId?: string
   onJump: (issue: Issue) => void
   explainIn: 'en' | 'local'
@@ -25,12 +27,12 @@ interface Props {
   after?: ReactNode
 }
 
-export function IssueList({ issues, revealed, activeId, onJump, explainIn, words, target, chars, activeMs, ltLine, checkerMissing, note, after }: Props) {
+export function IssueList({ issues, revealed, live, activeId, onJump, explainIn, words, target, chars, activeMs, ltLine, checkerMissing, note, after }: Props) {
   const groups = CATEGORY_ORDER.map((c) => ({ category: c, items: issues.filter((i) => i.category === c) })).filter((g) => g.items.length)
   const pct = target ? Math.min(1, words / target) : 0
 
   return (
-    <aside className="il" aria-label="Your text">
+    <aside className="il" aria-label="Corrections">
       <dl className="il-stats">
         <div className="il-stat il-stat--words">
           <dt>words</dt>
@@ -54,13 +56,13 @@ export function IssueList({ issues, revealed, activeId, onJump, explainIn, words
         </div>
       </dl>
 
-      <div className="il-body" aria-live="polite">
+      <div className="il-body">
         {checkerMissing ? (
           <p className="il-note">The checker did not load, so there are no corrections right now. Your text is saved.</p>
         ) : !revealed ? (
           note && <div className="il-note">{note}</div>
         ) : issues.length === 0 ? (
-          <p className="il-note">Nothing to correct. Kees read it twice and found nothing.</p>
+          <p className="il-note">{live ? 'Nothing to correct so far.' : 'Nothing to correct. Kees read it twice and found nothing.'}</p>
         ) : (
           groups.map((g) => <Group key={g.category} category={g.category} items={g.items} activeId={activeId} onJump={onJump} explainIn={explainIn} />)
         )}
@@ -81,9 +83,9 @@ function Group({ category, items, activeId, onJump, explainIn }: { category: Iss
   const title = CATEGORY_LABEL[category]
   return (
     <section className={`il-group il-group--${category}`}>
-      <h3 className="il-group-title">
+      <h2 className="il-group-title">
         <span className="il-group-name">{title[0].toUpperCase() + title.slice(1)}</span> <span className="il-count tabular">{items.length}</span>
-      </h3>
+      </h2>
       <ul className="il-items">
         {items.map((i) => {
           const rtl = isRtl(i.lang)

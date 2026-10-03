@@ -175,3 +175,31 @@ describe('classifyOps', () => {
     expect(classifyOps(alignWords('ik ga', 'ik'), 'nl')[1]).toMatchObject({ kind: 'skipped' })
   })
 })
+
+describe('review regressions', () => {
+  it('keeps numbers with separators in one token', () => {
+    expect(tokenize('Het kost 1.000 euro, om 12:30 of 3,5 uur.').map((t) => t.text)).toEqual(['Het', 'kost', '1.000', 'euro', ',', 'om', '12:30', 'of', '3,5', 'uur', '.'])
+    const ops = alignWords('Het is 1.000 euro.', 'Het is 1000 euro.')
+    expect(ops.filter((o) => o.op !== 'equal')).toEqual([expect.objectContaining({ op: 'sub', expected: '1.000', typed: '1000' })])
+    // a sentence-final full stop after a number stays punctuation
+    expect(tokenize('Ik ben 12.').map((t) => t.text)).toEqual(['Ik', 'ben', '12', '.'])
+  })
+
+  it('marks a moved word and labels it as word order, not as a skipped word', () => {
+    const ops = alignWords('Gisteren ging ik naar huis.', 'Gisteren ik ging naar huis.')
+    const moved = ops.filter((o) => o.moved)
+    expect(moved.map((o) => [o.op, o.expected ?? o.typed])).toEqual([
+      ['ins', 'ik'],
+      ['del', 'ik'],
+    ])
+    const labels = classifyOps(ops, 'nl')
+    const del = ops.findIndex((o) => o.op === 'del')
+    expect(labels[del]).toMatchObject({ tag: 'word-order', nature: 'cognitive', detail: "'ik' is in the wrong place" })
+    expect(labels[del]?.tip.local).toMatch(/persoonsvorm/)
+    expect(labels[ops.findIndex((o) => o.op === 'ins')]).toBeNull()
+    // a word that is really missing is still "skipped"
+    const skip = alignWords('Ik heb het boek gelezen.', 'Ik heb boek gelezen.')
+    expect(skip.some((o) => o.moved)).toBe(false)
+    expect(classifyOps(skip, 'nl')[2]).toMatchObject({ kind: 'skipped' })
+  })
+})

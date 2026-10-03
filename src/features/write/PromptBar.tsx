@@ -20,7 +20,7 @@ const KIND_OPTIONS: { value: PromptKind | 'all'; label: string }[] = [{ value: '
 export function PromptBar({ lang, prompt, kind, onKind, onShuffle, onFree, disabled }: Props) {
   const rtl = isRtl(lang)
   return (
-    <section className="wp-prompt" aria-label="Writing prompt">
+    <section className="wp-prompt" aria-label="Writing prompt" data-rtl={rtl || undefined}>
       {prompt ? (
         <>
           <p className="wp-prompt-meta">

@@ -310,7 +310,7 @@ export const DICTATION_EN: DictationSentence[] = [
     text: 'Wait, what is that? Hello, my name is Sara.',
     level: 1,
     focus: ['capital'],
-    note: { en: 'Names and sentence starts take a capital. No space before a question mark.' },
+    note: { en: 'Names take a capital (Sara), and so does the first word after a question mark (Hello).' },
   },
   {
     id: 'en-d44',

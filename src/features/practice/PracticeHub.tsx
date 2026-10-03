@@ -4,14 +4,14 @@ import { useSettings } from '@/state/settings'
 import { currentStreak, useStats } from '@/state/stats'
 import { BOX_DAYS, useNest } from '@/state/nest'
 import { dayKey } from '@/lib/id'
-import { LANG_NAMES, LANG_TAGS, isRtl, type Lang } from '@/types'
+import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import { weaknesses, type Weakness } from '@/engine'
 import { Kbd } from '@/components/ui'
 import { mostMissed, repairHref } from './repair'
 import { PLAN, planStatus, usePlanTicks, type PlanId } from './plan'
 import { dailyRuns } from './daily'
 import { DRILL_WORDS } from './drill'
-import { TickIcon, dueIn, pct } from './parts'
+import { LANG_IN_ENGLISH, TickIcon, dueIn, pct } from './parts'
 
 const BOX_WHEN = BOX_DAYS.map((d) => (d === 0 ? 'same day' : d === 1 ? '1 day' : d === 7 ? '1 week' : `${d} days`))
 
@@ -42,8 +42,8 @@ export function PracticeHub() {
           <h1 className="page-title">Weak spots</h1>
           <p className="page-lede">
             {parts.length
-              ? `Drills built from your own mistakes in ${LANG_NAMES[lang]}: ${joinAnd(parts)}.`
-              : `Drills built from your own mistakes in ${LANG_NAMES[lang]}. There are none yet, which means great typing or very little typing.`}
+              ? `Drills built from your own mistakes in ${LANG_IN_ENGLISH[lang]}: ${joinAnd(parts)}.`
+              : `Drills built from your own mistakes in ${LANG_IN_ENGLISH[lang]}. There are none yet, which means great typing or very little typing.`}
           </p>
         </div>
       </header>
@@ -56,7 +56,7 @@ export function PracticeHub() {
 
         <div className="practice-sections">
           <NestSection lang={lang} nest={nest} dueCount={due.length} now={now} />
-          <DrillSection lang={lang} weak={weak} keySamples={keySamples} />
+          <DrillSection lang={lang} weak={weak} keySamples={keySamples} primary={due.length === 0} />
           <RepairSection lang={lang} missed={missed.map((w) => ({ word: w.word, count: w.count }))} />
         </div>
       </div>
@@ -161,7 +161,7 @@ function NestSection({ lang, nest, dueCount, now }: { lang: Lang; nest: { box: n
         <p className="muted">
           {nest.length
             ? 'Words and sentences you got wrong. Each right answer moves one up a box and further away; five in a row and it leaves the nest.'
-            : `The nest is empty for ${LANG_NAMES[lang]}. Words you miss in dictation and the gym land here and come back until they stick.`}
+            : `The nest is empty for ${LANG_IN_ENGLISH[lang]}. Words you miss in dictation and the gym land here and come back until they stick.`}
         </p>
       </div>
 
@@ -194,7 +194,8 @@ function NestSection({ lang, nest, dueCount, now }: { lang: Lang; nest: { box: n
   )
 }
 
-function DrillSection({ lang, weak, keySamples }: { lang: Lang; weak: Weakness[]; keySamples: number }) {
+/** One primary button on the hub: the nest review when something is due, otherwise the drill. */
+function DrillSection({ lang, weak, keySamples, primary }: { lang: Lang; weak: Weakness[]; keySamples: number; primary: boolean }) {
   const units = weak.map((w) => w.unit)
   return (
     <section className="practice-section" aria-labelledby="drill-title">
@@ -217,14 +218,17 @@ function DrillSection({ lang, weak, keySamples }: { lang: Lang; weak: Weakness[]
             <li key={w.kind + w.unit} className="weak-chip" lang={LANG_TAGS[lang]}>
               <Kbd>{w.unit}</Kbd>
               <span className="weak-chip-rate tabular">{pct(w.errorRate)}</span>
-              <span className="weak-chip-note muted small">missed of {w.samples}</span>
+              <span className="weak-chip-note muted small">missed, {w.samples} tries</span>
             </li>
           ))}
         </ul>
       )}
 
       <div className="practice-actions">
-        <Link to={units.length ? `/practice?focus=${encodeURIComponent(units.join(','))}` : '/practice?mode=drill'} className="btn btn-primary btn-md">
+        <Link
+          to={units.length ? `/practice?focus=${encodeURIComponent(units.join(','))}` : '/practice?mode=drill'}
+          className={`btn ${primary ? 'btn-primary' : 'btn-subtle'} btn-md`}
+        >
           {units.length ? `Drill ${units.length === 1 ? 'this' : 'these'}, ${DRILL_WORDS} words` : `Warm-up, ${DRILL_WORDS} words`}
         </Link>
         <span className="muted small">Accuracy first: 97% before speed.</span>
@@ -262,7 +266,7 @@ function RepairSection({ lang, missed }: { lang: Lang; missed: { word: string; c
 
       <div className="practice-actions">
         {missed.length > 0 ? (
-          <Link to={repairHref(missed.map((w) => w.word))} className="btn btn-primary btn-md">
+          <Link to={repairHref(missed.map((w) => w.word))} className="btn btn-subtle btn-md">
             Practise these {missed.length} words
           </Link>
         ) : (

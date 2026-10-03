@@ -1,4 +1,5 @@
 import type { Dictionary, Lang, RuleContext, Sentence, Token } from '@/types'
+import { COMPARATIVES } from './lexicon/nl/adjectives'
 
 /* ------------------------------------------------------------------ */
 /* Character classes                                                   */
@@ -18,8 +19,9 @@ const isDigit = (c: string | undefined) => c !== undefined && DIGIT.test(c)
 const URL_RE = /(?:https?:\/\/|www\.)[^\s<>"'`()[\]{}]+/y
 const EMAIL_RE = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/uy
 const HANDLE_RE = /[@#][\p{L}\p{N}_]+/uy
+// no bare .de: "moe.de hond" is a missing space far more often than a German site
 const DOMAIN_RE =
-  /[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.(?:com|nl|org|net|be|io|app|dev|eu|de|uk|fr|ai|co|info|edu|gov)(?![\p{L}\p{N}])(?:\/[^\s<>"'`]*)?/uy
+  /[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.(?:com|nl|org|net|be|io|app|dev|eu|uk|fr|ai|co|info|edu|gov)(?![\p{L}\p{N}])(?:\/[^\s<>"'`]*)?/uy
 /** dotted abbreviations kept as one word: o.a., d.w.z., e.g., i.e., a.u.b., U.S.A. */
 const DOTTED_ABBR_RE = /(?:\p{L}{1,3}\.){2,}/uy
 /** Dutch clitics written with a leading apostrophe: 's avonds, 't is, 's-Hertogenbosch */
@@ -147,10 +149,12 @@ export function tokenize(text: string, _lang?: Lang): Token[] {
 export const ABBREVIATIONS: ReadonlySet<string> = new Set(
   `bijv bv enz etc dhr mevr mw mr mrs ms dr drs ir ing prof ca nr blz pag pp vs jr sr st inc ltd corp incl excl
   evt resp vgl zgn ong mln mld fig afb ds mgr lt sgt dept approx feb mrt apr jun jul aug sep sept okt oct nov dec
-  vnl ipv tov mbt nav ivm adv atd red jl`.split(/\s+/),
+  vnl ipv tov mbt nav ivm adv atd jl max min afd art tel gem hfst hst`.split(/\s+/),
 )
-/** Abbreviations that often close a list at the end of a sentence: split when a capital follows. */
-const END_ABBREVIATIONS: ReadonlySet<string> = new Set(['enz', 'etc', 'inc', 'ltd', 'corp'])
+/** Abbreviations that can close a sentence (a list, a measure): split when a capital follows. */
+const END_ABBREVIATIONS: ReadonlySet<string> = new Set(['enz', 'etc', 'inc', 'ltd', 'corp', 'max', 'min', 'tel', 'art', 'afd', 'gem'])
+/** dotted abbreviations (one word token) that can close a sentence: "peren e.d. Daarna ..." */
+const DOTTED_END: ReadonlySet<string> = new Set(['e.d.', 'e.a.', 'e.v.', 'e.v.a.', 'm.m.', 'c.s.', 'etc.'])
 const CLOSERS: ReadonlySet<string> = new Set(['"', "'", '’', '”', '»', ')', ']', '}', '›'])
 
 const startsUpper = (t: Token | undefined) => !!t && UPPER_START.test(t.text)
@@ -158,7 +162,8 @@ const startsLower = (t: Token | undefined) => !!t && CASED_START.test(t.text) &&
 
 function endsSentence(tokens: Token[], k: number): boolean {
   const t = tokens[k]
-  if (t.isWord || !/^[.!?؟…]+$/.test(t.text)) return false
+  if (t.isWord) return DOTTED_END.has(t.lower) && startsUpper(tokens[k + 1])
+  if (!/^[.!?؟…]+$/.test(t.text)) return false
   let j = k + 1
   let closed = false
   while (j < tokens.length && CLOSERS.has(tokens[j].text) && tokens[j].start === tokens[j - 1].end) {
@@ -211,7 +216,7 @@ export function splitSentences(text: string, tokens: Token[]): Sentence[] {
 export const NL_COORDINATORS: ReadonlySet<string> = new Set(['en', 'maar', 'want', 'dus', 'of', 'noch'])
 export const NL_SUBORDINATORS: ReadonlySet<string> = new Set(
   `omdat dat als wanneer terwijl hoewel zodat voordat nadat totdat sinds zodra tenzij alsof doordat waardoor zolang
-  indien mits opdat aangezien ofschoon`.split(/\s+/),
+  indien mits opdat aangezien ofschoon alhoewel zoals naarmate naargelang`.split(/\s+/),
 )
 export const NL_RELATIVES: ReadonlySet<string> = new Set(
   `die wat wie welke waar waarom hoe hoeveel hoelang waarin waarop waarmee waarvan waarover waarbij waaraan waarna
@@ -231,6 +236,13 @@ const PRONOUN_OPENERS: ReadonlySet<string> = new Set(['dat', 'die', 'wat', 'wie'
 const SUBJECTISH: ReadonlySet<string> = new Set(
   `ik jij je hij zij ze wij we jullie u het men er de een die dat dit deze mijn zijn haar ons onze hun`.split(/\s+/),
 )
+/** before "dan" these make it a comparison that opens a clause: "erger dan hij vertelt" */
+const COMPARE_BEFORE_DAN: ReadonlySet<string> = new Set([
+  ...COMPARATIVES,
+  ...`anders ander andere eerder later liever vaker sneller langer verder erger hoger lager ouder jonger`.split(/\s+/),
+])
+/** "dan" only opens a clause when a subject follows: "meer dan tien euro" stays one clause */
+const DAN_SUBJECTS: ReadonlySet<string> = new Set(`ik jij je hij zij ze wij we jullie u het men er`.split(/\s+/))
 const CLAUSE_PUNCT = /[,;:()"„“”«»–—[\]{}]|(?:^|\s)[-/](?:\s|$)/
 
 export interface Clause {
@@ -246,7 +258,8 @@ export interface Clause {
 /**
  * Split each sentence into rough clauses: on , ; : brackets and quotes, and before conjunctions
  * and relative words (dat/die/wat only when they are not right after a preposition or a leading
- * auxiliary, so "Is dat gebeurd?" and "met die man" stay together).
+ * auxiliary, so "Is dat gebeurd?" and "met die man" stay together), and before a comparative
+ * "dan" ("Het is erger dan hij vertelt").
  * Non-Dutch text is only split on punctuation.
  */
 export function splitClauses(ctx: RuleContext): Clause[] {
@@ -303,6 +316,7 @@ function opensClause(ctx: RuleContext, i: number, clauseFrom: number): boolean {
     return false
   }
   if (w === 'toen') return SUBJECTISH.has(words[i + 1]?.lower ?? '')
+  if (w === 'dan') return COMPARE_BEFORE_DAN.has(prev) && DAN_SUBJECTS.has(words[i + 1]?.lower ?? '')
   if (!isOpener(w)) return false
   if (DETERMINER_OPENERS.has(w) && NL_PREPOSITIONS.has(prev)) return false
   if (PRONOUN_OPENERS.has(w) && i - 1 === clauseFrom && NL_AUX_START.has(prev)) return false

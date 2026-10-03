@@ -58,9 +58,13 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
         <h2 id="gym-summary-title" className="sr-only">
           Round finished
         </h2>
-        <div className="gym-score tabular" aria-label={`${score} of ${total} right first time`}>
+        <div className="gym-score tabular">
           {score}
-          <span className="gym-score-of">/{total}</span>
+          <span className="gym-score-of">
+            <span className="sr-only"> of </span>
+            <span aria-hidden="true">/</span>
+            {total}
+          </span>
         </div>
         <p className="gym-score-label">right first time</p>
         <div className="gym-summary-stats">
@@ -75,6 +79,13 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
 
       <div className="gym-summary-right">
         <p className="gym-summary-line">{line}</p>
+        {misses.length === 0 && (
+          <p className="gym-summary-sub">
+            {m.known === m.total
+              ? `You know all ${m.total} sentences in this pack. Kees has nothing left to repeat.`
+              : `${m.known} of ${m.total} sentences in this pack right first time so far. The other ${m.total - m.known} come up first next round.`}
+          </p>
+        )}
 
         {misses.length > 0 && (
           <>

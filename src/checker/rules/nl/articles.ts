@@ -64,7 +64,19 @@ function nounAfter(ctx: RuleContext, d: number, allowAdj: boolean): number {
   return n
 }
 
-const nounOk = (ctx: RuleContext, n: number) => isLowercase(ctx.words[n]) && !compoundAhead(ctx, n) && !inversionAfter(ctx, n)
+/** "de huis- en tuinman", "het auto- en fietsverkeer": the noun is the first half of a shared compound */
+const truncatedCompound = (ctx: RuleContext, n: number) => /^-/.test(ctx.text.slice(ctx.words[n].end))
+
+const NUMBER_WORDS = set('één een twee drie vier vijf zes zeven acht negen tien elf twaalf honderd')
+/** "de nummer één van de wereld": a person ranked by number takes de */
+const rankedNumber = (ctx: RuleContext, n: number) => {
+  if (lw(ctx, n) !== 'nummer') return false
+  const m = next(ctx, n)
+  return m >= 0 && (/^\d/.test(ctx.words[m].text) || NUMBER_WORDS.has(lw(ctx, m)))
+}
+
+const nounOk = (ctx: RuleContext, n: number) =>
+  isLowercase(ctx.words[n]) && !compoundAhead(ctx, n) && !inversionAfter(ctx, n) && !truncatedCompound(ctx, n)
 
 /* ART-01: de + het-noun */
 export const deHet: Rule = {
@@ -81,7 +93,7 @@ export const deHet: Rule = {
       if (n < 0) return
       const noun = lw(ctx, n)
       const kind = hetNounKind(noun)
-      if (!kind || !nounOk(ctx, n)) return
+      if (!kind || !nounOk(ctx, n) || rankedNumber(ctx, n)) return
       if (noun === 'been' && prev(ctx, i) >= 0 && lw(ctx, i - 1) === 'op') return // "op de been" is a fixed phrase
       const why = hetWhy(noun, kind)
       out.push(

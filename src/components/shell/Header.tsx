@@ -7,9 +7,9 @@ import { Icon } from '@/components/ui/Icon'
 import { Logo } from '@/components/ui/Logo'
 
 const LANG_OPTIONS: SegmentedOption<Lang>[] = [
-  { value: 'nl', label: 'nl', title: `Practise in ${LANG_NAMES.nl}` },
-  { value: 'en', label: 'en', title: `Practise in ${LANG_NAMES.en}` },
-  { value: 'ar', label: 'ar', title: 'Practise in Arabic (العربية)' },
+  { value: 'nl', label: 'nl', title: `Practise in Dutch (${LANG_NAMES.nl})` },
+  { value: 'en', label: 'en', title: 'Practise in English' },
+  { value: 'ar', label: 'ar', title: `Practise in Arabic (${LANG_NAMES.ar})` },
 ]
 
 export function Header() {

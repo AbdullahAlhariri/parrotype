@@ -1,3 +1,4 @@
+import { FOCUS, PAIRS } from '@/content/dictation'
 import type { Lang } from '@/types'
 import { DEFAULT_CONFIG, type DictationConfig } from './logic/items'
 
@@ -38,17 +39,25 @@ function sanitise(c: Partial<DictationConfig> | undefined): DictationConfig {
   return out
 }
 
-export function loadConfig(lang: Lang): DictationConfig {
-  return sanitise(read<Partial<Record<Lang, DictationConfig>>>(CONFIG_KEY)?.[lang])
+/** Drop focus tags and pair sets the language does not have (old saves, typos in links). */
+export function forLang(lang: Lang, c: DictationConfig): DictationConfig {
+  const pairIds = new Set(PAIRS[lang].map((p) => p.id))
+  return { ...c, focus: c.focus.filter((f) => Object.hasOwn(FOCUS[lang], f)), pairs: c.pairs.filter((p) => pairIds.has(p)) }
 }
+
+export function loadConfig(lang: Lang): DictationConfig {
+  return forLang(lang, sanitise(read<Partial<Record<Lang, DictationConfig>>>(CONFIG_KEY)?.[lang]))
+}
+
+export const QUERY_KEYS = ['mode', 'level', 'focus', 'pairs', 'length', 'playback'] as const
 
 /**
  * Deep links from other pages: /listen?focus=dt,participle&level=2 or
- * /listen?mode=pairs&pairs=word-wordt&length=5. Unknown values fall back to the saved setup.
+ * /listen?mode=pairs&pairs=word-wordt&length=5. Unknown values fall back to the saved setup;
+ * with `lang`, tags and pair sets that language does not have are dropped.
  */
-export function configFromQuery(base: DictationConfig, q: URLSearchParams): DictationConfig | null {
-  const keys = ['mode', 'level', 'focus', 'pairs', 'length', 'playback']
-  if (!keys.some((k) => q.has(k))) return null
+export function configFromQuery(base: DictationConfig, q: URLSearchParams, lang?: Lang): DictationConfig | null {
+  if (!QUERY_KEYS.some((k) => q.has(k))) return null
   const list = (k: string) => (q.get(k) ?? '').split(',').map((x) => x.trim()).filter(Boolean)
   const next: Partial<DictationConfig> = { ...base }
   if (q.has('mode')) next.mode = q.get('mode') as DictationConfig['mode']
@@ -58,7 +67,8 @@ export function configFromQuery(base: DictationConfig, q: URLSearchParams): Dict
   if (q.has('focus')) next.focus = list('focus')
   if (q.has('pairs')) next.pairs = list('pairs')
   if (q.has('pairs') && !q.has('mode')) next.mode = 'pairs'
-  return sanitise(next)
+  const out = sanitise(next)
+  return lang ? forLang(lang, out) : out
 }
 
 export function saveConfig(lang: Lang, c: DictationConfig) {

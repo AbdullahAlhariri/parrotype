@@ -15,14 +15,14 @@ const go = (t: ProofText) => navigate(`/fix?text=${encodeURIComponent(t.id)}`)
 export default function ProofreadPage() {
   const query = useQuery()
   const practiceLang = useSettings((s) => s.lang)
-  const lastLang = useFix((s) => s.lastLang)
-  const setLastLang = useFix((s) => s.setLastLang)
+  const setSetting = useSettings((s) => s.set)
   const progress = useFix((s) => s.texts)
   const [listOpen, setListOpen] = useState(false)
 
   const asked = query.get('text')
   const fromQuery = asked ? findText(asked) : undefined
-  const lang: ProofLang = fromQuery?.lang ?? lastLang ?? (isProofLang(practiceLang) ? practiceLang : 'nl')
+  // texts follow the practice language (Dutch while that is Arabic); a link to a text wins
+  const lang: ProofLang = fromQuery?.lang ?? (isProofLang(practiceLang) ? practiceLang : 'nl')
   const texts = TEXTS[lang]
   // the default pick is made once per visit, so finishing a text doesn't swap it out underneath you
   const [fallbackId] = useState(() => nextUp(texts, progress).id)
@@ -30,7 +30,7 @@ export default function ProofreadPage() {
   const index = texts.indexOf(text)
 
   const pickLang = (l: ProofLang) => {
-    setLastLang(l)
+    setSetting('lang', l)
     go(nextUp(TEXTS[l], useFix.getState().texts))
   }
   const step = (d: number) => go(texts[(index + d + texts.length) % texts.length])

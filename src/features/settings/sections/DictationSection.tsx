@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSettings } from '@/state/settings'
-import { LANGS, LANG_TAGS, type Lang } from '@/types'
+import { LANGS, type Lang } from '@/types'
 import { loadVoices, speak, speechSupported, stopSpeaking, voicesFor } from '@/lib/speech'
 import { Button, Icon, Select, Slider } from '@/components/ui'
 import { Row, Section } from '../Row'
@@ -12,6 +12,17 @@ const SAMPLES: Record<Lang, string> = {
 }
 
 const NAME: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
+
+/** "Microsoft Fenna Online (Natural) - Dutch (Netherlands)" reads as "Fenna, online". */
+export function voiceLabel(v: Pick<SpeechSynthesisVoice, 'name' | 'localService'>): string {
+  const short =
+    v.name
+      .replace(/^Microsoft\s+/, '')
+      .replace(/\s+-\s+.*$/, '')
+      .replace(/\s*Online\s*(\(Natural\))?/i, '')
+      .trim() || v.name
+  return v.localService ? short : `${short}, online`
+}
 
 const INSTALL_HINT =
   'To add a voice on Windows: Settings, Time & language, Speech, Add voices. On macOS: System Settings, Accessibility, Spoken content, System voice, Manage voices. Then reload this page.'
@@ -73,28 +84,29 @@ export function DictationSection() {
     >
       {LANGS.map((lang) => {
         const list = voicesFor(lang, voices)
-        const options = [{ value: '', label: list.length ? `Automatic (${list[0].name})` : 'Automatic' }, ...list.map((v) => ({ value: v.name, label: `${v.name}${v.localService ? '' : ' (online)'}` }))]
+        const options = [
+          { value: '', label: list.length ? `Automatic: ${voiceLabel(list[0])}` : 'Automatic' },
+          ...list.map((v) => ({ value: v.name, label: voiceLabel(v) })),
+        ]
         const chosen = s.voices[lang] ?? ''
         const value = options.some((o) => o.value === chosen) ? chosen : ''
+        const none = loaded && list.length === 0
+        if (none) return <Row key={lang} label={`${NAME[lang]} voice`} hint={`No ${NAME[lang]} voice on this device.`}>{() => null}</Row>
         return (
-          <Row key={lang} label={`${NAME[lang]} voice`} hint={loaded && !list.length ? `No ${NAME[lang]} voice on this device.` : undefined} labelFor>
-            {({ controlId, hintId }) => (
+          <Row key={lang} label={`${NAME[lang]} voice`} labelFor>
+            {({ controlId }) => (
               <div className="voice-control">
                 <Select
                   id={controlId}
-                  aria-describedby={hintId}
                   options={options}
                   value={value}
                   onChange={(v) => s.set('voices', { ...s.voices, [lang]: v })}
                   disabled={!list.length}
                 />
-                <Button size="sm" onClick={() => hear(lang)} disabled={!list.length} aria-pressed={playing === lang}>
+                <Button size="sm" onClick={() => hear(lang)} disabled={!list.length}>
                   <Icon name={playing === lang ? 'sound-off' : 'sound'} size={16} />
                   {playing === lang ? 'Stop' : 'Hear a sample'}
                 </Button>
-                <span className="visually-hidden" lang={LANG_TAGS[lang]}>
-                  {SAMPLES[lang]}
-                </span>
               </div>
             )}
           </Row>

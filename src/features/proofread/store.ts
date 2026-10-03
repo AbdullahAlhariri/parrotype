@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ProofLang, ProofText } from '@/content/proofread'
+import type { ProofText } from '@/content/proofread'
 
 export interface TextProgress {
   attempts: number
@@ -14,10 +14,8 @@ export interface TextProgress {
 
 interface FixStore {
   texts: Record<string, TextProgress>
-  lastLang?: ProofLang
   /** Store one check. Returns true the first time a text comes out perfect. */
   record: (id: string, fixed: number, total: number, introduced: number) => boolean
-  setLastLang: (lang: ProofLang) => void
 }
 
 export const useFix = create<FixStore>()(
@@ -42,7 +40,6 @@ export const useFix = create<FixStore>()(
         }))
         return first
       },
-      setLastLang: (lastLang) => set({ lastLang }),
     }),
     { name: 'parrotype.fix', version: 1 },
   ),

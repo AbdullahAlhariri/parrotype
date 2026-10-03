@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Lang } from '@/types'
 
 export interface PackProgress {
   rounds: number
@@ -25,13 +24,10 @@ interface GymStore {
   packs: Record<string, PackProgress>
   /** beginner mode: pick from options with 1/2/3 instead of typing */
   choose: boolean
-  /** last language group opened in the pack list */
-  lastLang?: Lang
   /** Store a finished round. Returns true for a new best score (not on the first round). */
   recordRound: (packId: string, outcomes: Outcome[]) => boolean
   markRuleSeen: (packId: string) => void
   setChoose: (v: boolean) => void
-  setLastLang: (lang: Lang) => void
   reset: () => void
 }
 
@@ -74,7 +70,6 @@ export const useGym = create<GymStore>()(
       markRuleSeen: (packId) =>
         set((st) => ({ packs: { ...st.packs, [packId]: { ...(st.packs[packId] ?? blank()), ruleSeen: true } } })),
       setChoose: (choose) => set({ choose }),
-      setLastLang: (lastLang) => set({ lastLang }),
       reset: () => set({ packs: {} }),
     }),
     { name: 'parrotype.gym', version: 1 },

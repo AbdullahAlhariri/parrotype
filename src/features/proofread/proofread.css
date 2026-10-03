@@ -1,0 +1,343 @@
+/* Fix it. The text to proofread is the hero. It is set in the UI face, not the typing face:
+   a different look helps you see your own language fresh. Panels are square. */
+
+.fix-page-head {
+  flex-wrap: wrap;
+}
+/* no ĳ ligature from Recursive's Dutch locl in the typing face */
+.fix .mono-text:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+.fix-page-head .segmented {
+  padding-bottom: var(--s-1);
+}
+.fix-note-ar {
+  margin-bottom: var(--s-5);
+  color: var(--sub);
+}
+
+.fix-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-6);
+  max-width: 46rem;
+  margin-bottom: var(--s-5);
+}
+.fix-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.fix-meta {
+  display: flex;
+  gap: var(--s-5);
+  margin-top: var(--s-2);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.fix-nav {
+  display: flex;
+  gap: var(--s-4);
+  font-size: var(--fs-sm);
+  font-weight: 560;
+}
+.fix-page-head,
+.fix-nav {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+body[data-typing]:not([data-focus-mode='off']) .fix-page-head:not(:focus-within),
+body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* all texts */
+.fix-list {
+  max-width: 46rem;
+  margin-bottom: var(--s-7);
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+  animation: fix-in var(--dur-base) var(--ease-out);
+}
+.fix-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 8.5rem;
+  align-items: baseline;
+  gap: var(--s-5);
+  padding: var(--s-3) 0;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: var(--hairline) solid var(--border);
+}
+.fix-list-title {
+  font-weight: 600;
+  transition: color var(--dur-fast) ease;
+}
+.fix-list-row.is-current .fix-list-title {
+  color: var(--main);
+}
+.fix-list-status {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  text-align: right;
+}
+.fix-list-row.is-done .fix-list-status {
+  color: var(--ok);
+}
+.fix-list-level,
+.fix-list-count {
+  font-size: var(--fs-sm);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fix-list-row:hover .fix-list-title {
+    color: var(--main);
+  }
+}
+
+/* editor */
+.fix-hidden {
+  margin-bottom: var(--s-4);
+  color: var(--sub);
+}
+.fix-hidden-n {
+  color: var(--main);
+  font-weight: 650;
+}
+.fix-editor {
+  display: block;
+  width: 100%;
+  max-width: 46rem;
+  min-height: 12rem;
+  padding: var(--s-6);
+  border: var(--hairline) solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text);
+  caret-color: var(--caret);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  font-weight: 420;
+  line-height: 1.75;
+  resize: none;
+  overflow: hidden;
+  transition: border-color var(--dur-fast) ease;
+}
+.fix-editor:focus-visible {
+  outline: none;
+  border-color: var(--caret);
+}
+.fix-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-4);
+  margin-top: var(--s-5);
+}
+.fix-edits {
+  margin-inline-start: var(--s-2);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.btn .fix-kbd-on-primary {
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+  border-color: color-mix(in srgb, var(--bg) 30%, transparent);
+  color: inherit;
+}
+
+/* results */
+.fix-result {
+  max-width: 46rem;
+  animation: fix-in var(--dur-base) var(--ease-out);
+}
+.fix-score-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-6);
+}
+.fix-score {
+  color: var(--main);
+  font-size: var(--fs-hero);
+  font-weight: 760;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.fix-score-of {
+  margin-left: 0.08em;
+  color: var(--sub);
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.fix-score-label {
+  color: var(--sub);
+}
+.fix-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-6);
+  margin-top: var(--s-3);
+}
+.fix-stats .stat-value {
+  font-size: var(--fs-lg);
+}
+.fix-line {
+  margin-top: var(--s-6);
+  font-size: var(--fs-md);
+  font-weight: 620;
+}
+.fix-view-toggle {
+  margin-top: var(--s-5);
+  font-size: var(--fs-sm);
+  font-weight: 560;
+}
+.fix-doc {
+  margin-top: var(--s-3);
+  padding: var(--s-6);
+  background: var(--surface);
+  font-size: var(--fs-md);
+  line-height: 1.95;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.fx-tag {
+  margin-inline-start: 0.2em;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  line-height: 1;
+  vertical-align: super;
+  white-space: nowrap;
+}
+.fx-tag-ok {
+  color: var(--ok);
+}
+.fx-new .fx-tag {
+  color: var(--error);
+}
+.fx-was,
+.fix-was {
+  color: var(--sub);
+  font-size: 0.82em;
+  text-decoration-thickness: 1.5px;
+}
+.fx-miss .fx-right {
+  text-decoration: underline 2px var(--main);
+  text-underline-offset: 0.24em;
+  text-decoration-skip-ink: none;
+}
+.fx-num {
+  margin-inline-start: 0.12em;
+  color: var(--main);
+  font-size: 0.62em;
+  font-weight: 750;
+}
+
+/* notes */
+.fix-notes {
+  margin-top: var(--s-7);
+}
+.fix-notes-title {
+  color: var(--sub);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.fix-note-list {
+  margin-top: var(--s-3);
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+}
+.fix-note {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: var(--s-3);
+  padding-block: var(--s-4);
+  border-bottom: var(--hairline) solid var(--border);
+}
+.fix-note-n {
+  color: var(--main);
+  font-weight: 750;
+  line-height: 1.9;
+}
+.fix-note-head .fix-right {
+  font-size: var(--fs-md);
+  font-weight: 650;
+}
+.fix-note-text {
+  margin-top: var(--s-1);
+}
+.fix-note-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-5);
+  margin-top: var(--s-3);
+}
+.fix-retype {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.fix-retype-input {
+  padding: var(--s-2) var(--s-3);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  caret-color: var(--caret);
+}
+.fix-retype-input::placeholder {
+  color: var(--sub);
+}
+.fix-retype-input:focus-visible {
+  outline-offset: 1px;
+}
+.fix-drill {
+  font-size: var(--fs-sm);
+  font-weight: 560;
+}
+.fix-new-list {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  list-style: none;
+}
+.fix-right {
+  color: var(--text);
+}
+.fix-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-7);
+}
+
+@keyframes fix-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .fix-editor,
+  .fix-doc {
+    padding: var(--s-4);
+    font-size: 1.125rem;
+  }
+  .fix-score-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--s-5);
+  }
+  .fix-kees {
+    display: none;
+  }
+  .fix-list-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .fix-list-level,
+  .fix-list-count {
+    display: none;
+  }
+}

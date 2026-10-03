@@ -170,6 +170,11 @@
 .theme-chip[aria-checked='true'] {
   border-color: var(--main);
 }
+@media (hover: hover) and (pointer: fine) {
+  .theme-chip:hover:not([aria-checked='true']) {
+    border-color: var(--t-sub);
+  }
+}
 .theme-name {
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -328,15 +333,17 @@
 
 /* dictation */
 
+/* same width in every row, and the button keeps its width when it turns into Stop */
 .voice-control {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.75rem;
   align-items: center;
   gap: var(--s-3);
-  width: min(30rem, 100%);
+  width: 26rem;
+  max-width: 100%;
 }
-.voice-control .select {
-  flex: 1;
-  min-width: 0;
+.voice-control .btn {
+  justify-content: flex-start;
 }
 .rate-control {
   display: flex;
@@ -351,10 +358,7 @@
 }
 @media (max-width: 640px) {
   .voice-control {
-    flex-wrap: wrap;
-  }
-  .voice-control .select {
-    flex-basis: 100%;
+    width: 100%;
   }
 }
 

@@ -225,7 +225,7 @@ export const NL_TEXTS = defineTexts('nl', NOTES, [
     title: 'Samen sporten',
     difficulty: 2,
     source:
-      "Hoi Lisa,\n\nBedankt voor [jou>jouw#jouw-poss] berichtje. Ik ga morgen weer naar de sportschool en wil graag met [jouw>jou#jou-obj] mee naar de spinningles. [Me>Mijn/M'n#mijn-poss] knie doet niet meer [zon>zo'n#zon] pijn, dus ik denk dat het wel lukt. Neem jij je eigen handdoek mee? Die van mij ligt nog in de wasmachine. Tom en Fatima komen ook. [Hun>Zij/Ze#hun-subj] hebben net een abonnement genomen en vinden het nog een beetje spannend. Zullen we om zeven uur bij de ingang afspreken? Ik wacht wel op jou als je later bent.\n\nGroetjes,\nEmma",
+      "Hoi Lisa,\n\nBedankt voor [jou>jouw#jouw-poss] berichtje. Ik ga morgen weer naar de sportschool en wil graag met [jouw>jou#jou-obj] mee naar de yogales. [Me>Mijn/M'n#mijn-poss] knie doet niet meer [zon>zo'n#zon] pijn, dus ik denk dat het wel lukt. Neem jij je eigen handdoek mee? Die van mij ligt nog in de wasmachine. Tom en Fatima komen ook. [Hun>Zij/Ze#hun-subj] hebben net een abonnement genomen en vinden het nog een beetje spannend. Zullen we om zeven uur bij de ingang afspreken? Ik wacht wel op jou als je later bent.\n\nGroetjes,\nEmma",
   },
   {
     id: 'nl-10',

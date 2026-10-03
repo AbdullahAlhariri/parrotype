@@ -180,8 +180,12 @@ export function reRule(base: Base, re: RegExp, o: ReOptions): ArRule {
   })
 }
 
-/** quote for English messages / Arabic messages */
-export const q = (s: string) => `‘${s}’`
+/**
+ * Quote an Arabic word inside an English message. The word is wrapped in a bidi isolate (FSI ... PDI)
+ * so the quote marks stay on the right sides when the message is shown left-to-right.
+ */
+export const q = (s: string) => (/[\u0600-\u06FF]/.test(s) ? `‘\u2068${s}\u2069’` : `‘${s}’`)
+/** quote inside an Arabic message */
 export const qa = (s: string) => `«${s}»`
 
 export const LINKS = {

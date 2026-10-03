@@ -1,6 +1,13 @@
 /* Grammar gym: pack list, rule card, the round, the summary.
    The sentence is the hero; everything else is quiet text in --sub. Panels are square. */
 
+/* Recursive's Dutch locl draws i+j as one glyph (ĳ). One glyph per keystroke, so turn it off.
+   Arabic keeps its shaping features. */
+.gym .mono-text:not(:lang(ar)),
+.gym .gym-ex:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+
 /* ------------------------------------------------------------------ */
 /* pack list                                                           */
 /* ------------------------------------------------------------------ */
@@ -27,6 +34,10 @@
 }
 .gym-suggest-title {
   color: var(--text);
+}
+.gym-suggest-title[dir='rtl'] {
+  font-size: 1.3em;
+  line-height: 1.2;
 }
 
 .gym-packs {
@@ -504,6 +515,11 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
 .gym-summary-line {
   font-size: var(--fs-md);
   font-weight: 620;
+}
+.gym-summary-sub {
+  max-width: 34rem;
+  margin-top: var(--s-2);
+  color: var(--sub);
 }
 .gym-revisit-title {
   margin-top: var(--s-6);

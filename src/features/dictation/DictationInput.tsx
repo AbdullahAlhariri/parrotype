@@ -13,6 +13,8 @@ interface Props {
   invalid?: boolean
   describedBy?: string
   label: string
+  /** memory mode: out of the way while the sentence flashes in its place */
+  hidden?: boolean
 }
 
 const fit = (t: HTMLTextAreaElement | null) => {
@@ -25,8 +27,8 @@ const fit = (t: HTMLTextAreaElement | null) => {
  * The answer field: one logical line that grows downwards, in the typing font, with every
  * browser "help" (spellcheck, autocorrect, autocapitalise) off. Newlines never get in.
  */
-export function DictationInput({ ref, value, onChange, onKeyDown, lang, placeholder, readOnly, invalid, describedBy, label }: Props) {
-  useLayoutEffect(() => fit(ref.current), [ref, value, lang])
+export function DictationInput({ ref, value, onChange, onKeyDown, lang, placeholder, readOnly, invalid, describedBy, label, hidden }: Props) {
+  useLayoutEffect(() => fit(ref.current), [ref, value, lang, hidden])
   useLayoutEffect(() => {
     const onResize = () => fit(ref.current)
     window.addEventListener('resize', onResize)
@@ -36,7 +38,7 @@ export function DictationInput({ ref, value, onChange, onKeyDown, lang, placehol
   return (
     <textarea
       ref={ref}
-      className="dict-input mono-text"
+      className={`dict-input mono-text ${hidden ? 'is-hidden' : ''}`}
       rows={1}
       value={value}
       onChange={(e) => onChange(e.target.value.replace(/[\r\n]+/g, ' '))}

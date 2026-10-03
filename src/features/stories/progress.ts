@@ -17,41 +17,44 @@ export interface StoryProgress {
   current: number
   /** finished pages by index */
   pages: Record<number, PageRecord>
-  /** how many times the last page was finished */
+  /** how many times every page was typed (complete read-throughs) */
   reads: number
+  /** pages typed in the current read-through; a read counts when it holds every page */
+  fresh?: number[]
   updatedAt: number
 }
 
-export const emptyProgress = (): StoryProgress => ({ current: 0, pages: {}, reads: 0, updatedAt: 0 })
+export const emptyProgress = (): StoryProgress => ({ current: 0, pages: {}, reads: 0, fresh: [], updatedAt: 0 })
+
+/** Pages typed in the current read-through. Older saves have no list: before the first read it is every recorded page. */
+export const freshPages = (p: StoryProgress): number[] => p.fresh ?? (p.reads ? [] : Object.keys(p.pages).map(Number))
 
 export const pagesDone = (p: StoryProgress | undefined) => (p ? Object.keys(p.pages).length : 0)
 
-/** The first page without a record after `from`, wrapping round; -1 when every page is done. */
-export function nextUnfinished(p: StoryProgress, pageCount: number, from: number): number {
+/** The first page not in `done` after `from`, wrapping round; -1 when every page is in it. */
+export function nextUnfinished(done: ReadonlySet<number>, pageCount: number, from: number): number {
   for (let k = 1; k <= pageCount; k++) {
     const i = (from + k) % pageCount
-    if (!p.pages[i]) return i
+    if (!done.has(i)) return i
   }
   return -1
 }
 
 /**
  * Apply one finished page. Pure, so it can be tested without the store.
- * A read counts when the last missing page is filled in, or when the last page is typed
- * again after the story was complete (a re-read). A finished story starts over at page 1;
- * otherwise `current` is the next page still to type.
+ * A read counts when every page has been typed since the last read finished, in any order, so
+ * jumping straight to the last page of a finished story is not another read. A finished read
+ * starts over at page 1; otherwise `current` is the next page still to type in this read-through.
  */
 export function withPage(prev: StoryProgress | undefined, page: number, pageCount: number, rec: { wpm: number; accuracy: number }, now = Date.now()): StoryProgress {
   const p = prev ?? emptyProgress()
   const old = p.pages[page]
-  const wasComplete = nextUnfinished(p, pageCount, page) === -1
   const pages = { ...p.pages, [page]: { wpm: rec.wpm, accuracy: rec.accuracy, best: Math.max(old?.best ?? 0, rec.wpm), at: now } }
-  const next: StoryProgress = { ...p, pages, updatedAt: now }
-  const missing = nextUnfinished(next, pageCount, page)
-  // a re-read has to arrive at the last page by reading on, not by retyping it straight after the end
-  const completed = missing === -1 && (!wasComplete || (page === pageCount - 1 && p.current === page))
-  if (completed) return { ...next, current: 0, reads: p.reads + 1 }
-  return { ...next, current: missing === -1 ? Math.min(page + 1, pageCount - 1) : missing }
+  const fresh = new Set(freshPages(p).filter((i) => i >= 0 && i < pageCount))
+  fresh.add(page)
+  const missing = nextUnfinished(fresh, pageCount, page)
+  if (missing === -1) return { ...p, pages, fresh: [], current: 0, reads: p.reads + 1, updatedAt: now }
+  return { ...p, pages, fresh: [...fresh].sort((a, b) => a - b), current: missing, updatedAt: now }
 }
 
 /** True when this page record completed a read of the story. */

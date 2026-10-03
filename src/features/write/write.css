@@ -9,6 +9,8 @@
 /* ------------------------------------------------------------------ */
 
 .wp-bar {
+  /* the drafts panel hangs from the bar's end, so it stays inside the column when the bar wraps */
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -99,6 +101,15 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .wp-prompt-text--free {
   color: var(--sub);
 }
+/* Arabic: the prompt ends where the editor's text ends (the right edge of the main column) */
+.wp-prompt[data-rtl] {
+  max-width: calc(100% - 15.5rem - var(--s-8));
+}
+@media (max-width: 880px) {
+  .wp-prompt[data-rtl] {
+    max-width: none;
+  }
+}
 .wp-prompt-tools {
   display: flex;
   flex-wrap: wrap;
@@ -119,6 +130,19 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   color: var(--sub);
   font-size: var(--fs-sm);
   font-weight: 560;
+}
+@media (max-width: 520px) {
+  /* keep the three prompt tools on one row at phone width */
+  .wp-prompt-tools {
+    gap: 0;
+    margin-inline-start: calc(-1 * var(--s-3));
+  }
+  .wp-prompt-tools .btn-sm {
+    padding-inline: var(--s-3);
+  }
+  .select.wp-kind {
+    padding-inline-start: var(--s-3);
+  }
 }
 @media (hover: hover) and (pointer: fine) {
   .select.wp-kind:hover:not(:disabled) {
@@ -336,6 +360,13 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .we--lines .we-mark {
   text-decoration: none;
 }
+/* self-review reads the text in another font (fresh eyes); both layers switch together */
+.we--lines:not([data-lang='ar']) .we-text {
+  font-family: var(--font-typing, var(--font-mono));
+  font-weight: 400;
+  font-kerning: none;
+  font-variant-ligatures: none;
+}
 
 /* self-review: only the lines are marked */
 .we-bands {
@@ -460,6 +491,9 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 }
 .il-note .kbd {
   font-size: 0.75rem;
+}
+.il-note > p + p {
+  margin-top: var(--s-2);
 }
 
 .il-group-title {
@@ -754,15 +788,12 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 /* drafts menu                                                         */
 /* ------------------------------------------------------------------ */
 
-.wd {
-  position: relative;
-}
 .wd-panel {
   position: absolute;
   inset-inline-end: 0;
   top: calc(100% + var(--s-2));
   z-index: 30;
-  width: min(23rem, calc(100vw - 2 * var(--s-5)));
+  width: min(23rem, 100%);
   padding: var(--s-2);
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius);
@@ -812,6 +843,29 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 }
 .wd-delete {
   flex: none;
+}
+.wd-row--confirm {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-1) var(--s-2) var(--s-3);
+  border-radius: var(--radius-sm);
+  background: var(--hover);
+}
+.wd-ask {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
+.wd-ask-title {
+  color: var(--text);
+  font-weight: 560;
+}
+.wd-ask-buttons {
+  display: flex;
+  gap: var(--s-1);
 }
 .wd-empty,
 .wd-foot {
@@ -868,6 +922,12 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   margin-bottom: var(--s-4);
   font-size: var(--fs-base);
   font-weight: 650;
+}
+.wr-h-note {
+  margin-inline-start: var(--s-2);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  font-weight: 450;
 }
 .wr-cats {
   list-style: none;

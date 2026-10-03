@@ -13,7 +13,7 @@ export const FOCUS_NL: Record<string, FocusInfo> = {
   'als-dan': { label: 'als/dan', title: 'groter dan, zo groot als' },
   pronoun: { label: 'hun/me/jouw', title: 'hun/hen, me/mijn, jou/jouw' },
   compound: { label: 'compounds', title: 'One word or two, tussen-n, hyphens' },
-  trema: { label: 'trema', title: 'ideeën, België, geüpdatet' },
+  trema: { label: 'trema, é', title: 'ideeën, België, geüpdatet, kaassoufflé' },
   apostrophe: { label: 'apostrophes', title: "auto's, foto's, cafés" },
   capital: { label: 'capitals', title: 'maandag, januari, Nederlands' },
   spelling: { label: 'tricky words', title: 'per se, sowieso, te allen tijde' },
@@ -213,7 +213,7 @@ export const DICTATION_NL: DictationSentence[] = [
   },
   {
     id: 'nl-r23',
-    text: 'Op maandag 3 januari spreken we Nederlands, Engels en Arabisch met onze nieuwe buren.',
+    text: 'Elke maandag in januari spreken we Nederlands, Engels en Arabisch met onze nieuwe buren.',
     level: 3,
     focus: ['capital'],
     note: {
@@ -749,7 +749,10 @@ export const DICTATION_NL: DictationSentence[] = [
     text: 'Ik verwacht dat de prijzen van zonnepanelen volgend jaar opnieuw zullen dalen.',
     level: 3,
     focus: ['ei-ij', 'compound'],
-    note: { en: 'prijzen with ij. zonnepanelen: linking -e-, no n.', local: 'prijzen met ij. zonnepanelen: tussenklank -e-, zonder n.' },
+    note: {
+      en: 'prijzen with ij. zonnepanelen: linking -e- without n, because there is only one zon.',
+      local: 'prijzen met ij. zonnepanelen: tussenklank -e- zonder n, want er is maar één zon.',
+    },
   },
   {
     id: 'nl-d40',

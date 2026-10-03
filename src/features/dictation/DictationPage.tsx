@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DICTATION, PAIRS } from '@/content/dictation'
-import { Link } from '@/lib/router'
+import { Link, navigate, useQuery } from '@/lib/router'
 import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
 import type { Lang } from '@/types'
@@ -59,6 +59,15 @@ function VoiceNotice({ lang, status }: { lang: Lang; status: VoiceStatus }) {
   )
 }
 
+/** The same in one line, once the set is under way. */
+function VoiceNote({ lang, status }: { lang: Lang; status: VoiceStatus }) {
+  return (
+    <>
+      {status === 'unsupported' ? 'No speech in this browser' : `No ${LANG_EN[lang]} voice here`}, so memory mode. <Link to="/settings#voices">Voice settings</Link>
+    </>
+  )
+}
+
 interface Session {
   key: number
   items: DictationItem[]
@@ -80,11 +89,13 @@ export default function DictationPage() {
   const voice = useKeesVoice(lang)
   const [config, setConfig] = useState<DictationConfig>(() => {
     const saved = loadConfig(lang)
-    const linked = configFromQuery(saved, new URLSearchParams(location.search))
+    const linked = configFromQuery(saved, new URLSearchParams(location.search), lang)
     if (!linked) return saved
     saveConfig(lang, linked)
     return linked
   })
+  // the query string the setup above already came from
+  const appliedQuery = useRef(new URLSearchParams(location.search).toString())
   const [session, setSession] = useState<Session>(() => ({ key: 1, items: buildItems(lang, config), config }))
   const [finished, setFinished] = useState<Finished | null>(null)
 
@@ -109,6 +120,24 @@ export default function DictationPage() {
     setConfig(c)
     start(c)
   }, [lang, start])
+
+  // A deep link (/listen?focus=dt) sets up the page once; then the query goes, so a reload or a
+  // later change in the setup bar is not overridden. Links followed while already here apply too.
+  const search = useQuery().toString()
+  useEffect(() => {
+    const linked = configFromQuery(loadConfig(lang), new URLSearchParams(search), lang)
+    if (!linked) {
+      appliedQuery.current = search
+      return
+    }
+    if (search !== appliedQuery.current) {
+      appliedQuery.current = search
+      saveConfig(lang, linked)
+      setConfig(linked)
+      start(linked)
+    }
+    navigate(location.pathname + location.hash, { replace: true })
+  }, [search, lang, start])
 
   const changeConfig = (c: DictationConfig) => {
     setConfig(c)
@@ -145,6 +174,7 @@ export default function DictationPage() {
   }
 
   const notice = useMemo(() => (canListen ? null : <VoiceNotice lang={lang} status={voice.status} />), [canListen, lang, voice.status])
+  const noticeShort = useMemo(() => (canListen ? null : <VoiceNote lang={lang} status={voice.status} />), [canListen, lang, voice.status])
 
   return (
     <div className="dict page">
@@ -168,10 +198,11 @@ export default function DictationPage() {
           onFinish={finish}
           onNewSet={() => start(session.config, { autoStart: true })}
           notice={notice}
+          noticeShort={noticeShort}
           autoStart={session.autoStart}
         />
       ) : (
-        <p className="dict-empty">No sentences match this setup. Pick fewer focus tags.</p>
+        <p className="dict-empty">{config.mode === 'pairs' ? 'No sentences for these pairs yet. Pick another pair.' : 'No sentences match this setup. Pick fewer focus tags.'}</p>
       )}
     </div>
   )

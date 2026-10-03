@@ -16,12 +16,12 @@ const p = (id: string, kind: WritingPrompt['kind'], words: number, text: string,
 
 export const EN_PROMPTS: WritingPrompt[] = [
   // story starters
-  p('p01', 'story', 150, 'Story starter: The parrot cleared its throat and said, “We need to talk.”', ['its-its', 'dialogue-punctuation']),
-  p('p02', 'story', 150, 'Story starter: Nobody noticed the door until it started to glow.', ['story', 'past-perfect']),
+  p('p01', 'story', 150, 'First line: ‘The parrot cleared its throat and said, “We need to talk.”’', ['its-its', 'dialogue-punctuation']),
+  p('p02', 'story', 150, 'First line: ‘Nobody noticed the door until it started to glow.’', ['story', 'past-perfect']),
   p('p03', 'story', 120, 'Write the opening paragraph of a mystery novel set in Amsterdam.', ['story', 'capitals:places']),
   p('p04', 'story', 150, 'Write a dialogue between a cat and a dog who have to share one sofa.', ['dialogue-punctuation']),
   p('p05', 'story', 200, 'Tell the story of the worst trip you have ever taken. What went wrong first?', ['irregular-past']),
-  p('p06', 'story', 150, 'Story starter: The last train had left, and the station clock had stopped at 11:47.', ['story', 'past-perfect']),
+  p('p06', 'story', 150, 'First line: ‘The last train had left, and the station clock had stopped at 11:47.’', ['story', 'past-perfect']),
 
   // opinion
   p('p07', 'opinion', 200, 'Is it better to work from home or in an office? Give two reasons for each side before you decide.', ['opinion', 'linking-words']),
@@ -63,6 +63,6 @@ export const EN_PROMPTS: WritingPrompt[] = [
   p('p33', 'trap', 150, 'Write about a time someone taught you something, or lent you something you really needed.', ['teach-learn', 'lend-borrow'], 'teach / learn, lend / borrow'),
   p('p34', 'trap', 150, 'What did you do last weekend, and what are you doing this weekend? Write at least three sentences about each.', ['irregular-past', 'present-continuous'], 'went, bought, thought'),
   p('p35', 'trap', 120, 'What would you hate to lose most: your phone, your keys or your wallet? Explain why.', ['lose-loose'], 'lose / loose'),
-  p('p36', 'trap', 120, 'Write about your weekend using do, make, take and have at least twice each: homework, a photo, a walk, fun.', ['make-do'], 'do homework, take a photo, have fun'),
+  p('p36', 'trap', 120, 'Write about your weekend and use do, make, take and have at least twice each: do the shopping, make a mess, take a nap, have a laugh.', ['make-do'], 'do / make, take / have'),
   p('p37', 'trap', 120, 'Write about your week day by day, starting each part with the name of the day.', ['capitals:days'], 'Monday, not monday'),
 ]

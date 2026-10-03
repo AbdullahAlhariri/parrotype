@@ -57,11 +57,14 @@ export const groterAls: Rule = {
 
 const EQUAL_ADJ = new Set([...ADJ_INFLECT.keys(), 'veel', 'vaak', 'weinig', 'ver', 'dichtbij', 'hard', 'graag', 'lang'])
 
+/** adverbs after a particle "dan": "Duurt het zo lang dan nog?" */
+const AFTER_PARTICLE = set('nog toch eigenlijk wel ook niet maar weer echt ineens nu nou opeens')
+
 /** "dan" here closes the phrase as a particle ("Is het zo koud dan?") */
 const danIsParticle = (ctx: RuleContext, dan: number) => {
   const n = next(ctx, dan)
   if (n < 0) return true
-  return isFiniteForm(lw(ctx, n)) // "zo duur dan moet je..." (dan = then)
+  return isFiniteForm(lw(ctx, n)) || AFTER_PARTICLE.has(lw(ctx, n)) // "zo duur dan moet je..." (dan = then)
 }
 
 export const evenAls: Rule = {
@@ -128,9 +131,10 @@ export const zowelAls: Rule = {
     const out: RuleHit[] = []
     ctx.words.forEach((w, i) => {
       if (w.lower !== 'zowel') return
+      // "zowel mijn broer en zus als mijn ouders": an als later on pairs with zowel
+      for (let k = i + 1; k < ctx.words.length && sameSentence(ctx, i, k); k++) if (lw(ctx, k) === 'als') return
       for (let k = i + 1; k <= i + 6 && k < ctx.words.length && sameSentence(ctx, i, k); k++) {
         const x = lw(ctx, k)
-        if (x === 'als') return
         if (x === 'en') {
           out.push(
             hitWord(ctx, k, ['als'], {

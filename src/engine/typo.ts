@@ -13,8 +13,9 @@ export type { TypoTag } from './tips'
 
 // Labels one mistyped word (expected vs typed) with a kind, motor/cognitive nature,
 // a short detail and a friendly tip. Pipeline (order matters): keyboard layout -> case
-// -> diacritics -> spaces -> language spelling rules -> doubling -> cut short -> hand
-// shift -> real word -> keyboard-aware optimal string alignment.
+// -> dead keys -> diacritics -> spaces -> punctuation -> language spelling rules ->
+// doubling -> cut short -> hand shift -> real word -> keyboard-aware optimal string alignment.
+// Punctuation both words share at the edges is ignored first ("wordt," vs "word,").
 
 // the same folding the typing session applies (curly quotes count as straight ones)
 const norm = (s: string) => normalizeTypingText(s).trim()
@@ -91,8 +92,8 @@ function caseRule(c: Ctx): TypoLabel | null {
   })
   const detail =
     missing && !extra ? `missed the capital in '${c.E}'` : extra && !missing ? `no capital needed: '${c.E}'` : `capitals differ: '${c.E}'`
-  // Dutch IJ is one letter: Ijs for IJs is a spelling question, not a Shift slip
-  if (c.lang === 'nl' && /IJ/.test(c.E) && /Ij/.test(c.T)) return label(c, 'case', 'cognitive', `capital IJ: '${c.E}'`, 'ij-capital', 'capital')
+  // Dutch IJ is one letter: from memory Ijs is a spelling question; copying, Shift may have come up early
+  if (c.lang === 'nl' && /IJ/.test(c.E) && /Ij/.test(c.T)) return label(c, 'case', soft(c), `capital IJ: '${c.E}'`, 'ij-capital', 'capital')
   return c.mode === 'dictation'
     ? label(c, 'case', 'cognitive', detail, `case.${c.lang}`, 'capital')
     : label(c, 'case', 'motor', detail, 'case', 'capital')
@@ -166,7 +167,11 @@ function spaceRule(c: Ctx): TypoLabel | null {
     const split = /\s/.test(c.T) && !/\s/.test(c.E)
     const join = /\s/.test(c.E) && !/\s/.test(c.T)
     const detail = split ? `split '${c.E}' into two words` : join ? `wrote '${c.E}' as one word` : 'spaces in the wrong place'
-    if (c.mode === 'copy') return label(c, 'space', 'motor', detail, 'space', 'split-join')
+    // from memory, a compound written apart is a spelling choice (zieken huis); a space inside a
+    // short piece (gr oot) is a thumb slip
+    const parts = c.T.split(/\s+/)
+    const wordLike = (p: string) => graphemes(p).length >= 3 || !!c.o.dict?.has(p.toLowerCase())
+    if (c.mode === 'copy' || (split && !parts.every(wordLike))) return label(c, 'space', 'motor', detail, 'space', 'split-join')
     return label(c, 'space', 'cognitive', detail, join ? 'join' : 'split', 'split-join')
   }
   const noHyphen = (s: string) => s.replace(/[\s\-\u2010\u2011]+/g, '')

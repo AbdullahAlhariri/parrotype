@@ -190,3 +190,25 @@ describe('computeResult', () => {
     expect(r).toMatchObject({ wpm: 0, rawWpm: 0, accuracy: 0, consistency: 0, words: [], wpmSeries: [], rawSeries: [] })
   })
 })
+
+describe('review regressions', () => {
+  it('labels words with their sentence context (hij eet -> hij eed is the verb rule)', () => {
+    const r = computeResult(run(['hij', 'eet', 'brood'], 'hij eed brood'))
+    expect(r.words[1]).toMatchObject({ expected: 'eet', typed: 'eed', correct: false, kind: 'spelling' })
+    // without a subject in front it is just two sound-alike letters
+    expect(computeResult(run(['eet', 'brood'], 'eed brood')).words[0].kind).toBe('substitution')
+  })
+
+  it('keeps live numbers and the result in step through backspacing into a wrong word', () => {
+    const s = new TypingSession(['de', 'kat', 'zit'], { lang: 'nl' })
+    let t = 0
+    for (const k of ['d', 'w', ' ', 'k', 'Backspace', 'Backspace', 'Backspace', 'e', ' ', 'k', 'a', 't', ' ', 'z', 'i', 't']) s.input(k, (t += 150))
+    const r = computeResult(s)
+    expect(s.finished).toBe(true)
+    expect(r.words.map((w) => w.correct)).toEqual([true, true, true])
+    expect(r.words[0].everWrong).toBe(true)
+    expect(Math.round(s.liveWpm(1e9) * 100) / 100).toBe(r.wpm)
+    expect(Math.round(s.liveAccuracy() * 100) / 100).toBe(r.accuracy)
+    expect(r.wpmSeries.at(-1)).toBe(r.wpm)
+  })
+})

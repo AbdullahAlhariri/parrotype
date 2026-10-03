@@ -20,7 +20,7 @@ export const eiIj = definePack({
     pijl: { en: 'de pijl: an arrow, also on signs. Het peil: a level.', local: 'de pijl: om mee te schieten, of op een bord. Het peil: het niveau.' },
     steil: { en: 'steil: steep. De stijl: a style.', local: 'steil: heel schuin omhoog. De stijl: de manier waarop.' },
     stijl: { en: 'de stijl: style. Steil: steep.', local: 'de stijl: de manier waarop. Steil: heel schuin omhoog.' },
-    reis: { en: 'de reis: the journey. Reizen, ik reis, hij reist.', local: 'de reis: de tocht. Reizen, ik reis, hij reist.' },
+    reis: { en: 'de reis: the trip. Reizen, ik reis, hij reist.', local: 'de reis: de tocht. Reizen, ik reis, hij reist.' },
     rijst: { en: 'de rijst: rice. Hij reist: he travels.', local: 'de rijst: wat je eet. Hij reist: van reizen.' },
     eis: { en: 'de eis: a demand. Het ijs: ice.', local: 'de eis: wat je vraagt of wilt. Het ijs: bevroren water.' },
     ijs: { en: 'het ijs, het ijsje: ice, ice cream. De eis: a demand.', local: 'het ijs, het ijsje: bevroren water of iets lekkers. De eis: wat je vraagt.' },
@@ -220,7 +220,7 @@ export const tremaApostrof = definePack({
 export const compounds = definePack({
   id: 'nl.compounds',
   lang: 'nl',
-  title: 'tandarts / tand arts',
+  title: 'aaneen / los',
   blurb: 'Compounds are one word in Dutch. Plus the few groups that stay apart.',
   rule: {
     en: 'Dutch writes compounds as one word: *tandarts*, *ziekenhuis*, *telefoonnummer*. English words inside a compound too: *accountmanager*. Writing them apart is common enough to have a name, *Engelse ziekte*, and it can change the meaning.\n\nA hyphen only appears where two vowels would clash (*auto-ongeluk*) or with an abbreviation (*tv-programma*). Some fixed groups go the other way and stay apart: *in plaats van*, *te veel*, *nog steeds*, *zo meteen*, *van alles*. The trick: one thing with one meaning is one word.',

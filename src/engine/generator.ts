@@ -109,7 +109,9 @@ interface Targets {
 }
 
 function pickTargets(ws: Weakness[]): Targets {
-  const units = ws.filter((w) => w.weak !== false && graphemes(w.unit).every((g) => /\p{L}/u.test(g)))
+  const units = ws
+    .filter((w) => w.weak !== false && graphemes(w.unit).every((g) => /\p{L}/u.test(g)))
+    .sort((a, b) => b.score - a.score) // callers may pass an unsorted list
   const keys = units.filter((w) => w.kind === 'key').map((w) => ({ unit: w.unit.toLowerCase(), score: Math.max(w.score, 0.01) }))
   const bigrams = units.filter((w) => w.kind === 'bigram').map((w) => ({ unit: w.unit.toLowerCase(), score: Math.max(w.score, 0.01) }))
   return { focus: keys[0], support: keys.slice(1, 3), bigrams: bigrams.slice(0, 3) }

@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react'
 import { Link } from '@/lib/router'
 import { useSettings } from '@/state/settings'
-import { isRtl, LANG_NAMES, LANG_TAGS } from '@/types'
+import { isRtl, LANG_TAGS } from '@/types'
 import { storiesFor, type Story } from '@/content/stories'
+import { LANG_IN_ENGLISH } from '@/features/practice/parts'
 import { continueCandidate, pagesDone, useStoryProgress, wordCount, type StoryProgress } from './progress'
 
 const storyHref = (s: Story) => `/stories?s=${encodeURIComponent(s.id)}`
@@ -22,7 +23,7 @@ export function StoryList({ missing }: { missing?: string }) {
           <p className="page-lede">Short stories to type, one page at a time. Capitals and punctuation count. Kees keeps your place.</p>
         </div>
         <p className="stories-count muted small tabular">
-          {stories.length} in {LANG_NAMES[lang]}
+          {stories.length} in {LANG_IN_ENGLISH[lang]}
           {finished > 0 && `, ${finished} finished`}
         </p>
       </header>
@@ -31,7 +32,7 @@ export function StoryList({ missing }: { missing?: string }) {
 
       {resume && <ResumeStrip story={resume} progress={progress[resume.id]} />}
 
-      <ol className="story-list" aria-label={`Stories in ${LANG_NAMES[lang]}`}>
+      <ol className="story-list" aria-label={`Stories in ${LANG_IN_ENGLISH[lang]}`}>
         {stories.map((s) => (
           <li key={s.id}>
             <StoryRow story={s} progress={progress[s.id]} />
@@ -72,13 +73,14 @@ function StoryRow({ story, progress }: { story: Story; progress?: StoryProgress 
     <Link
       to={storyHref(story)}
       className={`story-row${done ? ' is-started' : ''}`}
+      dir={rtl ? 'rtl' : undefined}
       aria-label={`${story.title}. ${story.level}, ${done} of ${total} pages done.`}
     >
-      <span className="story-row-main" lang={LANG_TAGS[story.lang]} dir={rtl ? 'rtl' : undefined}>
+      <span className="story-row-main" lang={LANG_TAGS[story.lang]}>
         <span className="story-row-title">{story.title}</span>
         <span className="story-row-blurb">{story.blurb}</span>
       </span>
-      <span className="story-row-meta" aria-hidden="true">
+      <span className="story-row-meta" dir="ltr" aria-hidden="true">
         <span className="story-row-pages tabular">
           {done}/{total}
           <span className="muted"> pages</span>

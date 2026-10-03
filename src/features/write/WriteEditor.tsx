@@ -90,10 +90,14 @@ export const WriteEditor = forwardRef<WriteEditorHandle, Props>(function WriteEd
     const ro = new ResizeObserver(() => measureLines())
     ro.observe(mirror)
     let live = true
-    document.fonts?.ready.then(() => live && measureLines())
+    // self-review switches fonts, and a font that arrives late can move words to other lines
+    const onFonts = () => live && measureLines()
+    document.fonts?.ready.then(onFonts)
+    document.fonts?.addEventListener?.('loadingdone', onFonts)
     return () => {
       live = false
       ro.disconnect()
+      document.fonts?.removeEventListener?.('loadingdone', onFonts)
     }
   }, [measureLines, mode])
 

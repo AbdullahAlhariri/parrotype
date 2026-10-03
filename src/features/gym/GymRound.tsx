@@ -156,10 +156,15 @@ export function GymRound({ pack, items, choose, onFinish, onRestart }: Props) {
 
   return (
     <div className={`gym-round is-${phase}`}>
-      <div className="gym-meter tabular" aria-label="Round progress">
+      <div className="gym-meter tabular">
         <span className="gym-meter-count">
+          <span className="sr-only">Sentence </span>
           {index + 1}
-          <span className="gym-meter-of">/{items.length}</span>
+          <span className="gym-meter-of">
+            <span className="sr-only"> of </span>
+            <span aria-hidden="true">/</span>
+            {items.length}
+          </span>
         </span>
         <span className="gym-meter-streak">
           streak {streak}

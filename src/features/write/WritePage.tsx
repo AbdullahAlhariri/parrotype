@@ -12,7 +12,7 @@ import { IssueList } from './IssueList'
 import { PromptBar } from './PromptBar'
 import { DraftsMenu } from './DraftsMenu'
 import { WriteReport } from './WriteReport'
-import { useWriteSession, type FeedbackMode } from './useWriteSession'
+import { STALE, useWriteSession, type FeedbackMode } from './useWriteSession'
 import { ruleTitles, useCheckerStatus } from './lib/checker'
 import { MARK_LABEL, markKind, stepIssue } from './lib/segments'
 import { defaultTitle, summarize, type TitleFor, type WriteSummary } from './lib/report'
@@ -63,6 +63,8 @@ export default function WritePage() {
   const [activeId, setActiveId] = useState<string>()
   const [anchor, setAnchor] = useState<{ top: number; bottom: number; left: number; right: number; width: number } | null>(null)
   const [lines, setLines] = useState(0)
+  /** lines marked when self-review started; the bands clear as flagged words get edited, this stays */
+  const [markedLines, setMarkedLines] = useState(0)
   const [typingNow, setTypingNow] = useState(false)
   /** caret position at the last keystroke: the word being typed there is not judged yet */
   const [typingAt, setTypingAt] = useState(-1)
@@ -84,6 +86,8 @@ export default function WritePage() {
   const active = visible.find((i) => i.id === activeId)
   const activeRef = useRef<Issue | undefined>(active)
   activeRef.current = active
+  /** the caret selects the whole flagged word (F8, alt+arrows, the side list): Enter then applies the fix */
+  const [wordSelected, setWordSelected] = useState(false)
   const words = countWords(s.text)
   const empty = !s.text.trim()
 
@@ -110,6 +114,11 @@ export default function WritePage() {
     },
     [],
   )
+
+  // A report belongs to one Finish: drop it when the page leaves the report (language switch, new text).
+  useEffect(() => {
+    if (s.phase !== 'report') setReport(null)
+  }, [s.phase])
 
   // The popover closes once its word is gone (edited, fixed, ignored) or feedback is hidden.
   useEffect(() => {
@@ -140,7 +149,11 @@ export default function WritePage() {
     }
     measure()
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    document.fonts?.addEventListener?.('loadingdone', measure)
+    return () => {
+      window.removeEventListener('resize', measure)
+      document.fonts?.removeEventListener?.('loadingdone', measure)
+    }
   }, [active, s.text])
 
   // Start with the caret in the editor (on devices with a real keyboard), and put it back there
@@ -166,9 +179,13 @@ export default function WritePage() {
   // Tell screen readers what just happened.
   const inReview = s.phase === 'review'
   useEffect(() => {
-    // the line count arrives after the editor has measured, so this keys on it
-    if (inReview && lines > 0) setAnnounce(`Find your mistakes first. Kees marked ${lines} ${lines === 1 ? 'line' : 'lines'}.`)
+    if (!inReview) setMarkedLines(0)
+    else setMarkedLines((m) => Math.max(m, lines))
   }, [inReview, lines])
+  useEffect(() => {
+    // the line count arrives after the editor has measured, so this keys on it
+    if (inReview && markedLines > 0) setAnnounce(`Find your mistakes first. Kees marked ${markedLines} ${markedLines === 1 ? 'line' : 'lines'}.`)
+  }, [inReview, markedLines])
   useEffect(() => {
     if (s.phase === 'revealed' && s.mode === 'done') setAnnounce(s.issues.length ? `${s.issues.length} underlined. Press F8 to go through them.` : 'Nothing to correct.')
     else if (s.phase === 'checking') setAnnounce('Kees is reading.')
@@ -176,10 +193,11 @@ export default function WritePage() {
 
   /* ---------------- issues ---------------- */
 
-  const describe = (i: Issue) => {
+  const describe = (i: Issue, viaKey: boolean) => {
     const msg = (explainIn === 'local' && i.messageLocal) || i.message
     const rep = i.replacements[0]
-    return `${MARK_LABEL[markKind(i)]}: ${i.text}. ${msg}. ${rep !== undefined ? `Enter changes it to ${rep || 'nothing'}. ` : ''}Tab for more options, Escape to close.`
+    const enter = viaKey && rep !== undefined ? `Enter changes it to ${rep || 'nothing'}. ` : ''
+    return `${MARK_LABEL[markKind(i)]}: ${i.text}. ${msg}. ${enter}Tab for more options, Escape to close.`
   }
 
   const openIssue = (i: Issue, via: 'click' | 'key') => {
@@ -189,7 +207,8 @@ export default function WritePage() {
       ta?.focus()
       ta?.setSelectionRange(i.offset, i.offset + i.length)
     }
-    setAnnounce(describe(i))
+    setWordSelected(via === 'key')
+    setAnnounce(describe(i, via === 'key'))
   }
 
   const step = (dir: 1 | -1) => {
@@ -240,7 +259,9 @@ export default function WritePage() {
 
   const onCaret = (start: number, end: number) => {
     const a = activeRef.current
-    if (a && (start < a.offset || end > a.offset + a.length)) setActiveId(undefined)
+    if (!a) return
+    if (start < a.offset || end > a.offset + a.length) setActiveId(undefined)
+    else setWordSelected(start === a.offset && end === a.offset + a.length)
   }
 
   /* ---------------- primary action ---------------- */
@@ -252,15 +273,25 @@ export default function WritePage() {
     const text = s.text
     const titlesLoading = ruleTitles(lang)
     const final = await s.finish()
-    if (!final) return
+    if (final === STALE) return
+    if (!final) {
+      if (!useCheckerStatus.getState().unavailable) toast('Kees could not read your text this time. Try again in a moment; your text is saved.', 'bad')
+      return
+    }
     const titles = await titlesLoading
     const titleFor: TitleFor = (i) => titles.get(i.ruleId) ?? defaultTitle(i)
     const summary = summarize(text, final, titleFor)
     setReport({ text, issues: final, summary })
-    if (!s.draft.finished) {
-      recordWriteSession({ lang, text, issues: final, summary, activeMs: s.draft.activeMs, config: s.prompt ? kindLabel(s.prompt.kind) : 'free writing', titleFor })
-      s.markFinished()
-    }
+    const recorded = recordWriteSession({
+      lang,
+      text,
+      issues: final,
+      activeMs: s.draft.activeMs,
+      config: s.prompt ? kindLabel(s.prompt.kind) : 'free writing',
+      titleFor,
+      already: s.draft.recorded,
+    })
+    s.markFinished(recorded)
     setTyping(false)
     window.scrollTo({ top: 0 })
   }
@@ -268,7 +299,7 @@ export default function WritePage() {
   const doReview = async () => {
     setActiveId(undefined)
     const ok = await s.review()
-    if (!ok && !status.unavailable) toast('Kees could not read your text this time. Try again in a moment; your text is saved.', 'bad')
+    if (!ok && !useCheckerStatus.getState().unavailable) toast('Kees could not read your text this time. Try again in a moment; your text is saved.', 'bad')
   }
 
   const primary = () => {
@@ -314,7 +345,8 @@ export default function WritePage() {
     }
     const a = activeRef.current
     if (!a) return
-    if (e.key === 'Enter' && !mod && !e.shiftKey && !e.altKey && a.replacements[0] !== undefined) {
+    // Enter only applies when the word is selected; with a plain caret it makes a new line as usual
+    if (e.key === 'Enter' && wordSelected && !mod && !e.shiftKey && !e.altKey && a.replacements[0] !== undefined) {
       e.preventDefault()
       apply(a, a.replacements[0])
     } else if (e.key === 'Escape') {
@@ -398,9 +430,12 @@ export default function WritePage() {
 
   const note =
     s.phase === 'review' ? (
-      <p>
-        Kees marked {lines} {lines === 1 ? 'line' : 'lines'}. Fix what you can find, then reveal.
-      </p>
+      <>
+        <p>
+          Kees marked {markedLines} {markedLines === 1 ? 'line' : 'lines'}. Fix what you can find, then reveal.
+        </p>
+        {lang !== 'ar' && <p>The font changed on purpose: your own words look less familiar, so mistakes stand out.</p>}
+      </>
     ) : checking ? (
       <p>Kees is reading.</p>
     ) : s.mode === 'live' ? (
@@ -416,6 +451,7 @@ export default function WritePage() {
 
   return (
     <div className="page write" data-phase={s.phase}>
+      <h1 className="visually-hidden">Free writing</h1>
       <div className="wp-bar">
         <div className="wp-mode">
           <span className="wp-bar-label" id="wp-mode-label">
@@ -437,7 +473,7 @@ export default function WritePage() {
         <div className="wp-main">
           <Strip
             phase={s.phase}
-            lines={lines}
+            lines={markedLines}
             secondsLeft={secondsLeft}
             found={s.found}
             left={s.issues.length}
@@ -454,7 +490,7 @@ export default function WritePage() {
             text={s.text}
             lang={lang}
             onChange={onText}
-            issues={s.issues}
+            issues={markMode === 'lines' ? s.issues : visible}
             mode={markMode}
             activeId={active?.id}
             onPick={(i) => openIssue(i, 'click')}
@@ -474,6 +510,7 @@ export default function WritePage() {
                 explainIn={explainIn}
                 index={visible.indexOf(active)}
                 total={visible.length}
+                enterApplies={wordSelected}
                 onApply={(r) => apply(active, r)}
                 onIgnore={() => ignore(active)}
                 onAddWord={() => void addWord(active)}
@@ -515,6 +552,7 @@ export default function WritePage() {
           <IssueList
             issues={visible}
             revealed={s.phase === 'revealed' && !empty}
+            live={s.mode === 'live'}
             activeId={active?.id}
             onJump={(i) => openIssue(i, 'key')}
             explainIn={explainIn}

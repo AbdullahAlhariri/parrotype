@@ -123,13 +123,12 @@ export const kofschip: Rule = {
 /* PAST-03: real-word adjective instead of -dde past                   */
 /* ------------------------------------------------------------------ */
 
+// Singular only: stem + en is the infinitive and present plural ("we landen", "ze leiden"), and
+// "reden" is also the past of rijden, so a plural can never be judged without knowing the tense.
 const DDE_PAST: ReadonlyMap<string, string> = new Map(
-  WEAK_VERBS.filter((v) => v.pastSg.endsWith('dde')).flatMap((v) => [
-    [v.ik + 'e', v.pastSg] as [string, string],
-    [v.ik + 'en', v.pastPl] as [string, string],
-  ]),
+  WEAK_VERBS.filter((v) => v.pastSg.endsWith('dde')).map((v) => [v.ik + 'e', v.pastSg] as [string, string]),
 )
-const PAST_SUBJ = set('ik hij zij ze we wij jij je u men')
+const PAST_SUBJ = set('ik hij zij ze jij je u men')
 
 export const pastDde: Rule = {
   id: 'nl.past.dde',
@@ -139,11 +138,10 @@ export const pastDde: Rule = {
   confidence: 'medium',
   check(ctx) {
     const out: RuleHit[] = []
-    for (const { s, v } of subjectVerbPairs(ctx, PAST_SUBJ)) {
+    for (const { v } of subjectVerbPairs(ctx, PAST_SUBJ)) {
       const w = lw(ctx, v)
       const right = DDE_PAST.get(w)
       if (!right) continue
-      if (w.endsWith('en') && !set('we wij ze zij').has(lw(ctx, s))) continue
       if (nounFollows(ctx, v) || isKnownNoun(w)) continue
       out.push(
         hitWord(ctx, v, [right], {

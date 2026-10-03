@@ -26,6 +26,8 @@ interface Props {
   explainIn: 'en' | 'local'
   index: number
   total: number
+  /** the flagged word is selected in the editor, so Enter applies the first fix */
+  enterApplies?: boolean
   onApply: (replacement: string) => void
   onIgnore: () => void
   onAddWord?: () => void
@@ -54,7 +56,7 @@ function sourceName(url: string) {
 
 /** Small card anchored under the flagged word: what is wrong, the fix, and the rule on request. */
 export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function IssuePopover(
-  { issue, anchor, rtl, explainIn, index, total, onApply, onIgnore, onAddWord, onClose, onStep },
+  { issue, anchor, rtl, explainIn, index, total, enterApplies = false, onApply, onIgnore, onAddWord, onClose, onStep },
   ref,
 ) {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -138,7 +140,7 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
               <span className="ip-rep-text" dir={rtl ? 'rtl' : undefined}>
                 {r || '(remove)'}
               </span>
-              {i === 0 && <Kbd>enter</Kbd>}
+              {i === 0 && enterApplies && <Kbd>enter</Kbd>}
             </button>
           ))}
         </div>

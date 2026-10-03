@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from '@/lib/router'
+import type { Lang } from '@/types'
+
+/** Language names inside English copy ("mistakes in Dutch"). The native names sit badly in an English sentence, and العربية next to digits reorders. */
+export const LANG_IN_ENGLISH: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
 
 /** "Weak spots" link back to the hub, above a sub-page title. */
 export function SubHead({ title, children, back = '/practice', backLabel = 'Weak spots' }: { title: ReactNode; children?: ReactNode; back?: string; backLabel?: string }) {

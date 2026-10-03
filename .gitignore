@@ -10,3 +10,6 @@ playwright-report
 *.whl
 *.tar.gz
 __pycache__
+.env
+.env.*
+*.key

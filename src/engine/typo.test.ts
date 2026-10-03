@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { classifyTypo, editOps, osaDistance, tipFor, typoName, type ClassifyOptions, type TypoLabel } from './typo'
 import { TIPS, TYPO_TAGS } from './tips'
-import type { LayoutId } from './keyboard'
+import { LAYOUTS, keyOf, layoutFor, type LayoutId } from './keyboard'
+import { wordList } from './generator'
 import type { Lang } from '@/types'
 
 const cls = (expected: string, typed: string, lang: Lang = 'nl', o?: LayoutId | ClassifyOptions): TypoLabel => {
@@ -409,7 +410,7 @@ describe('review regressions: fewer false rule labels', () => {
     expect(cls('opgehaald', 'opgehaalt').tag).toBe('dt')
     expect(cls('betaald', 'betaalt').tag).toBe('dt')
     // nouns and adjectives: the final d sounds like t, which is not the verb rule
-    for (const [e, t] of [['hand', 'hant'], ['goed', 'goet'], ['kind', 'kint'], ['paard', 'paart'], ['gezond', 'gezont']]) {
+    for (const [e, t] of [['hand', 'hant'], ['goed', 'goet'], ['kind', 'kint'], ['paard', 'paart'], ['gezond', 'gezont'], ['beeld', 'beelt']]) {
       expect(cls(e, t)).toMatchObject({ tag: 'final-d', nature: 'cognitive' })
     }
     expect(cls('hand', 'hant').tip.local).toMatch(/langere vorm/)
@@ -420,7 +421,7 @@ describe('review regressions: fewer false rule labels', () => {
     }
     // context still picks the verb rule and its tip
     expect(cls('vind', 'vint', 'nl', { prev: 'ik' }).tag).toBe('dt')
-    expect(cls('vindt', 'vind', 'nl', { prev: 'Hij,' }).tip.en).toMatch(/After 'Hij,'/)
+    expect(cls('vindt', 'vind', 'nl', { prev: '"Hij' }).tip.en).toMatch(/^After 'Hij' the verb/)
   })
 
   it("labels 't kofschip only where the rule explains the ending", () => {
@@ -462,9 +463,17 @@ describe('review regressions: fewer false rule labels', () => {
     expect(cls("zo'n", 'zon').tip.local).toMatch(/weggelaten letters/)
     expect(cls("auto's", 'autos').tip.local).toMatch(/Meervoud/)
     expect(cls("don't", 'dont', 'en').tip.en).toMatch(/missing letters/)
-    expect(cls('IJsland', 'Ijsland')).toMatchObject({ kind: 'case', nature: 'cognitive', tag: 'capital' })
+    expect(cls('IJsland', 'Ijsland')).toMatchObject({ kind: 'case', nature: 'unknown', tag: 'capital' })
+    expect(cls('IJsland', 'Ijsland', 'nl', d).nature).toBe('cognitive')
     expect(cls('IJsland', 'Ijsland').tip.local).toMatch(/IJs/)
     expect(cls('Amsterdam', 'amsterdam').nature).toBe('motor')
+  })
+
+  it('treats a space inside a short piece as a thumb slip, even from memory', () => {
+    expect(cls('groot', 'gr oot', 'nl', d)).toMatchObject({ kind: 'space', nature: 'motor' })
+    expect(cls('ziekenhuis', 'zieken huis', 'nl', d).nature).toBe('cognitive')
+    expect(cls('voetbal', 'voet bal', 'nl', d).nature).toBe('cognitive')
+    expect(cls('ok', 'o k', 'en', { mode: 'dictation', dict: { has: (w) => ['o', 'k'].includes(w) } }).nature).toBe('cognitive')
   })
 
   it('hears a final b as p in Dutch', () => {
@@ -494,5 +503,47 @@ describe('review regressions: fewer false rule labels', () => {
     expect(classifyTypo("auto's", 'auto’s', 'nl')).toBeNull()
     expect(classifyTypo("auto's", 'autoʼs', 'nl')).toBeNull()
     expect(classifyTypo("auto's", 'auto`s', 'nl')).not.toBeNull()
+  })
+})
+
+describe('review regressions: simulated finger slips stay out of the knowledge bucket', () => {
+  /** letters on the keys touching `ch` (same shift level) */
+  const neighbours = (ch: string, lang: Lang): string[] => {
+    const layout = layoutFor(lang)
+    const p = keyOf(ch, layout)
+    if (!p || p.shift) return []
+    return LAYOUTS[layout].rows
+      .flat()
+      .filter((k) => k.row < 4 && k.code !== p.code && Math.hypot(k.x - p.x, k.row - p.row) <= 1.25 && /^\p{L}$/u.test(k.base))
+      .map((k) => k.base)
+  }
+  const risky: Record<Lang, string[]> = {
+    nl: ['het', 'niet', 'met', 'weet', 'moet', 'doet', 'heeft', 'gebeurd', 'antwoordde', 'platte', 'werkte', 'binnenkort', 'grote', 'hand', 'jouw', 'kopen'],
+    en: ['their', 'its', 'to', 'then', 'receive', 'until', 'were', 'your'],
+    ar: ['ذلك', 'هذا', 'مدرسة', 'على', 'إلى', 'شيء', 'قالوا', 'أنا'],
+  }
+  // slips that land exactly on a classic spelling error are fine to call cognitive
+  const classic = new Set(['wordt>word', 'vindt>vind', 'houdt>houd', 'antwoordde>antwoorde', 'ziekenhuis>ziekehuis', 'لكن>لاكن'])
+
+  it.each(['nl', 'en', 'ar'] as Lang[])('%s: neighbour keys, swaps, rolls, bounces and drops', (lang) => {
+    const bad: string[] = []
+    const check = (e: string, t: string) => {
+      if (e === t || classic.has(`${e}>${t}`)) return
+      if (classifyTypo(e, t, lang)?.nature === 'cognitive') bad.push(`${e}>${t}`)
+    }
+    for (const w of [...wordList(lang, 120), ...risky[lang]]) {
+      const g = Array.from(w)
+      g.forEach((ch, i) => {
+        const at = (mid: string[], skip = 1) => [...g.slice(0, i), ...mid, ...g.slice(i + skip)].join('')
+        for (const n of neighbours(ch, lang)) {
+          check(w, at([n])) // neighbour key
+          check(w, at([ch, n])) // rolled extra key
+        }
+        check(w, at([ch, ch])) // bounce
+        if (g.length > 2) check(w, at([])) // dropped letter
+        if (i + 1 < g.length) check(w, at([g[i + 1], ch], 2)) // swap
+      })
+    }
+    expect(bad).toEqual([])
   })
 })

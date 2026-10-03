@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type KeyboardEvent } from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
 import { LANGS, LANG_NAMES, LANG_TAGS, isRtl, type Lang } from '@/types'
 import { packsFor, type DrillPack } from '@/content/drills'
 import { useSettings } from '@/state/settings'
@@ -31,18 +31,13 @@ function suggestion(packs: DrillPack[], progress: Record<string, PackProgress>):
 }
 
 export function PackPicker({ missing }: { missing?: string }) {
-  const practiceLang = useSettings((s) => s.lang)
-  const lastLang = useGym((s) => s.lastLang)
-  const setLastLang = useGym((s) => s.setLastLang)
+  // the packs follow the practice language, the same one the header switches
+  const lang = useSettings((s) => s.lang)
+  const setSetting = useSettings((s) => s.set)
   const progress = useGym((s) => s.packs)
-  const [lang, setLang] = useState<Lang>(lastLang ?? practiceLang)
   const packs = packsFor(lang)
   const tip = suggestion(packs, progress)
-
-  const pick = (l: Lang) => {
-    setLang(l)
-    setLastLang(l)
-  }
+  const pick = (l: Lang) => setSetting('lang', l)
 
   return (
     <div className="gym-picker">

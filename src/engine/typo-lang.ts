@@ -51,7 +51,9 @@ const NL_AUX = new Set(['heb', 'hebt', 'heeft', 'hebben', 'had', 'hadden', 'ben'
 const NL_PREFIXED =
   /^(?:(?:op|aan|af|uit|in|mee|na|om|door|over|terug|weg|toe|voor|bij|samen|vast|los|neer|tegen|achter|thuis)?ge|be|ver|ont|her|er)\p{L}{3,}$/u
 /** common ge-/be-/ver- words that are not verb forms: no verb rule for gezond/gezont */
-const NL_NOT_VERB = new Set(['gezond', 'gebied', 'geluid', 'gezicht', 'gedicht', 'gerecht', 'gevecht', 'gewicht', 'bericht', 'verstand', 'verband'])
+const NL_NOT_VERB = new Set([
+  'gezond', 'gebied', 'geluid', 'gebed', 'gezicht', 'gedicht', 'gerecht', 'gevecht', 'gewicht', 'bericht', 'beeld', 'beleid', 'herfst', 'verstand', 'verband',
+])
 /** a context word without punctuation, lowercased */
 const bareWord = (w?: string) => w?.toLowerCase().replace(/[^\p{L}\p{M}']/gu, '')
 
@@ -62,7 +64,7 @@ function dtRule(c: Ctx): TypoLabel | null {
   if (!me || !mt || me[1] !== mt[1] || me[2] === mt[2]) return null
   const [e, t] = [me[2], mt[2]]
   const dt = (key: string, nature: TypoNature = 'cognitive') =>
-    label(c, 'spelling', nature, `d/t ending: '${c.E}', not '${c.T}'`, key, 'dt', { prev: c.o.prev ?? '' })
+    label(c, 'spelling', nature, `d/t ending: '${c.E}', not '${c.T}'`, key, 'dt', { prev: c.o.prev?.replace(/[^\p{L}\p{M}']/gu, '') ?? '' })
   // a d added to a t-word (het -> hedt, weet -> weedt) is a rolled key when copying
   if (e === 't' && t === 'dt') return c.mode === 'copy' ? null : dt('dt')
   // the stem's d left out (wordt -> wort): the same question from memory, one dropped key when copying

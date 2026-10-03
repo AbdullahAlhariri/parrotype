@@ -49,9 +49,13 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
         Check result
       </h2>
       <div className="fix-score-row">
-        <div className="fix-score tabular" aria-label={`${grade.fixed} of ${grade.total} mistakes fixed`}>
+        <div className="fix-score tabular">
           {grade.fixed}
-          <span className="fix-score-of">/{grade.total}</span>
+          <span className="fix-score-of">
+            <span className="sr-only"> of </span>
+            <span aria-hidden="true">/</span>
+            {grade.total}
+          </span>
         </div>
         <div className="fix-score-side">
           <p className="fix-score-label">mistakes fixed</p>

@@ -20,7 +20,7 @@ export const DETERMINERS = set(`de het een geen deze dit die dat elk elke ieder 
 
 export const COORDINATORS = set('en maar want dus of noch')
 export const SUBORDINATORS = set(`omdat dat als wanneer terwijl hoewel zodat voordat nadat totdat sinds zodra tenzij
-  alsof doordat waardoor zolang indien mits opdat aangezien ofschoon toen`)
+  alsof doordat waardoor zolang indien mits opdat aangezien ofschoon toen alhoewel zoals naarmate naargelang`)
 export const QUESTION_WORDS = set('wat wie waar wanneer waarom hoe welke welk hoeveel hoelang')
 
 /** sentence-initial adverbs that trigger verb-second order (WO-01). Subordinator-like words left out. */
@@ -55,7 +55,7 @@ export const DAYS = set('maandag dinsdag woensdag donderdag vrijdag zaterdag zon
 export const MONTHS = set('januari februari maart april mei juni juli augustus september oktober november december')
 export const SEASONS = set('lente zomer herfst winter')
 /** official holiday names that contain a weekday and keep their capital */
-export const HOLIDAY_PREFIXES = set('goede witte stille')
+export const HOLIDAY_PREFIXES = set('goede witte stille dolle zwarte blauwe')
 
 /** languages, peoples and their adjectives: always capitalised in Dutch */
 export const LANGUAGE_WORDS = set(`nederlands nederlandse nederlander nederlanders engels engelse engelsman arabisch

@@ -287,8 +287,8 @@ export const TIPS: Record<string, TipText> = {
     nl: 'Gebruik dan bij een verschil (groter dan) en als bij gelijkheid (even groot als).',
   },
   'word-order': {
-    en: 'This word is in the wrong place: in a main clause the verb comes second (Gisteren ging ik), in a subclause it goes last (omdat ik ziek ben).',
-    nl: 'Dit woord staat op de verkeerde plek: in een hoofdzin staat de persoonsvorm op de tweede plaats (Gisteren ging ik), in een bijzin achteraan (omdat ik ziek ben).',
+    en: 'This word is in the wrong place. Remember: in a Dutch main clause the verb comes second (Gisteren ging ik), in a subclause it goes last (omdat ik ziek ben).',
+    nl: 'Dit woord staat op de verkeerde plek. Let op: in een hoofdzin staat de persoonsvorm op de tweede plaats (Gisteren ging ik), in een bijzin achteraan (omdat ik ziek ben).',
   },
   'word-order.en': { en: 'This word is in the wrong place: check the word order of the sentence.' },
   'word-order.ar': { en: 'This word is in the wrong place: check the word order of the sentence.', ar: 'هذه الكلمة في غير موضعها: انتبه لترتيب الكلمات في الجملة.' },

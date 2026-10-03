@@ -58,9 +58,12 @@ export interface WriteSummary {
   /** counted mistakes (hints excluded) */
   mistakes: number
   hints: number
+  /** mistakes per category (hints are not in here) */
   byCategory: CategoryCount[]
   /** non-spelling rules that fired, most frequent first */
   rules: RuleLine[]
+  /** style hints and unsure calls, most frequent first: shown, never counted */
+  hintRules: RuleLine[]
   /** misspelled words, most frequent first */
   words: WordLine[]
   /** correct form of the most frequent mistake, for Kees to repeat */
@@ -70,28 +73,32 @@ export interface WriteSummary {
 export function summarize(text: string, issues: readonly Issue[], titleFor: TitleFor = defaultTitle): WriteSummary {
   const cat = new Map<IssueCategory, number>()
   const rules = new Map<string, RuleLine>()
+  const hintRules = new Map<string, RuleLine>()
   const words = new Map<string, WordLine>()
   const freq = new Map<string, { n: number; first: Issue }>()
   let mistakes = 0
   let hints = 0
 
+  const addRule = (map: Map<string, RuleLine>, i: Issue) => {
+    const r = map.get(i.ruleId)
+    if (r) r.count++
+    else map.set(i.ruleId, { ruleId: i.ruleId, title: titleFor(i), category: i.category, count: 1, example: i })
+  }
+
   for (const i of issues) {
-    cat.set(i.category, (cat.get(i.category) ?? 0) + 1)
     if (!isMistake(i)) {
       hints++
+      addRule(hintRules, i)
       continue
     }
     mistakes++
+    cat.set(i.category, (cat.get(i.category) ?? 0) + 1)
     if (isSpelling(i)) {
       const key = i.text.toLowerCase()
       const w = words.get(key)
       if (w) w.count++
       else words.set(key, { wrong: i.text, right: i.replacements[0], count: 1 })
-    } else {
-      const r = rules.get(i.ruleId)
-      if (r) r.count++
-      else rules.set(i.ruleId, { ruleId: i.ruleId, title: titleFor(i), category: i.category, count: 1, example: i })
-    }
+    } else addRule(rules, i)
     if (i.replacements[0]) {
       const key = `${i.ruleId}|${i.replacements[0].toLowerCase()}`
       const f = freq.get(key)
@@ -115,6 +122,7 @@ export function summarize(text: string, issues: readonly Issue[], titleFor: Titl
     hints,
     byCategory: CATEGORY_ORDER.filter((c) => cat.has(c)).map((c) => ({ category: c, count: cat.get(c)! })),
     rules: [...rules.values()].sort((a, b) => b.count - a.count),
+    hintRules: [...hintRules.values()].sort((a, b) => b.count - a.count),
     words: [...words.values()].sort((a, b) => b.count - a.count),
     repeat,
   }

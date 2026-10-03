@@ -12,8 +12,8 @@ interface Props {
 }
 
 /**
- * Memory mode: the sentence shows for a few seconds with a thin draining line under it,
- * then hides and you type it from memory.
+ * Memory mode: the sentence shows in the answer field's place for a few seconds, the field's
+ * underline draining as a timer, then it hides and you type it from memory.
  */
 export function MemoryFlash({ text, lang, ms, flashKey, onHidden }: Props) {
   useEffect(() => {
@@ -22,8 +22,8 @@ export function MemoryFlash({ text, lang, ms, flashKey, onHidden }: Props) {
   }, [flashKey, ms, onHidden])
 
   return (
-    <div className="dict-flash" aria-live="polite">
-      <p className="dict-flash-text mono-text" lang={LANG_TAGS[lang]} dir={isRtl(lang) ? 'rtl' : 'ltr'}>
+    <div className="dict-flash" dir={isRtl(lang) ? 'rtl' : 'ltr'} aria-live="polite">
+      <p className="dict-flash-text mono-text" lang={LANG_TAGS[lang]}>
         {text}
       </p>
       <span key={flashKey} className="dict-flash-timer" style={{ animationDuration: `${ms}ms` }} aria-hidden="true" />

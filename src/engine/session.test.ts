@@ -350,3 +350,48 @@ describe('live numbers', () => {
 })
 
 const wpmOf = (chars: number, ms: number) => chars / 5 / (ms / 60000)
+
+describe('review regressions: text input', () => {
+  it('types a whole composed word, even one that looks like a key name ("Het" from a mobile keyboard)', () => {
+    const s = make(['Het', 'is', 'goed'])
+    expect(s.input('Het', 0)).toMatchObject({ typed: 't', correct: true, charIndex: 2 })
+    expect(s.getSnapshot().words[0].typed).toBe('Het')
+    // insertText never filters key names: "Enter" typed as text is text
+    const t = make(['Enter'])
+    t.insertText('Enter', 0)
+    expect(t.finished).toBe(true)
+    // real key names are still ignored by input()
+    for (const key of ['Shift', 'CapsLock', 'ArrowLeft', 'F5', 'Tab', 'Escape', 'Unidentified', 'Process', 'MediaPlayPause']) {
+      expect(make(['a']).input(key, 0), key).toBeNull()
+    }
+  })
+
+  it('types a composition with a space across the word boundary', () => {
+    const s = make(['ik', 'ga', 'naar'])
+    s.insertText('ik ga', 0)
+    expect(s.getSnapshot()).toMatchObject({ wordIndex: 1, charIndex: 2 })
+    expect(s.keyEvents.map((e) => e.op)).toEqual(['insert', 'insert', 'commit', 'insert', 'insert'])
+  })
+
+  it('accepts curly quotes for straight ones and makes typographic targets typable', () => {
+    const s = make(['auto’s', 'zo…', '“ja”'])
+    expect(s.getSnapshot().words.map((w) => w.target)).toEqual(["auto's", 'zo...', '"ja"'])
+    type(s, 'auto’s zo... “ja”')
+    expect(s.finished).toBe(true)
+    expect(s.getSnapshot().words.every((w) => w.correct)).toBe(true)
+  })
+
+  it('ignores control characters and splits ligatures', () => {
+    const s = make(['ijs', 'fijn'])
+    expect(s.input('\t', 0)).toBeNull()
+    expect(s.input('\n', 0)).toBeNull()
+    expect(s.started).toBe(false)
+    s.input('ĳ', 0) // the one-character ĳ ligature
+    s.input('s', 100)
+    s.input(' ', 200)
+    s.input('ﬁ', 300) // ﬁ
+    type(s, 'jn', 400)
+    expect(s.getSnapshot().words.map((w) => w.correct)).toEqual([true, true])
+    expect(s.finished).toBe(true)
+  })
+})

@@ -293,7 +293,7 @@ export const T3_TO_IK: ReadonlyMap<string, string> = (() => {
 /** d-stem forms that are also nouns or adjectives: het antwoord, het land, bereid zijn */
 export const DSTEM_HOMOGRAPHS = set(`antwoord land kleed raad dood geld bloed strijd hoed brand bad luid wijd bereid
   verspreid verbrand vermoord besteed beantwoord begeleid bevrijd gekleed red wed scheid bind rij verantwoord vergoed
-  verkleed`)
+  verkleed download upload verraad onderscheid voorbereid`)
 
 /** hij-forms whose ik-form is clipped and therefore allowed: ik hou, ik rij, hou je */
 export const CLIPPED_IK = set('hou rij snij glij')

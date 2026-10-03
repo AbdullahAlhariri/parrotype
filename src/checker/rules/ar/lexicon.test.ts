@@ -9,7 +9,7 @@ describe('arabic lexicon', () => {
   it('only holds Arabic keys without harakat or tatweel', () => {
     for (const [name, m] of MAPS) {
       for (const k of m.keys()) {
-        expect(k, name).toMatch(/^[ء-ي]+$/)
+        expect(k, name).toMatch(/^[\u0621-\u063F\u0641-\u064A]+$/)
       }
     }
   })

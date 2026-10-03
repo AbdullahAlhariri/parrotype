@@ -15,8 +15,17 @@ export interface Draft {
   activeMs: number
   /** issues the user dismissed: `${ruleId}|${text}` */
   ignored: string[]
-  /** set once the user finished it and saw the report */
+  /** set while the report is the last thing the user saw; cleared by "Keep writing" */
   finished?: boolean
+  /** what is already in the stats, so finishing again only adds what is new */
+  recorded?: Recorded
+}
+
+export interface Recorded {
+  /** activeMs at the last recording */
+  ms: number
+  /** ids of the mistakes already recorded (checker ids: rule + text + occurrence) */
+  keys: string[]
 }
 
 type DraftMap = Partial<Record<Lang, Draft[]>>

@@ -24,8 +24,10 @@ interface Props {
   voice: KeesVoice
   onFinish: (results: ItemResult[]) => void
   onNewSet: () => void
-  /** shown above the stage, e.g. "no Arabic voice in this browser" */
+  /** shown above the stage before the first sentence, e.g. "no Arabic voice in this browser" */
   notice?: ReactNode
+  /** the same in one line, under the controls once the set has started */
+  noticeShort?: ReactNode
   /** play the first sentence right away (the set was started with a click or enter) */
   autoStart?: boolean
 }
@@ -39,7 +41,7 @@ function repeatWords(s: ItemState): string[] {
   return words.length === 1 ? keesRepeat(words[0]) : words.slice(0, 3).map((w) => `${w}.`)
 }
 
-export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, notice, autoStart = false }: Props) {
+export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, notice, noticeShort, autoStart = false }: Props) {
   const explainIn = useSettings((s) => s.explainIn)
   const [index, setIndex] = useState(0)
   const [st, setSt] = useState<ItemState>(initialItem)
@@ -269,7 +271,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
 
   return (
     <section className="dict-run" aria-label={`Sentence ${index + 1} of ${items.length}`}>
-      {notice}
+      {!started && index === 0 && notice}
       <div className="dict-stage">
         <div className="dict-kees">
           <Kees
@@ -311,6 +313,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
               Voice: {voice.voiceName}. <Link to="/settings#voices">Change</Link>
             </p>
           )}
+          {noticeShort && (started || index > 0) && <p className="dict-voice">{noticeShort}</p>}
         </div>
         <p className="dict-progress tabular" aria-label={`Sentence ${index + 1} of ${items.length}`}>
           {index + 1}
@@ -326,10 +329,11 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         </p>
       )}
 
+      {/* memory mode: the sentence shows where the answer goes, then the field takes its place */}
       {flashing && <MemoryFlash text={item.text} lang={lang} ms={flashMs(item.text)} flashKey={flashKey} onHidden={onFlashHidden} />}
-
       <DictationInput
         ref={inputRef}
+        hidden={flashing}
         value={text}
         onChange={setText}
         onKeyDown={onKeyDown}

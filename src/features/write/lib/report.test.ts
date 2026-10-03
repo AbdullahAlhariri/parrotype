@@ -93,10 +93,20 @@ describe('summarize', () => {
 
   it('keeps hints out of the mistake count', () => {
     const t = 'een hele mooie dag'
-    const s = summarize(t, [mkIssue(t, 'hele', { category: 'style', replacements: ['heel'] })])
+    const s = summarize(t, [mkIssue(t, 'hele', { ruleId: 'nl.style.hele', category: 'style', replacements: ['heel'] })])
     expect(s.mistakes).toBe(0)
     expect(s.hints).toBe(1)
     expect(s.rules).toEqual([])
+    expect(s.byCategory).toEqual([])
+    expect(s.hintRules.map((r) => r.ruleId)).toEqual(['nl.style.hele'])
+  })
+
+  it('does not count unsure grammar calls in the categories', () => {
+    const list = [...issues(), mkIssue(T, 'goed', { ruleId: 'maybe', confidence: 'low', replacements: ['prima'] })]
+    const s = summarize(T, list)
+    expect(s.mistakes).toBe(3)
+    expect(s.byCategory.reduce((n, c) => n + c.count, 0)).toBe(3)
+    expect(s.hintRules.map((r) => r.ruleId)).toEqual(['maybe'])
   })
 
   it('derives instance-free titles from messages', () => {

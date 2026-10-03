@@ -6,8 +6,14 @@ import { LINKS } from './links'
 
 // Capital letters (§3.11, CAP-01..04).
 
-/** a capital is expected here anyway: after a colon, quote, bracket, bullet or line break */
-const freshStart = (ctx: RuleContext, i: number) => isSentenceStart(ctx, i) || /[:"“”„'‘’«»(\[\n•*–—-]\s*$/.test(gapBefore(ctx, i))
+/**
+ * A capital may be expected here anyway: after a colon, quote, bracket, bullet or line break, or after a
+ * full stop the sentence splitter did not treat as a sentence end ("plan B. Ik", "peren e.d. Ik").
+ */
+const freshStart = (ctx: RuleContext, i: number) =>
+  isSentenceStart(ctx, i) ||
+  /[.:"“”„'‘’«»(\[\n•*–—-]\s*$/.test(gapBefore(ctx, i)) ||
+  (i > 0 && ctx.words[i - 1].text.endsWith('.') && gapBefore(ctx, i).trim() === '')
 
 const SEASON_PREV = set('de deze die vorige volgende afgelopen komende in het hele elke iedere')
 /** months that are also first names (April, Mei, Juni, Juli) need a date context */
@@ -33,6 +39,7 @@ export const dayMonth: Rule = {
       const p = prev(ctx, i)
       const n = next(ctx, i)
       if (p >= 0 && isCapitalized(ctx.words[p]) && HOLIDAY_PREFIXES.has(lw(ctx, p))) return // Goede Vrijdag
+      if (p >= 0 && isCapitalized(ctx.words[p]) && !isSentenceStart(ctx, p)) return // part of a name: Dolle Dinsdag
       if (n >= 0 && isCapitalized(ctx.words[n])) return // part of a name or title
       if (w === 'augustus' && !isNumber(ctx, p) && !isNumber(ctx, n)) return // keizer Augustus
       if (NAME_MONTHS.has(w) && !isNumber(ctx, p) && !isNumber(ctx, n) && (p < 0 || !MONTH_PREV.has(lw(ctx, p)))) return // Mei (name)

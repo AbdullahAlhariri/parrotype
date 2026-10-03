@@ -88,7 +88,7 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
 
       <div className="wr-main">
         <h2 id="wr-title" className="wr-title" tabIndex={-1} ref={headRef}>
-          {clean ? 'Nothing to correct. Kees read it twice and found nothing.' : headline(summary)}
+          {!clean ? headline(summary) : cleanHeadline(summary.hints)}
         </h2>
         <p className="wr-lede">
           {lengthNote}
@@ -146,6 +146,19 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
           </>
         )}
 
+        {summary.hintRules.length > 0 && (
+          <div className="wr-block">
+            <h3 className="wr-h">
+              Style hints <span className="wr-h-note">not counted as mistakes</span>
+            </h3>
+            <ul className="wr-rules wr-rules--hints">
+              {summary.hintRules.map((r) => (
+                <RuleItem key={r.ruleId} rule={r} text={text} lang={lang} explainIn={explainIn} />
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="wr-actions">
           {nestItems.length > 0 &&
             (added ? (
@@ -153,7 +166,7 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
                 <Button variant="subtle" disabled>
                   In your nest
                 </Button>
-                <Link to="/practice" className="btn btn-primary btn-md">
+                <Link to="/practice?mode=nest" className="btn btn-primary btn-md">
                   Practise them now
                 </Link>
               </>
@@ -174,10 +187,16 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
   )
 }
 
+function cleanHeadline(hints: number) {
+  if (!hints) return 'Nothing to correct. Kees read it twice and found nothing.'
+  return hints === 1 ? 'No mistakes. One style hint, take it or leave it.' : `No mistakes. ${hints} style hints, take them or leave them.`
+}
+
 function headline(s: WriteSummary) {
-  const parts = s.byCategory.filter((c) => c.category !== 'style').map((c) => `${c.count} ${CATEGORY_LABEL[c.category]}`)
-  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0]
-  return `${plural(s.mistakes, 'mistake')}: ${list}.`
+  const cats = s.byCategory
+  if (cats.length === 1) return s.mistakes === 1 ? `1 mistake: ${CATEGORY_LABEL[cats[0].category]}.` : `${s.mistakes} mistakes, all ${CATEGORY_LABEL[cats[0].category]}.`
+  const parts = cats.map((c) => `${c.count} ${CATEGORY_LABEL[c.category]}`)
+  return `${plural(s.mistakes, 'mistake')}: ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`
 }
 
 function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: string; lang: Lang; explainIn: 'en' | 'local' }) {

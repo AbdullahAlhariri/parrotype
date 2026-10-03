@@ -1,6 +1,8 @@
-import type { Rule, RuleHit } from '@/types'
-import { clauseOf, hitWord, isSubjectSlot, lw, next, prev, sameSentence, wordInfo } from '../../helpers'
+import type { Rule, RuleContext, RuleHit } from '@/types'
+import { clauseOf, hitWord, isCapitalized, isSubjectSlot, lw, next, prev, sameSentence, wordInfo } from '../../helpers'
+import { NL_RELATIVES } from '../../tokenize'
 import {
+  DETERMINERS,
   DSTEM,
   DSTEM_HOMOGRAPHS,
   INDIRECT_OBJECT_PARTICIPLES,
@@ -9,8 +11,10 @@ import {
   PAST_FORMS,
   QUESTION_WORDS,
   ADV_FRONT,
+  SUBORDINATORS,
   T3_TO_IK,
   VERBS,
+  isKnownNoun,
   set,
 } from '../../lexicon/nl'
 import { LINKS } from './links'
@@ -48,7 +52,32 @@ const lopenTrick = {
 /* DT-01 / DT-02: ik + stem                                            */
 /* ------------------------------------------------------------------ */
 
-const IK_NOT_SUBJECT_PREV = set("het mijn m'n zijn jouw je ons haar woord en of dan")
+const IK_NOT_SUBJECT_PREV = set("het mijn m'n zijn jouw je ons haar woord en of dan behalve zoals")
+/** "Iemand als ik heeft ...": als after a noun or pronoun compares, the verb belongs to that noun */
+const CLAUSE_LINKS = set('en maar want dus of')
+const comparingAls = (ctx: RuleContext, p: number) => {
+  if (lw(ctx, p) !== 'als') return false
+  const pp = prev(ctx, p)
+  return pp >= 0 && !CLAUSE_LINKS.has(lw(ctx, pp))
+}
+
+/**
+ * The verb before ik/jij probably closes an earlier clause ("Als hij komt ik ga weg", "Het probleem is
+ * ik heb geen tijd"), so it is not inverted with ik/jij.
+ */
+const CLAUSE_SUBJECT_START = set(`ik jij je hij zij ze wij we jullie u het men er de een dit dat die deze mijn jouw
+  zijn haar ons onze hun iemand niemand iedereen`)
+
+function verbClosesEarlierClause(ctx: RuleContext, v: number): boolean {
+  const c = clauseOf(ctx, v)
+  // a subordinate clause with its own subject before the verb: "Als hij komt | ik ga weg"
+  if (c?.opener && v > c.core && (SUBORDINATORS.has(c.opener) || NL_RELATIVES.has(c.opener))) {
+    if (CLAUSE_SUBJECT_START.has(lw(ctx, c.core)) || isCapitalized(ctx.words[c.core])) return true
+  }
+  if (lw(ctx, v) !== 'is') return false
+  const p = prev(ctx, v)
+  return p >= 0 && (isKnownNoun(lw(ctx, p)) || (prev(ctx, p) >= 0 && DETERMINERS.has(lw(ctx, p - 1))))
+}
 /** hij-forms that are also nouns: rijst (rice), vaart (speed), staat (state), kust (coast) */
 const T3_NOUNS = set('rijst vaart staat kust')
 
@@ -85,7 +114,7 @@ export const ikStem: Rule = {
       const ik = T3_TO_IK.get(t3)
       if (!ik) return
       const p = prev(ctx, i)
-      if (p >= 0 && IK_NOT_SUBJECT_PREV.has(lw(ctx, p))) return
+      if (p >= 0 && (IK_NOT_SUBJECT_PREV.has(lw(ctx, p)) || comparingAls(ctx, p))) return
       if (T3_NOUNS.has(t3) || (inVerbFinalClause(ctx, i) && laterFiniteInClause(ctx, v))) return // "omdat ik rijst eet"
       out.push(hitWord(ctx, v, withClipped(ik), ikMessage(ik, t3)))
     })
@@ -107,7 +136,7 @@ export const invertedIk: Rule = {
       if (v < 0) return
       const t3 = lw(ctx, v)
       const ik = T3_TO_IK.get(t3)
-      if (!ik || T3_NOUNS.has(t3)) return
+      if (!ik || T3_NOUNS.has(t3) || verbClosesEarlierClause(ctx, v)) return
       const p = prev(ctx, v)
       if (p >= 0 && PERSONAL_SUBJ.has(lw(ctx, p))) return
       const msg = ikMessage(ik, t3)
@@ -147,7 +176,8 @@ export const hijStemT: Rule = {
       if (!t3) continue
       const ambiguous = AMBIGUOUS_SUBJ.has(subj)
       if ((ambiguous || verbFinal) && DSTEM_HOMOGRAPHS.has(ik)) continue
-      if (ambiguous && nounFollows(ctx, v)) continue
+      // "Wat vind kinderen leuk?" has a noun subject after the verb; "Het word tijd" does not
+      if (ambiguous && nounFollows(ctx, v) && !(subj === 'het' && ik === 'word')) continue
       if (subj === 'er' && !wordInfo(ctx, s)?.sentStart) continue
       const plural = subj === 'zij' || subj === 'ze'
       const inf = IK_TO_INF.get(ik)
@@ -299,7 +329,7 @@ export const invertedJij: Rule = {
       if (v < 0) return
       const t3 = lw(ctx, v)
       const ik = T3_TO_IK.get(t3)
-      if (!ik) return
+      if (!ik || verbClosesEarlierClause(ctx, v)) return
       const p = prev(ctx, v)
       if (p >= 0 && PERSONAL_SUBJ.has(lw(ctx, p))) return
       out.push(
