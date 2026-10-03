@@ -198,6 +198,10 @@ export const TIPS: Record<string, TipText> = {
     en: 'g and ch sound alike: adjectives on -ig always take g (nodig, gelukkig), and ligt (lies) differs from licht (light).',
     nl: 'g en ch klinken hetzelfde: bijvoeglijke naamwoorden op -ig schrijf je met g (nodig, gelukkig), en ligt (liggen) is iets anders dan licht.',
   },
+  lijk: {
+    en: "-lijk sounds like 'luk' but is always written lijk: natuurlijk, eigenlijk, moeilijk.",
+    nl: "-lijk klinkt als 'luk', maar je schrijft altijd lijk: natuurlijk, eigenlijk, moeilijk.",
+  },
   apostrophe: { en: "Apostrophes mark missing letters (don't = do not) or ownership (the cat's bowl)." },
   'apostrophe.nl': {
     en: "Plural 's only after a final a, i, o, u or y (auto's, foto's); otherwise just add s.",

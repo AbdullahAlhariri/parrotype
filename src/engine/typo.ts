@@ -369,6 +369,11 @@ function kofschipRule(c: Ctx): TypoLabel | null {
   const me = re.exec(c.el)
   const mt = re.exec(c.tl)
   if (!me || !mt || me[1] !== mt[1] || me[3] !== mt[3] || me[2] === mt[2]) return null
+  // -de vs -te is the kofschip choice; a lost double (wachtte -> wachte) is the classic slip too,
+  // but an extra double (zitten -> zittten, houden -> houdden) is just a bounce
+  const doubledE = me[2].length === 3
+  const doubledT = mt[2].length === 3
+  if (me[2].at(-2) === mt[2].at(-2) && !(doubledE && !doubledT)) return null
   return label(c, 'spelling', 'cognitive', `past-tense ending: '${c.E}', not '${c.T}'`, 'kofschip', 'kofschip')
 }
 
@@ -377,6 +382,9 @@ function digraphRule(c: Ctx): TypoLabel | null {
   if (swapEither(c.tl, c.el, 'ij', 'y')) return label(c, 'spelling', 'cognitive', `ij, not y: '${c.E}'`, 'ij-y', 'ij-y')
   if (swapEither(c.tl, c.el, 'au', 'ou')) return label(c, 'spelling', 'cognitive', `au/ou: '${c.E}'`, 'au-ou', 'au-ou')
   if (swapEither(c.tl, c.el, 'g', 'ch')) return label(c, 'spelling', 'cognitive', `g/ch: '${c.E}'`, 'g-ch', 'g-ch')
+  if (['luk', 'lek', 'lik', 'lijck'].some((x) => oneSwap(c.tl, c.el, x, 'lijk'))) {
+    return label(c, 'spelling', 'cognitive', `-lijk: '${c.E}'`, 'lijk', 'lijk')
+  }
   return null
 }
 
@@ -393,8 +401,9 @@ function apostropheRule(c: Ctx): TypoLabel | null {
 function tussenNRule(c: Ctx): TypoLabel | null {
   const [long, short] = c.el.length > c.tl.length ? [c.el, c.tl] : [c.tl, c.el]
   if (long.length !== short.length + 1) return null
-  for (let k = 3; k <= long.length - 3; k++) {
-    if (long[k] !== 'n' || long[k - 1] !== 'e' || long[k + 1] === 'n') continue
+  // compound shape: a first part of 4+ letters, linking e(n), then a 3+ letter part starting with a consonant
+  for (let k = 5; k <= long.length - 4; k++) {
+    if (long[k] !== 'n' || long[k - 1] !== 'e' || long[k + 1] === 'n' || isVowel(long[k + 1])) continue
     if (long.startsWith('lijk', k + 1)) continue
     if (long.slice(0, k) + long.slice(k + 1) === short) {
       return label(c, 'spelling', 'cognitive', `linking -e(n)-: '${c.E}'`, 'tussen-n', 'tussen-n')
@@ -434,9 +443,9 @@ function homophoneEn(c: Ctx): TypoLabel | null {
   const group = EN_HOMOPHONES.find((g) => g.words.includes(c.el) && g.words.includes(c.tl))
   if (!group) return null
   const tag = group.words[0] === 'its' ? 'its-its' : 'homophone'
-  // to/too, of/off, lose/loose in a copy test are as likely a double tap as a mix-up
-  const doubleOnly = c.mode === 'copy' && collapse(c.el) === collapse(c.tl)
-  const out = label(c, 'spelling', doubleOnly ? 'unknown' : 'cognitive', `'${c.E}', not '${c.T}'`, tag, tag)
+  // to/too, two/to, by/bye in a copy test are as likely one extra or missing key as a mix-up
+  const oneKey = c.mode === 'copy' && Math.abs(c.el.length - c.tl.length) === 1 && osaDistance(c.el, c.tl) === 1
+  const out = label(c, 'spelling', oneKey ? 'unknown' : 'cognitive', `'${c.E}', not '${c.T}'`, tag, tag)
   out.tip = { en: group.tip }
   return out
 }
@@ -464,8 +473,6 @@ function arabicRule(c: Ctx): TypoLabel | null {
 /* Doubling, hand shift, real words                                     */
 /* ------------------------------------------------------------------ */
 
-const collapse = (s: string) => runs(s).map((r) => r.c).join('')
-
 function runs(s: string): { c: string; n: number }[] {
   const out: { c: string; n: number }[] = []
   for (const g of graphemes(s)) {
@@ -491,7 +498,9 @@ function doublingRule(c: Ctx): TypoLabel | null {
   })
   if (!missed.length && !extra.length) return null
   const latin = c.lang !== 'ar'
-  const ruleTag = (k: number) => (!latin ? undefined : isVowel(re[k].c) ? (c.lang === 'nl' ? 'open-syllable' : undefined) : 'double-consonant')
+  // in a copy test a doubled or dropped letter is ambiguous, so spelling-rule tags need dictation
+  const ruleTag = (k: number) =>
+    !latin || c.mode !== 'dictation' ? undefined : isVowel(re[k].c) ? (c.lang === 'nl' ? 'open-syllable' : undefined) : 'double-consonant'
 
   if (missed.length === 1 && extra.length === 1) {
     return label(c, 'doubling', 'motor', `doubled '${rt[extra[0]].c}' instead of '${re[missed[0]].c}'`, 'doubling', 'wrong-double')
