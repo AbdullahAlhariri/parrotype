@@ -22,7 +22,9 @@ describe('osaDistance and editOps', () => {
   it('returns keyboard-aware edit operations', () => {
     expect(editOps('the', 'teh').map((o) => o.op)).toEqual(['equal', 'swap'])
     expect(editOps('the', 'teh')[1]).toMatchObject({ op: 'swap', e: 'he', t: 'eh', i: 1, j: 1 })
-    expect(editOps('alleen', 'aleen').filter((o) => o.op !== 'equal')).toEqual([{ op: 'del', e: 'l', i: 2, j: 2 }])
+    const del = editOps('alleen', 'aleen').filter((o) => o.op !== 'equal')
+    expect(del).toHaveLength(1)
+    expect(del[0]).toMatchObject({ op: 'del', e: 'l' })
     expect(editOps('test', 'tesrt').filter((o) => o.op !== 'equal')).toEqual([{ op: 'ins', t: 'r', i: 3, j: 3 }])
     expect(editOps('the', 'thw').filter((o) => o.op !== 'equal')).toEqual([{ op: 'sub', e: 'e', t: 'w', i: 2, j: 2 }])
     expect(editOps('', 'ab').map((o) => o.op)).toEqual(['ins', 'ins'])

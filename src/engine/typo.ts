@@ -394,7 +394,7 @@ function tussenNRule(c: Ctx): TypoLabel | null {
   const [long, short] = c.el.length > c.tl.length ? [c.el, c.tl] : [c.tl, c.el]
   if (long.length !== short.length + 1) return null
   for (let k = 3; k <= long.length - 3; k++) {
-    if (long[k] !== 'n' || long[k - 1] !== 'e' || long[k + 1] === 'n' || long[k - 2] === 'n') continue
+    if (long[k] !== 'n' || long[k - 1] !== 'e' || long[k + 1] === 'n') continue
     if (long.startsWith('lijk', k + 1)) continue
     if (long.slice(0, k) + long.slice(k + 1) === short) {
       return label(c, 'spelling', 'cognitive', `linking -e(n)-: '${c.E}'`, 'tussen-n', 'tussen-n')
