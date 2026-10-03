@@ -173,9 +173,17 @@ export function normalize(text, lang) {
 const NAME_VARIANTS = { kees: ['keith', 'keys', 'case', 'kase', 'kiss', 'cees', 'kays', 'كيس'] }
 const canonical = (w) => Object.keys(NAME_VARIANTS).find((n) => n === w || NAME_VARIANTS[n].includes(w)) ?? w
 
+// Audio cannot show spelling: words that sound the same compare equal (word/wordt, its/it's...).
+const EN_HOMOPHONES = { "it's": 'its', "they're": 'there', their: 'there', "you're": 'your', too: 'to', two: 'to', "who's": 'whose', "we're": 'were', "there's": 'theres' }
+function soundAlike(w, lang) {
+  if (lang === 'nl') return w.replace(/dt$|d$/, 't').replace(/ij/g, 'ei').replace(/ou/g, 'au').replace(/[ëï]/g, (c) => (c === 'ë' ? 'e' : 'i'))
+  if (lang === 'en') return EN_HOMOPHONES[w] ?? w
+  return w
+}
+
 export function wordErrors(expected, actual, lang) {
-  const a = normalize(expected, lang).map(canonical)
-  const b = normalize(actual, lang).map(canonical)
+  const a = normalize(expected, lang).map(canonical).map((w) => soundAlike(w, lang))
+  const b = normalize(actual, lang).map(canonical).map((w) => soundAlike(w, lang))
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
   for (let j = 1; j <= b.length; j++) d[0][j] = j
   for (let i = 1; i <= a.length; i++)
