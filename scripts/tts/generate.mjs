@@ -27,7 +27,7 @@ const BITRATE = process.env.TTS_BITRATE ?? '40k'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-async function api(path, body, attempt = 0) {
+export async function api(path, body, attempt = 0) {
   const res = await fetch(`${API}/${path}`, {
     method: 'POST',
     headers: { 'x-goog-api-key': KEY, 'Content-Type': 'application/json' },
@@ -73,7 +73,7 @@ export async function ensureDesignedVoices(previewDir) {
   return ids
 }
 
-function resolveVoice(voice, ids) {
+export function resolveVoice(voice, ids) {
   if (!voice.startsWith('@')) return voice
   const id = ids[voice.slice(1)]
   if (!id) throw new Error(`designed voice ${voice} has not been created`)
@@ -120,7 +120,8 @@ function pcmToWav(pcm, rate) {
 
 /** Trims silence at both ends, evens out loudness, encodes a small mono MP3. Returns seconds. */
 export async function encodeMp3(wav, outFile) {
-  const tmp = join(tmpdir(), `pt-${process.pid}-${Math.random().toString(36).slice(2)}.wav`)
+  const ext = wav.subarray(0, 4).toString() === 'RIFF' ? 'wav' : 'mp3'
+  const tmp = join(tmpdir(), `pt-${process.pid}-${Math.random().toString(36).slice(2)}.${ext}`)
   await writeFile(tmp, wav)
   await mkdir(dirname(outFile), { recursive: true })
   const trim = 'silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12'
@@ -136,9 +137,9 @@ export async function encodeMp3(wav, outFile) {
 
 /* ---------------- verification ---------------- */
 
-export async function transcribe(mp3, lang) {
+export async function transcribe(mp3, lang, model = QA_MODEL) {
   const numbers = lang === 'ar' ? 'Write numbers as words.' : 'Write numbers out in words, exactly as spoken.'
-  const json = await api(`models/${QA_MODEL}:generateContent`, {
+  const json = await api(`models/${model}:generateContent`, {
     contents: [{
       role: 'user',
       parts: [
