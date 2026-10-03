@@ -1,8 +1,9 @@
 import type { WritingPrompt } from './types'
 
-// Arabic writing prompts. Modern Standard Arabic, written without
-// tashkeel, as people type it. Focus tags point at the usual typing traps: hamza seats,
-// taa marbuta vs haa, alif maqsura vs yaa, hamzat al-wasl.
+// Arabic writing prompts. Modern Standard Arabic, written without tashkeel, as people type it.
+// Focus tags point at the usual traps: hamza seats, taa marbuta vs haa, alif maqsura vs yaa,
+// hamzat al-wasl, the tanween alif, the hidden alif (هذا، لكن) and إن شاء الله.
+// Trap prompts make the writer produce exactly those forms.
 
 const p = (id: string, kind: WritingPrompt['kind'], words: number, text: string, focus: string[], watch?: string): WritingPrompt => ({
   id: `ar-${id}`,
@@ -30,4 +31,40 @@ export const AR_PROMPTS: WritingPrompt[] = [
   p('p13', 'describe', 100, 'صف غرفتك: ماذا يوجد فيها؟ وأين تضع أشياءك المفضلة؟', ['hamza']),
   p('p14', 'trap', 100, 'ماذا فعلت أمس؟ وماذا ستفعل غدا؟', ['past-future', 'hamza'], 'فعلت / سأفعل'),
   p('p15', 'trap', 100, 'اكتب عن رحلة إلى مدينة أخرى، واستخدم كلمات مثل: إلى، على، مستشفى، مبنى.', ['alif-maqsura'], 'ى / ي'),
+
+  // story starters
+  p('p16', 'story', 120, 'اكتب قصة قصيرة عن ببغاء هرب من قفصه وقضى يوما كاملا في المدينة. أين ذهب؟ وبمن التقى؟', ['story', 'alif-maqsura', 'tanween']),
+  p('p17', 'story', 120, 'اكتب قصة تبدأ بهذه الجملة: «رن الهاتف في منتصف الليل، وكان المتصل يعرف اسمي.»', ['story', 'hamzat-wasl']),
+  p('p18', 'story', 150, 'توقف المصعد بين طابقين، ولم تكن وحدك. اكتب ما حدث في الدقائق العشر التالية.', ['story', 'past-tense']),
+
+  // opinion
+  p('p19', 'opinion', 150, 'هل العمل من البيت أفضل من العمل في المكتب؟ اذكر سببين لكل رأي، ثم اختر موقفك.', ['opinion', 'hamza']),
+  p('p20', 'opinion', 150, 'هل ينبغي منع الهواتف على مائدة الطعام؟ دافع عن رأيك، ثم اذكر نقطة واحدة يكون فيها الطرف الآخر على حق.', ['opinion', 'hamza-seat', 'alif-maqsura']),
+  p('p21', 'opinion', 150, 'أيهما أفضل للسكن: مدينة كبيرة أم قرية صغيرة؟ قارن بينهما، ثم اذكر رأيك.', ['comparative', 'taa-marbuta']),
+
+  // describe
+  p('p22', 'describe', 120, 'صف سوقا شعبيا في الصباح: الباعة، والروائح، والأصوات، والألوان.', ['describe', 'tanween', 'taa-marbuta']),
+  p('p23', 'describe', 120, 'صف شخصا تحترمه دون أن تذكر اسمه. هل يستطيع القارئ أن يعرف من هو؟', ['hamzat-wasl', 'tanween']),
+
+  // journal
+  p('p24', 'journal', 120, 'ما الشيء الذي تعلمته هذا العام ولم تكن تعرفه في العام الماضي؟', ['hamza', 'hidden-alif']),
+  p('p25', 'journal', 100, 'ما الذي أضحكك هذا الأسبوع؟ اكتب عن الموقف ومن كان معك.', ['hamza', 'hidden-alif']),
+
+  // letters
+  p('p26', 'letter', 100, 'اكتب رسالة إلى جيرانك تخبرهم فيها بأنك ستقيم حفلة صغيرة يوم السبت قد تستمر حتى وقت متأخر.', ['taa-marbuta', 'alif-maqsura']),
+  p('p27', 'letter', 150, 'اكتب رسالة شكوى مهذبة إلى متجر إلكتروني أرسل إليك طلبا خاطئا، واقترح حلا.', ['formal', 'hamza', 'tanween']),
+
+  // explain to a friend
+  p('p28', 'explain', 150, 'اشرح لطفل في العاشرة كيف يصلح إطار دراجة مثقوبا.', ['imperative', 'hamza', 'tanween']),
+  p('p29', 'explain', 150, 'اشرح لصديق من بلد آخر عادة من عادات بلدك: ما هي؟ ولماذا يحافظ عليها الناس؟', ['explain', 'taa-marbuta']),
+
+  // traps
+  p('p30', 'trap', 100, 'اكتب عن خططك للأسبوع القادم وعن شيء أعجبك عند صديق. استخدم «إن شاء الله» و«ما شاء الله».', ['inshallah', 'hamza'], 'إن شاء الله / ما شاء الله'),
+  p('p31', 'trap', 120, 'اكتب عن آخر مرة خرج فيها أصدقاؤك معا: أين ذهبوا؟ وماذا أكلوا؟ ومن الذي لم يأت؟', ['waw-jamaa', 'hamza-seat'], 'ذهبوا / أصدقاؤك'),
+  p('p32', 'trap', 120, 'تخيل أنك رئيس فريقك ليوم واحد. ما أول قرار تتخذه؟ وما السؤال الذي تطرحه على زملائك؟', ['hamza-seat'], 'رئيس / سؤال / مسؤول'),
+  p('p33', 'trap', 100, 'صف مدرستك القديمة: المكتبة، والساحة، والقاعة، ومعلما ما زلت تتذكره.', ['taa-marbuta', 'tanween'], 'ة / ه'),
+  p('p34', 'trap', 100, 'اكتب عن نزهة في الطبيعة: ماذا رأيت عند الضحى؟ وأين جلست في الظل وقت الظهر؟', ['dad-dha', 'alif-maqsura'], 'ض / ظ'),
+  p('p35', 'trap', 100, 'ما الأشياء التي تفعلها دائما، وما الأشياء التي لا تفعلها أبدا؟ استخدم أيضا كلمات مثل: أحيانا، غالبا، نادرا.', ['tanween'], 'دائما / أيضا'),
+  p('p36', 'trap', 120, 'اكتب عن عائلتك: ما اسم كل فرد فيها؟ وماذا يعمل؟ ابدأ بنفسك، ثم بأبيك وأمك وإخوتك.', ['hamzat-wasl', 'hamza'], 'اسم / أبيك / إخوتك'),
+  p('p37', 'trap', 120, 'اكتب رأيك في فيلم أو كتاب: ما الذي أعجبك؟ وما الذي لم يعجبك؟ استخدم كلمات مثل: هذا، ذلك، لكن، هكذا.', ['hidden-alif'], 'هذا / لكن'),
 ]

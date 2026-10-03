@@ -118,14 +118,14 @@ function pipeline(c) {
   b.push(label(318, 86, 'Character diff + alignment'), label(318, 108, 'Damerau-Levenshtein, split/merged words', { cls: 's', size: 13, weight: 400 }))
   b.push(label(318, 140, 'Slip classifier', { size: 14 }))
   b.push(chips(c, 318, 152, ['neighbour key', 'swapped', 'missed double']))
-  b.push(chips(c, 318, 184, ['d/t', 'ei/ij', 'trema', 'hamza', 'taa marbuta'], { color: c.main }))
+  b.push(chips(c, 318, 184, ["its/it's", 'then/than', 'a/an', 'hamza', 'taa marbuta'], { color: c.main }))
   // free-text lane
   b.push(label(300, 266, 'free text, in a Web Worker', { cls: 's', size: 13, weight: 500 }))
   b.push(box(c, 300, 280, 320, 196))
   b.push(label(318, 308, 'Hunspell (WASM)'), label(318, 330, 'OpenTaal · SCOWL · Ayaspell', { cls: 's', size: 13, weight: 400 }))
-  b.push(chips(c, 318, 342, ['eigelijk', 'definately'], { under: 'wavy', mono: true }))
+  b.push(chips(c, 318, 342, ['definately', 'recieve'], { under: 'wavy', mono: true }))
   b.push(label(318, 390, 'Grammar rule packs  nl · en · ar', { size: 14 }))
-  b.push(chips(c, 318, 402, ['hij word', 'groter als', 'its a'], { under: 'dashed', mono: true }))
+  b.push(chips(c, 318, 402, ['could of', 'its a', 'taller then'], { under: 'dashed', mono: true }))
   b.push(`<rect x="318" y="438" width="284" height="26" rx="13" fill="none" stroke="${c.border}" stroke-dasharray="5 4"/>`)
   b.push(label(330, 455.5, '+ LanguageTool, if you switch it on', { cls: 's', size: 12.5, weight: 400 }))
   // outputs
@@ -172,7 +172,7 @@ function voices(c) {
   // voices row
   const vy = 214
   b.push(label(28, vy + 6, 'voices', { cls: 's', size: 13, weight: 500 }))
-  b.push(chips(c, 90, vy - 11, ['Kees', 'Lies', 'Juf Ans', 'Oma Riet', 'Fleur', 'Daan'], { color: c.text }))
+  b.push(chips(c, 90, vy - 11, ['Kees', 'Lies', 'Ans', 'Riet', 'Fleur', 'Daan'], { color: c.text }))
   b.push(chips(c, 90, vy + 21, ['Monty', 'Ollie', 'the narrator', 'Miss Hale', 'June', 'Walt'], { color: c.text }))
   b.push(chips(c, 90, vy + 53, ['فستق Fustuq', 'Huda', 'Layla', 'Nour', 'Salma', 'Sami', 'Karim', 'Omar'], { color: c.text }))
   b.push(label(1004, vy + 6, 'nl', { cls: 's', size: 12, anchor: 'end', weight: 500 }), label(1004, vy + 38, 'en', { cls: 's', size: 12, anchor: 'end', weight: 500 }), label(1004, vy + 70, 'ar', { cls: 's', size: 12, anchor: 'end', weight: 500 }))
@@ -215,9 +215,9 @@ p{font-family:RS;font-size:26px;line-height:1.45;color:${c.sub};margin:22px 0 34
 </style></head><body><div class="wrap"><div>
 <h1>parrotype<span class="q"></span></h1>
 <p>Typing, spelling and grammar practice for people who make typos. Dutch, English and Arabic, accuracy first.</p>
-<div class="type"><span style="color:${c.text}">hij</span> <span style="color:${c.text};text-decoration:underline;text-decoration-color:${c.error};text-decoration-thickness:3px;text-underline-offset:9px">word<span style="color:${c.sub}">t</span></span> <span class="caret"></span><span style="color:${c.sub}">morgen achttien</span></div>
-<div class="langs"><b>nl</b> &nbsp;·&nbsp; en &nbsp;·&nbsp; ar &nbsp;&nbsp; typing test · parrot says · write · grammar gym · fix it · stories</div>
-</div><div class="kees"><div class="bubble">wordt. wordt. wordt.</div>${keesSvg(c, { size: 270 })}</div></div></body></html>`
+<div class="type"><span style="color:${c.text}">she is taller</span> <span style="color:${c.text};text-decoration:underline;text-decoration-color:${c.error};text-decoration-thickness:3px;text-underline-offset:9px">th<span style="color:${c.error}">e</span>n</span> <span class="caret"></span><span style="color:${c.sub}">me</span></div>
+<div class="langs">nl &nbsp;·&nbsp; <b>en</b> &nbsp;·&nbsp; ar &nbsp;&nbsp; typing test · parrot says · write · grammar gym · fix it · stories</div>
+</div><div class="kees"><div class="bubble">than. than. than.</div>${keesSvg(c, { size: 270 })}</div></div></body></html>`
 }
 
 const browser = await chromium.launch()

@@ -2,7 +2,7 @@
 
 Practise typing, spelling and grammar in **Dutch**, **English** and (basic, phase 2) **Arabic**.
 Monkeytype-style typing tests, plus modes that go after the mistakes a spell checker never sees:
-*hij word* vs *hij wordt*, *gebeurd* vs *gebeurt*, *then* vs *than*, *its* vs *it's*.
+Dutch verb endings that sound the same but are spelled differently, *then* vs *than*, *its* vs *it's*.
 
 Your guide is Kees, a kea (an alpine parrot) with a monocle. Copy-typing is parroting, after all.
 
@@ -10,10 +10,10 @@ Your guide is Kees, a kea (an alpine parrot) with a monocle. Copy-typing is parr
 
 | Mode | Route | What it trains |
 |---|---|---|
-| Type | `/` | Classic typing test (time, words, quotes) with live caret, focus mode and a results screen that labels each typo (neighbour key, swapped letters, missed double, d/t...) |
+| Type | `/` | Classic typing test (time, words, quotes) with live caret, focus mode and a results screen that labels each typo (neighbour key, swapped letters, missed double, verb ending...) |
 | Parrot says | `/listen` | Dictation: Kees reads a sentence aloud, you type it. Hint ladder, then the rule, then a retype of the correct form |
 | Write | `/write` | Free writing with prompts. Spelling (Hunspell) and grammar (hand-written rules) feedback, delayed by default so you look for mistakes yourself first |
-| Grammar gym | `/gym` | Quick drills you type: d/t, gebeurd/gebeurt, 't kofschip, de/het, die/dat, ei/ij, its/it's, then/than, hamza... |
+| Grammar gym | `/gym` | Quick drills you type: Dutch verb endings and articles, its/it's, then/than, a/an, Arabic hamza and taa marbuta... |
 | Fix it | `/fix` | Proofread a short text with planted mistakes |
 | Stories | `/stories` | Type original short stories page by page |
 | Weak spots | `/practice` | Drills built from your own weak keys, bigrams and misspelled words, plus a spaced-repetition "mistake nest" |
@@ -27,7 +27,7 @@ unless you switch on the optional LanguageTool check in settings (free-writing t
 
 1. **Known target text** (typing test, dictation, drills): a character diff, then a classifier that
    labels each slip (motor slips like neighbour keys and swapped letters vs. spelling knowledge like
-   d/t or ei/ij).
+   verb endings or homophones).
 2. **Free text**: a Web Worker runs [Hunspell](https://hunspell.github.io/) (compiled to WebAssembly)
    for spelling, with suggestions re-ranked by word frequency and keyboard distance, plus a
    rule engine with Dutch, English and Arabic rule packs. Each rule has a friendly explanation in

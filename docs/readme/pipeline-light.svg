@@ -27,31 +27,31 @@
 <text x="444" y="168.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#272318">swapped</text>
 <rect x="510" y="152" width="109.00000000000001" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
 <text x="519" y="168.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#272318">missed double</text>
-<rect x="318" y="184" width="39" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="327" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">d/t</text>
-<rect x="365" y="184" width="53" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="374" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">ei/ij</text>
-<rect x="426" y="184" width="53" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="435" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">trema</text>
-<rect x="487" y="184" width="53" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="496" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">hamza</text>
-<rect x="548" y="184" width="95.00000000000001" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="557" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">taa marbuta</text>
+<rect x="318" y="184" width="74" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="327" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">its/it's</text>
+<rect x="400" y="184" width="81" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="409" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">then/than</text>
+<rect x="489" y="184" width="46" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="498" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">a/an</text>
+<rect x="543" y="184" width="53" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="552" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">hamza</text>
+<rect x="604" y="184" width="95.00000000000001" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="613" y="200.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#6A4E0F">taa marbuta</text>
 <text x="300" y="266" class="s" font-size="13" font-weight="500" text-anchor="start">free text, in a Web Worker</text>
 <rect x="300" y="280" width="320" height="196" rx="6" fill="#DADEC9" stroke="#B9BEA4" stroke-width="1.2"/>
 <text x="318" y="308" class="t" font-size="15" font-weight="600" text-anchor="start">Hunspell (WASM)</text>
 <text x="318" y="330" class="s" font-size="13" font-weight="400" text-anchor="start">OpenTaal · SCOWL · Ayaspell</text>
-<rect x="318" y="342" width="78" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="327" y="358.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">eigelijk</text><path d="M327 361 q2 -2.4 4 0 t4 0 t4 0 t4 0 t4 0 t4 0 t4 0" fill="none" stroke="#A32900" stroke-width="1.2"/>
-<rect x="404" y="342" width="93" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="413" y="358.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">definately</text><path d="M413 361 q2 -2.4 4 0 t4 0 t4 0 t4 0 t4 0 t4 0 t4 0" fill="none" stroke="#A32900" stroke-width="1.2"/>
+<rect x="318" y="342" width="93" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="327" y="358.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">definately</text><path d="M327 361 q2 -2.4 4 0 t4 0 t4 0 t4 0 t4 0 t4 0 t4 0" fill="none" stroke="#A32900" stroke-width="1.2"/>
+<rect x="419" y="342" width="70.5" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="428" y="358.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">recieve</text><path d="M428 361 q2 -2.4 4 0 t4 0 t4 0 t4 0 t4 0 t4 0 t4 0" fill="none" stroke="#A32900" stroke-width="1.2"/>
 <text x="318" y="390" class="t" font-size="14" font-weight="600" text-anchor="start">Grammar rule packs  nl · en · ar</text>
 <rect x="318" y="402" width="78" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="327" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">hij word</text><path d="M327 421.5 H387" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
-<rect x="404" y="402" width="93" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="413" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">groter als</text><path d="M413 421.5 H488" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
-<rect x="505" y="402" width="55.5" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
-<text x="514" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">its a</text><path d="M514 421.5 H551.5" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
+<text x="327" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">could of</text><path d="M327 421.5 H387" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
+<rect x="404" y="402" width="55.5" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="413" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">its a</text><path d="M413 421.5 H450.5" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
+<rect x="467.5" y="402" width="100.5" height="24" rx="12" fill="none" stroke="#B9BEA4" stroke-width="1.1"/>
+<text x="476.5" y="418.5" font-family="'RM', ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="12.5" fill="#272318">taller then</text><path d="M476.5 421.5 H559" stroke="#1D5486" stroke-width="1.4" stroke-dasharray="3 2.5"/>
 <rect x="318" y="438" width="284" height="26" rx="13" fill="none" stroke="#B9BEA4" stroke-dasharray="5 4"/>
 <text x="330" y="455.5" class="s" font-size="12.5" font-weight="400" text-anchor="start">+ LanguageTool, if you switch it on</text>
 <text x="780" y="44" class="s" font-size="13" font-weight="500" text-anchor="start">what you get</text>

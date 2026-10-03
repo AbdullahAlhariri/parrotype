@@ -36,14 +36,14 @@
 <text x="99" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Kees</text>
 <rect x="144" y="203" width="46" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
 <text x="153" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Lies</text>
-<rect x="198" y="203" width="67" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
-<text x="207" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Juf Ans</text>
-<rect x="273" y="203" width="74" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
-<text x="282" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Oma Riet</text>
-<rect x="355" y="203" width="53" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
-<text x="364" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Fleur</text>
-<rect x="416" y="203" width="46" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
-<text x="425" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Daan</text>
+<rect x="198" y="203" width="39" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
+<text x="207" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Ans</text>
+<rect x="245" y="203" width="46" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
+<text x="254" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Riet</text>
+<rect x="299" y="203" width="53" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
+<text x="308" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Fleur</text>
+<rect x="360" y="203" width="46" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
+<text x="369" y="219.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Daan</text>
 <rect x="90" y="235" width="53" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
 <text x="99" y="251.5" font-family="'RS', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" fill="#EEE8D8">Monty</text>
 <rect x="151" y="235" width="53" height="24" rx="12" fill="none" stroke="#4A4433" stroke-width="1.1"/>
