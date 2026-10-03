@@ -1,6 +1,7 @@
 import type { Lang } from '@/types'
 import { osaUnits } from './osa'
 import { classifyTypo, type TypoLabel } from './typo'
+import { tip } from './typo-ctx'
 import { graphemes, normalizeInput, stripAccents, stripTashkeel } from './text'
 
 // Word-level alignment of free typed text against an expected sentence (dictation,
@@ -40,6 +41,8 @@ export interface WordOp {
   typedRange?: [number, number]
   /** the tokens involved are punctuation */
   punct?: boolean
+  /** a 'del' and an 'ins' of the same word close together: the word was moved (word order) */
+  moved?: boolean
 }
 
 export interface CharOp {
@@ -50,10 +53,10 @@ export interface CharOp {
   b?: string
 }
 
-// 's / 't / 'n (Dutch), words with inner apostrophes or hyphens (invisible joiners allowed
-// inside), or single punctuation marks
+// 's / 't / 'n (Dutch), numbers with separators (1.000, 3,5, 12:30), words with inner
+// apostrophes or hyphens (invisible joiners allowed inside), or single punctuation marks
 const TOKEN_RE =
-  /'[stn](?![\p{L}\p{M}\p{N}])|[\p{L}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*(?:['\-][\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*)*|[^\s\p{L}\p{M}\p{N}\p{Cf}]/gu
+  /'[stn](?![\p{L}\p{M}\p{N}])|\p{N}+(?:[.,:]\p{N}+)+(?![\p{L}\p{M}])|[\p{L}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*(?:['\-][\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*)*|[^\s\p{L}\p{M}\p{N}\p{Cf}]/gu
 
 const normQuotes = (s: string) => s.replace(/[\u2018\u2019\u02BC]/g, "'").replace(/[\u201C\u201D]/g, '"')
 
@@ -210,7 +213,27 @@ export function alignWords(expected: string, typed: string, opts: AlignOptions =
       j--
     }
   }
-  return ops.reverse()
+  return markMoves(ops.reverse(), opts)
+}
+
+/** Pairs a deleted word with the same word inserted within a few steps (Gisteren ik ging). */
+function markMoves(ops: WordOp[], o: AlignOptions): WordOp[] {
+  const key = (s: string) => normalise(s, { ...o, ignoreCase: true })
+  for (let a = 0; a < ops.length; a++) {
+    const x = ops[a]
+    if ((x.op !== 'del' && x.op !== 'ins') || x.punct || x.moved) continue
+    const want = x.op === 'del' ? 'ins' : 'del'
+    const word = key((x.op === 'del' ? x.expected : x.typed) ?? '')
+    for (let b = a + 1; b < ops.length && b <= a + 4; b++) {
+      const y = ops[b]
+      if (y.op === want && !y.punct && !y.moved && key((want === 'del' ? y.expected : y.typed) ?? '') === word) {
+        x.moved = true
+        y.moved = true
+        break
+      }
+    }
+  }
+  return ops
 }
 
 /** Per-letter diff of expected `a` vs typed `b` (graphemes, unit-cost Levenshtein). */
@@ -295,9 +318,15 @@ export function classifyOps(ops: WordOp[], lang: Lang): (TypoLabel | null)[] {
   const words = ops.filter((o) => o.expected !== undefined && !o.punct)
   return ops.map((o) => {
     if (o.punct || o.op === 'equal') return null
+    // a moved word is labelled once, on the place where it was expected
+    if (o.moved) return o.op === 'del' ? wordOrderLabel(o.expected ?? '', lang) : null
     if (o.op === 'del') return classifyTypo(o.expected ?? '', '', lang, { mode: 'dictation' })
     if (o.op === 'ins') return null
     const k = words.indexOf(o)
     return classifyTypo(o.expected ?? '', o.typed ?? '', lang, { mode: 'dictation', prev: words[k - 1]?.expected, next: words[k + 1]?.expected })
   })
+}
+
+function wordOrderLabel(word: string, lang: Lang): TypoLabel {
+  return { kind: 'spelling', nature: 'cognitive', detail: `'${word}' is in the wrong place`, tag: 'word-order', tip: tip('word-order', lang) }
 }

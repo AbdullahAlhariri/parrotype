@@ -19,8 +19,6 @@ const STAGE_CONFIG: Record<Stage, string> = { line: 'word repair', context: 'wor
 /** Word repair on the given words, or on the most-missed words from the stats. */
 export function WordRepair({ words: given }: { words?: string[] }) {
   const lang = useSettings((s) => s.lang)
-  const stopOnError = useSettings((s) => s.stopOnError)
-  const showKeyboard = useSettings((s) => s.showKeyboard)
   const [targets] = useState(() => (given?.length ? given : mostMissed(useStats.getState().words[lang], 8).map((w) => w.word)))
   const [stage, setStage] = useState<Stage>('line')
   const [round, setRound] = useState(0)
@@ -82,10 +80,9 @@ export function WordRepair({ words: given }: { words?: string[] }) {
           onFinish={onFinish}
           onRestart={() => start(stage)}
           resetKey={`repair:${stage}:${round}`}
-          stopOnError={stopOnError}
-          showKeyboard={showKeyboard}
           showLiveStats
           autoFocus
+          label={stage === 'line' ? 'Word repair, three times each' : 'Word repair, in context'}
         />
       ) : (
         <ResultView

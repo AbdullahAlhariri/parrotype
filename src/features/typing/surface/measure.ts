@@ -18,6 +18,8 @@ export function measureCaret(
   rtl: boolean,
   caretEl: HTMLElement,
   style: CaretStyle,
+  /** a letter rendered as incorrect (stop on error), so the runs match the rendered ones */
+  blockedAt = -1,
 ): CaretBox | null {
   const cw = caretEl.offsetWidth
   const ch = caretEl.offsetHeight
@@ -32,7 +34,7 @@ export function measureCaret(
     if (!n) return null
     const { slots } = buildRuns(
       view.letters.map((l) => l.char),
-      view.letters.map((l) => l.state),
+      view.letters.map((l, i) => (i === blockedAt ? 'incorrect' : l.state)),
     )
     const after = charIndex >= n
     const slot = slots[after ? n - 1 : charIndex]

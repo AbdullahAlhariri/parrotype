@@ -10,15 +10,16 @@ interface Copy {
 }
 
 const NOT_IN_DICT: Copy = { en: 'Not in the dictionary', nl: 'Staat niet in het woordenboek', ar: 'غير موجودة في القاموس' }
-const NEEDS_CAPITAL: Copy = { en: 'Needs a capital letter', nl: 'Hoort met een hoofdletter' }
+const NEEDS_CAPITAL: Copy = { en: 'Needs a capital letter', nl: 'Schrijf je met een hoofdletter' }
 const NO_CAPITAL: Copy = { en: 'No capital letter here', nl: 'Hier geen hoofdletter' }
+const OTHER_CAPITALS: Copy = { en: 'Check the capitals', nl: 'Let op de hoofdletters' }
 const IJ_CAPITAL: Copy = { en: 'IJ takes two capitals', nl: 'IJ krijgt twee hoofdletters' }
 const HYPHEN_JOIN: Copy = { en: 'Written as one word', nl: 'Schrijf je aan elkaar' }
 
 const EXPLAIN: Partial<Record<CandidateKind, Copy>> = {
   trema: {
-    en: 'The trema (two dots) shows where a new syllable starts: ide-eën, Bel-gi-ë.',
-    nl: 'Het trema laat zien waar een nieuwe lettergreep begint: ide-eën, Bel-gi-ë.',
+    en: 'The trema (two dots) shows where a new syllable starts: i-dee-ën, Bel-gi-ë.',
+    nl: 'Het trema laat zien waar een nieuwe lettergreep begint: i-dee-ën, Bel-gi-ë.',
   },
   accent: { en: 'This word keeps its accent.', nl: 'Dit woord schrijf je met een accent.' },
   'trema-drop': {
@@ -58,15 +59,23 @@ const EXPLAIN: Partial<Record<CandidateKind, Copy>> = {
     nl: "Woorden op a, i, o, u of y krijgen 's in het meervoud: auto's, foto's.",
   },
   'apostrophe-drop': {
-    en: 'After a consonant the plural is just -s, no apostrophe.',
-    nl: 'Na een medeklinker is het meervoud gewoon -s, zonder apostrof.',
+    en: "Only words ending in a, i, o, u or y take 's in the plural. This one just gets -s.",
+    nl: "Alleen woorden op a, i, o, u of y krijgen 's in het meervoud. Hier is het gewoon -s.",
   },
   'ie-ei': {
     en: 'i before e, except after c: believe, receive. Weird and foreign break the rule.',
   },
   hamza: {
     en: 'This word is written with a hamza: أ or إ, not a bare ا.',
-    ar: 'تُكتب هذه الكلمة بالهمزة: أ أو إ وليس ا.',
+    ar: 'تُكتب هذه الكلمة بالهمزة: أ أو إ، لا ا.',
+  },
+  'hamza-drop': {
+    en: 'This alif has no hamza (hamzat al-wasl): write ا, not أ or إ.',
+    ar: 'هذه همزة وصل، فتُكتب ألفًا بلا همزة: ا، لا أ ولا إ.',
+  },
+  'hamza-seat': {
+    en: 'The hamza is on the wrong seat. Check أ or إ, and ئ or ؤ.',
+    ar: 'كرسي الهمزة غير صحيح. انتبه: أ أو إ، وئ أو ؤ.',
   },
   'ta-marbuta': {
     en: 'Check the last letter: ta marbuta (ة) and ha (ه) look alike but are different letters.',
@@ -74,7 +83,11 @@ const EXPLAIN: Partial<Record<CandidateKind, Copy>> = {
   },
   'alif-maqsura': {
     en: 'Check the last letter: alif maqsura (ى) has no dots, ya (ي) has two.',
-    ar: 'انتبه للحرف الأخير: الألف المقصورة (ى) بدون نقاط والياء (ي) بنقطتين.',
+    ar: 'انتبه للحرف الأخير: الألف المقصورة (ى) بلا نقاط، والياء (ي) بنقطتين.',
+  },
+  'final-alif': {
+    en: 'Check the last letter: alif (ا) and alif maqsura (ى) are written differently.',
+    ar: 'انتبه للحرف الأخير: الألف (ا) والألف المقصورة (ى) تُكتبان بشكل مختلف.',
   },
   split: { en: 'These are two separate words.', nl: 'Dit zijn twee losse woorden.' },
   join: { en: 'Written as one word, without a hyphen.', nl: 'Dit schrijf je aan elkaar, zonder streepje.' },
@@ -113,8 +126,12 @@ export function spellCopy(
   let category: IssueCategory = 'spelling'
   if (best && best.word.toLowerCase() === word.toLowerCase() && best.word !== word) {
     category = 'capitalization'
-    if (/^Ij/.test(word) && /^IJ/.test(best.word)) head = IJ_CAPITAL
-    else head = /\p{Lu}/u.test(best.word[0] ?? '') && !/\p{Lu}/u.test(word[0] ?? '') ? NEEDS_CAPITAL : NO_CAPITAL
+    const capitals = (s: string) => [...s].filter((c) => /\p{Lu}/u.test(c)).length
+    const more = capitals(best.word) - capitals(word)
+    if (/^ij/i.test(word) && !word.startsWith('IJ') && best.word.startsWith('IJ')) head = IJ_CAPITAL // Ijsland
+    else if (more === 1 && capitals(word) === 0) head = NEEDS_CAPITAL // utrecht
+    else if (more < 0 && capitals(best.word) === 0) head = NO_CAPITAL // Maandag
+    else head = OTHER_CAPITALS // iphone -> iPhone, youtube -> YouTube
   } else if (best?.kind === 'join') head = HYPHEN_JOIN
 
   let why: Copy | undefined

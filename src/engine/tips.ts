@@ -129,6 +129,10 @@ export const TIPS: Record<string, TipText> = {
     nl: 'Namen, talen en het begin van een zin krijgen een hoofdletter; dagen, maanden en seizoenen niet.',
   },
   'case.en': { en: 'English capitalises names, days, months, languages and the word I.' },
+  'ij-capital': {
+    en: 'Dutch ij is one letter, so a capital IJ gets both: IJs, IJsland (not Ijs).',
+    nl: 'De ij is één letter, dus allebei een hoofdletter: IJs, IJsland (niet Ijs).',
+  },
   diacritic: {
     en: 'Dots and accents belong to the spelling: check the marks on this word.',
     nl: 'Puntjes en accenten horen bij de spelling: let op de tekens in dit woord.',
@@ -169,6 +173,11 @@ export const TIPS: Record<string, TipText> = {
   'split.en': { en: 'Check whether this is one word or two: a lot, every day (each day) but everyday (ordinary).' },
   'join.en': { en: 'Check whether this is one word or two: a lot, every day (each day) but everyday (ordinary).' },
   hyphen: { en: 'Check the hyphen in this word.' },
+  punctuation: {
+    en: 'Punctuation counts too: look at the end of each word before you press space.',
+    nl: 'Leestekens tellen ook mee: kijk naar het eind van elk woord voordat je op de spatiebalk drukt.',
+    ar: 'علامات الترقيم مهمة أيضًا: انظر إلى آخر الكلمة قبل أن تضغط المسافة.',
+  },
   'hyphen.nl': {
     en: 'Check the hyphen: Dutch uses one where two vowels would clash (zee-egel, auto-ongeluk).',
     nl: 'Let op het streepje: gebruik het als twee klinkers botsen (zee-egel, auto-ongeluk).',
@@ -196,8 +205,20 @@ export const TIPS: Record<string, TipText> = {
     nl: "Na '{prev}' komt het voltooid deelwoord: stam + d, of + t na een letter uit 't kofschip (gebeurd, gewerkt).",
   },
   kofschip: {
-    en: "Past tense: if the stem ends in t, k, f, s, ch or p ('t kofschip) add -te, otherwise -de: werkte, woonde.",
-    nl: "Verleden tijd: eindigt de stam op een letter uit 't kofschip (t, k, f, s, ch, p), dan -te, anders -de: werkte, woonde.",
+    en: "If the stem ends in t, k, f, s, ch or p ('t kofschip), write -te / -t, otherwise -de / -d: werkte, gewerkt, woonde. Check the infinitive: leven → leefde.",
+    nl: "Eindigt de stam op een letter uit 't kofschip (t, k, f, s, ch, p), dan -te / -t, anders -de / -d: werkte, gewerkt, woonde. Kijk naar het hele werkwoord: leven → leefde.",
+  },
+  'dt-stem': {
+    en: 'Keep the d of the stem: worden → word → hij wordt, vinden → vind → hij vindt.',
+    nl: 'De d van de stam blijft staan: worden → word → hij wordt, vinden → vind → hij vindt.',
+  },
+  'dt-prefix': {
+    en: 'With be-, ge-, ver-, ont-, her- or er- verbs d and t sound alike: after is/heeft/wordt use the participle (is gebeurd), otherwise stem + t (het gebeurt).',
+    nl: 'Bij werkwoorden met be-, ge-, ver-, ont-, her- of er- klinken d en t hetzelfde: na is/heeft/wordt het voltooid deelwoord (is gebeurd), anders stam + t (het gebeurt).',
+  },
+  'final-d': {
+    en: 'A final d sounds like t: say a longer form of the word to hear it (handen → hand, goede → goed).',
+    nl: 'Een d aan het eind klinkt als een t: zeg een langere vorm om hem te horen (handen → hand, goede → goed).',
   },
   'ei-ij': {
     en: 'ei and ij sound the same, so learn each word: korte ei (trein) or lange ij (tijd).',
@@ -220,6 +241,10 @@ export const TIPS: Record<string, TipText> = {
     nl: "-lijk klinkt als 'luk', maar je schrijft altijd lijk: natuurlijk, eigenlijk, moeilijk.",
   },
   apostrophe: { en: "Apostrophes mark missing letters (don't = do not) or ownership (the cat's bowl)." },
+  elision: {
+    en: "The apostrophe stands for left-out letters: zo'n (zo een), 's ochtends, m'n.",
+    nl: "De apostrof staat voor weggelaten letters: zo'n (zo een), 's ochtends, m'n.",
+  },
   'apostrophe.nl': {
     en: "Plural 's only after a final a, i, o, u or y (auto's, foto's); otherwise just add s.",
     nl: "Meervoud met 's alleen na een eind-a, -i, -o, -u of -y (auto's, foto's); anders gewoon -s.",
@@ -261,6 +286,12 @@ export const TIPS: Record<string, TipText> = {
     en: 'Use dan for a difference (groter dan) and als for sameness (even groot als).',
     nl: 'Gebruik dan bij een verschil (groter dan) en als bij gelijkheid (even groot als).',
   },
+  'word-order': {
+    en: 'This word is in the wrong place: in a main clause the verb comes second (Gisteren ging ik), in a subclause it goes last (omdat ik ziek ben).',
+    nl: 'Dit woord staat op de verkeerde plek: in een hoofdzin staat de persoonsvorm op de tweede plaats (Gisteren ging ik), in een bijzin achteraan (omdat ik ziek ben).',
+  },
+  'word-order.en': { en: 'This word is in the wrong place: check the word order of the sentence.' },
+  'word-order.ar': { en: 'This word is in the wrong place: check the word order of the sentence.', ar: 'هذه الكلمة في غير موضعها: انتبه لترتيب الكلمات في الجملة.' },
   lexical: {
     en: 'These two words are easy to mix up: check which meaning fits the sentence.',
     nl: 'Deze twee woorden worden vaak verwisseld: kijk welke betekenis in de zin past.',
@@ -296,10 +327,10 @@ export const TYPO_TAGS = [
   'neighbour', 'mirror', 'same-finger', 'hand-shift', 'repeat', 'roll', 'cross-hand', 'same-hand', 'wrong-double', 'cut-short', 'dead-key',
   'shift', 'wrong-layout',
   // general spelling
-  'phonetic', 'vowel', 'real-word', 'capital', 'split-join', 'hyphen', 'accent', 'trema', 'apostrophe', 'double-consonant',
+  'phonetic', 'vowel', 'real-word', 'capital', 'split-join', 'hyphen', 'punctuation', 'accent', 'trema', 'apostrophe', 'double-consonant',
   // Dutch
-  'dt', 'kofschip', 'ei-ij', 'ij-y', 'au-ou', 'g-ch', 'lijk', 'tussen-n', 'open-syllable',
-  'de-het', 'die-dat', 'jou-jouw', 'me-mijn', 'hun-hen', 'als-dan', 'lexical',
+  'dt', 'final-d', 'kofschip', 'ei-ij', 'ij-y', 'au-ou', 'g-ch', 'lijk', 'tussen-n', 'open-syllable',
+  'de-het', 'die-dat', 'jou-jouw', 'me-mijn', 'hun-hen', 'als-dan', 'lexical', 'word-order',
   // English
   'its-its', 'homophone', 'ie-ei',
   // Arabic
@@ -343,10 +374,12 @@ export const NAMES: Record<TypoTag | TypoKind, TipText> = {
   capital: { en: 'Capital letter', nl: 'Hoofdletter' },
   'split-join': { en: 'One word or two', nl: 'Aan elkaar of los', ar: 'كلمة أم كلمتان' },
   hyphen: { en: 'Hyphen', nl: 'Streepje' },
+  punctuation: { en: 'Punctuation', nl: 'Leestekens', ar: 'علامات الترقيم' },
   accent: { en: 'Accent', nl: 'Accent' },
   trema: { en: 'Trema', nl: 'Trema' },
   /* Dutch */
   dt: { en: 'd/t ending', nl: 'd/t-regel' },
+  'final-d': { en: 'Final d (sounds like t)', nl: 'Eind-d (klinkt als t)' },
   kofschip: { en: "Past tense ('t kofschip)", nl: "Verleden tijd ('t kofschip)" },
   'ei-ij': { en: 'ei / ij', nl: 'ei / ij' },
   'ij-y': { en: 'ij / y', nl: 'ij / y' },
@@ -364,6 +397,7 @@ export const NAMES: Record<TypoTag | TypoKind, TipText> = {
   'hun-hen': { en: 'hun / zij', nl: 'hun / zij' },
   'als-dan': { en: 'als / dan', nl: 'als / dan' },
   lexical: { en: 'Word mix-up', nl: 'Woordverwarring' },
+  'word-order': { en: 'Word order', nl: 'Woordvolgorde', ar: 'ترتيب الكلمات' },
   /* English */
   'its-its': { en: "its / it's" },
   homophone: { en: 'Sound-alike word' },

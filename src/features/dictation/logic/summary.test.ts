@@ -50,7 +50,7 @@ describe('summarise', () => {
 
 describe('small helpers', () => {
   it('keesRepeat only repeats the correct word', () => {
-    expect(keesRepeat('wordt')).toBe('wordt. wordt. wordt.')
+    expect(keesRepeat('wordt')).toEqual(['wordt.', 'wordt.', 'wordt.'])
   })
   it('formatDuration', () => {
     expect(formatDuration(48_000)).toBe('48 s')
@@ -59,6 +59,7 @@ describe('small helpers', () => {
   it('configLabel', () => {
     expect(configLabel('nl', { ...DEFAULT_CONFIG, level: 2, focus: ['dt'] }, false)).toBe('nl level 2 dt')
     expect(configLabel('en', { ...DEFAULT_CONFIG, mode: 'pairs', pairs: ['then-than'] }, true)).toBe('en which one then-than memory')
+    expect(configLabel('en', { ...DEFAULT_CONFIG, mode: 'pairs', pairs: ['then-than'] }, false, () => 'then/than')).toBe('en which one then/than')
   })
 })
 

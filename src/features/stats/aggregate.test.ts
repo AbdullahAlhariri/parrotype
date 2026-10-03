@@ -4,6 +4,7 @@ import { dayKey } from '@/lib/id'
 import {
   bestsList,
   drillHref,
+  drillUnits,
   headline,
   heatShare,
   historyScale,
@@ -17,8 +18,11 @@ import {
   nestSummary,
   newestPage,
   practiceCalendar,
+  practiceLangFor,
+  practiseSet,
   practiseWordsHref,
   rolling,
+  sessionConfig,
   sessionsFor,
   statsForFilter,
   topRules,
@@ -231,6 +235,21 @@ describe('keys', () => {
     expect(w.keys.map((k) => k.unit)).toEqual(['a'])
   })
 
+  it('drill units are letters only, mixed by score, at most 5', () => {
+    const wk = (unit: string, score: number, kind: 'key' | 'bigram' = unit.length > 1 ? 'bigram' : 'key') => ({ unit, kind, score, errorRate: 0.1, samples: 50, avgMs: 0 })
+    const units = drillUnits({
+      keys: [wk('d', 0.9), wk("'", 0.8), wk('ë', 0.5), wk('G', 0.3), wk('b', 0.1)],
+      bigrams: [wk('ij', 0.85), wk('dt', 0.4), wk('e.', 0.35)],
+    })
+    expect(units).toEqual(['d', 'ij', 'ë', 'dt', 'g'])
+  })
+
+  it('practice language follows the filter; all avoids Arabic', () => {
+    expect(practiceLangFor('en', 'nl')).toBe('en')
+    expect(practiceLangFor('all', 'en')).toBe('en')
+    expect(practiceLangFor('all', 'ar')).toBe('nl')
+  })
+
   it('drill links carry units and language', () => {
     expect(drillHref(['d', 'ij'], 'nl')).toBe('/practice?focus=d%2Cij&lang=nl')
     expect(drillHref(['d'], 'all')).toBe('/practice?focus=d')
@@ -283,11 +302,40 @@ describe('words, rules, kinds', () => {
       {},
     )
     const rows = topRules(rules, 'all')
-    expect(rows.map((r) => [r.ruleId, r.drillable, r.spelling])).toEqual([
-      ['spell', false, true],
-      ['nl.dt.hij-wordt', true, false],
-      ['lt:EN_A_VS_AN', false, false],
+    expect(rows.map((r) => [r.ruleId, r.drillable, r.spelling, r.gym?.id ?? null])).toEqual([
+      ['spell', false, true, null],
+      ['nl.dt.hij-wordt', true, false, 'nl.dt'],
+      ['lt:EN_A_VS_AN', true, false, 'en.a-an'],
     ])
+  })
+
+  it('tolerates old records without examples or typed versions', () => {
+    const rules = perLang({ x: { ruleId: 'nl.punct.space-before', title: 't', count: 1, lastAt: 1 } as never }, {}, {})
+    expect(topRules(rules, 'nl')[0].examples).toEqual([])
+    expect(topRules(rules, 'nl')[0].drillable).toBe(false)
+    expect(wrongVersions({ word: 'x', count: 1, lastAt: 0 } as never)).toEqual([])
+  })
+
+  it('practise set keeps to one language', () => {
+    const all = missedWords(words, 'all')
+    expect(practiseSet(all, 'nl')).toMatchObject({ lang: 'nl', mixed: true })
+    expect(practiseSet(all, 'nl').words.map((x) => x.word)).toEqual(['alleen', 'wordt'])
+    // a tie goes to the preferred language
+    const tie = missedWords(perLang({ a: w('a', 1, []) }, { b: w('b', 2, []) }, {}), 'all')
+    expect(practiseSet(tie, 'en').lang).toBe('en')
+    expect(practiseSet(tie, 'nl').lang).toBe('nl')
+    expect(practiseSet(missedWords(words, 'nl'), 'en')).toMatchObject({ lang: 'nl', mixed: false })
+  })
+})
+
+describe('session labels', () => {
+  it('drops what the mode column already says', () => {
+    const at = NOW.getTime()
+    expect(sessionConfig({ mode: 'daily', config: `daily ${dayKey(NOW)}`, at })).toBe('')
+    expect(sessionConfig({ mode: 'daily', config: 'daily 2026-09-21', at })).toBe('21 Sept')
+    expect(sessionConfig({ mode: 'typing', config: 'time 30', at })).toBe('time 30')
+    expect(sessionConfig({ mode: 'practice', config: 'nest review', at })).toBe('nest review')
+    expect(sessionConfig({ mode: 'write', config: 'write free', at })).toBe('free')
   })
 })
 
@@ -312,6 +360,8 @@ describe('nest, pages, bests', () => {
     expect(s.due).toBe(2)
     expect(s.total).toBe(4)
     expect(s.nextDueAt).toBeNull()
+    expect(s.dueByLang).toEqual({ nl: 2, en: 0, ar: 0 })
+    expect(nestSummary([item(1, 0), item(2, 0, 'en'), item(4, 0, 'en')], 'all', now).dueByLang).toEqual({ nl: 1, en: 2, ar: 0 })
     expect(nestSummary([item(1, 2000), item(2, 1500)], 'all', now).nextDueAt).toBe(1500)
   })
 

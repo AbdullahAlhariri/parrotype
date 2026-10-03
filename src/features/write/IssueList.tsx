@@ -17,7 +17,7 @@ interface Props {
   chars: number
   activeMs: number
   /** LanguageTool status line, when the user has it switched on */
-  ltLine?: { text: string; warn: boolean }
+  ltLine?: { text: string; warn: boolean; detail?: string }
   checkerMissing: boolean
   /** shown instead of the list while feedback is hidden */
   note?: ReactNode
@@ -67,7 +67,12 @@ export function IssueList({ issues, revealed, activeId, onJump, explainIn, words
         {revealed && after}
       </div>
 
-      {ltLine && <p className={`il-lt${ltLine.warn ? ' is-warn' : ''}`}>{ltLine.text}</p>}
+      {ltLine && (
+        <p className={`il-lt${ltLine.warn ? ' is-warn' : ''}`}>
+          {ltLine.text}
+          {ltLine.detail && <span className="il-lt-detail">{ltLine.detail}</span>}
+        </p>
+      )}
     </aside>
   )
 }

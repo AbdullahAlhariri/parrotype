@@ -80,7 +80,6 @@ export function TypingSurface(props: TypingSurfaceProps) {
   const wordsKey = useMemo(() => words.join('\n'), [words])
   const session = useMemo(
     () => new TypingSession(words, { lang, stopOnError, timeLimitMs }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [wordsKey, lang, stopOnError, timeLimitMs, resetKey, restarts],
   )
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
@@ -91,6 +90,8 @@ export function TypingSurface(props: TypingSurfaceProps) {
 
   const [focused, setFocused] = useState(false)
   const [composing, setComposing] = useState<string | null>(null)
+  // stop on error: the letter a wrong key bounced off, until the next accepted key
+  const [blocked, setBlocked] = useState<{ session: TypingSession; w: number; c: number } | null>(null)
   const [caps, setCaps] = useState(false)
   const [layoutTick, setLayoutTick] = useState(0)
 
@@ -139,6 +140,8 @@ export function TypingSurface(props: TypingSurfaceProps) {
         cb.current.onStart?.()
       }
       playKey(ok === true || ok.correct)
+      if (ok !== true && ok.op === 'blocked') setBlocked({ session, w: ok.wordIndex, c: ok.charIndex })
+      else setBlocked(null)
       caretRef.current?.typing()
       if (session.finished) finish()
     },
@@ -303,10 +306,11 @@ export function TypingSurface(props: TypingSurfaceProps) {
         }
       }
     }
-    const box = measureCaret(track, active, snap.words[snap.wordIndex], snap.charIndex, rtl, caretEl, caretStyle)
+    const blockedAt = blocked && blocked.session === session && blocked.w === snap.wordIndex ? blocked.c : -1
+    const box = measureCaret(track, active, snap.words[snap.wordIndex], snap.charIndex, rtl, caretEl, caretStyle, blockedAt)
     if (box) caret.moveTo(box, motion ? GLIDE_MS : 0)
     else caret.hide()
-  }, [snap, start, session, layoutTick, caretStyle, fontSize, rtl, smoothCaret])
+  }, [snap, start, session, layoutTick, caretStyle, fontSize, rtl, smoothCaret, blocked])
 
   const restart = useCallback(() => {
     setTyping(false)
@@ -345,6 +349,7 @@ export function TypingSurface(props: TypingSurfaceProps) {
         active={active}
         composeAt={active && composing ? snap.charIndex : -1}
         composeLen={active && composing ? Array.from(composing).length : 0}
+        blockedAt={active && blocked && blocked.session === session && blocked.w === i ? blocked.c : -1}
       />,
     )
   }

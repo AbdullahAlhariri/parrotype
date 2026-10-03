@@ -13,10 +13,10 @@ const chipStyle = (t: Theme) => {
 function Sample() {
   return (
     <span className="theme-sample mono-text" aria-hidden="true">
-      <span className="ts-typed">de kat word</span>
-      <span className="ts-wrong">t</span>
+      <span className="ts-typed">de kat wordt mor</span>
+      <span className="ts-wrong">g</span>
       <span className="ts-caret" />
-      <span className="ts-sub"> morgen gewassen</span>
+      <span className="ts-sub">en gewassen</span>
     </span>
   )
 }

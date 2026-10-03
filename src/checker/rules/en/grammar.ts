@@ -1,4 +1,4 @@
-import { BASE_TO_PARTICIPLE, PARTICIPLE_TO_PAST, PAST_TO_BASE, baseForm, thirdPerson } from '../../lexicon/en'
+import { BASE_TO_PARTICIPLE, IRREGULAR_PAST, PARTICIPLE_TO_PAST, PAST_TO_BASE, baseForm, thirdPerson } from '../../lexicon/en'
 import { dictVariant, LINKS, lowerKeepI, q, regexRule, SENT_START, type EnRule } from './shared'
 
 // Grammar (rules 44-60 and 77-81): tense with since/for, agreement, do-support, uncountables,
@@ -30,15 +30,15 @@ export const sincePresent = regexRule({
   title: 'I live here since 2015 → I have lived',
   category: 'grammar',
   confidence: 'medium',
-  re: /\b(?<s>I|you|we|they)\s+(?<v>live|work|study|know|am|are|teach|play|own|wait|stay|learn)\b(?:\s+[\w']+){0,4}?\s+since\s+(?:\d{4}|last\b|yesterday|january|february|march|april|may|june|july|august|september|october|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|childhood|this\s+morning|I\s+was|we\s+were)/gi,
-  target: 'v',
-  fix: (f) => [`have ${BASE_TO_PARTICIPLE[f.g.v!.toLowerCase()]}`],
+  re: /\b(?:(?<s>I|you|we|they)\s+(?<v>live|work|study|know|am|are|teach|play|own|wait|stay|learn)|(?<s3>he|she|it)\s+(?<v3>lives|works|studies|knows|is|teaches|plays|owns|waits|stays|learns))\b(?:\s+[\w']+){0,4}?\s+since\s+(?:\d{4}|last\b|yesterday|january|february|march|april|may|june|july|august|september|october|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|childhood|this\s+morning|I\s+was|we\s+were)/gi,
+  target: ['v', 'v3'],
+  fix: (f) => (f.g.v ? [`have ${BASE_TO_PARTICIPLE[f.g.v.toLowerCase()]}`] : [`has ${BASE_TO_PARTICIPLE[baseForm(f.g.v3!)]}`]),
   msg: (f, fixes) => ({
-    message: `Started in the past and still true: ${q(`${lowerKeepI(f.g.s!)} ${fixes[0]}`)}`,
+    message: `Started in the past and still true: ${q(`${lowerKeepI((f.g.s ?? f.g.s3)!)} ${fixes[0]}`)}`,
     explanation: `Something that started in the past and is still going takes the present perfect: I have lived here since 2015. Dutch uses the present (‘ik woon hier sinds 2015’), so the English version can feel odd at first.`,
     learnMore: LINKS.sincePerfect,
   }),
-  examples: { wrong: 'I live in Utrecht since 2015.', flag: 'live', fix: 'have lived', right: 'I have lived in Utrecht since 2015.', ok: ['I live here since it is cheap.', 'I have known him since 2010.'] },
+  examples: { wrong: 'I live in Utrecht since 2015.', flag: 'live', fix: 'have lived', right: 'I have lived in Utrecht since 2015.', ok: ['I live here since it is cheap.', 'I have known him since 2010.', 'She has worked here since 2019.', 'It is quiet since everyone left.'] },
 })
 
 export const perfectPastTime = regexRule({
@@ -79,7 +79,7 @@ export const iAmAgree = regexRule({
   },
   msg: {
     message: `${q('agree')} is a verb: ${q('I agree')}, ${q("I don't agree")}`,
-    explanation: `In English agree is a verb, not an adjective, so there's no ‘am’ or ‘is’: I agree, she agrees, do you agree? Many languages say ‘I am agreed’, English doesn't.`,
+    explanation: `In English agree is a verb, not an adjective, so there's no ‘am’ or ‘is’: I agree, she agrees, do you agree? Dutch ‘ik ben het eens’ and Arabic ‘أنا موافق’ both have an ‘am’, English doesn't.`,
   },
   examples: { wrong: 'I am agree with you.', flag: 'I am agree', fix: 'I agree', right: 'I agree with you.', ok: ['I agree with you.', 'We are in agreement.'] },
 })
@@ -110,7 +110,7 @@ export const uncountablePlural = regexRule({
   fix: (f) => [UNCOUNTABLE[f.text.toLowerCase()]],
   msg: (_f, fixes) => ({
     message: `${q(fixes[0]?.toLowerCase() ?? '')} has no plural in English`,
-    explanation: `Some nouns can't be counted in English: information, furniture, equipment, homework. Say ‘some information’ or ‘a piece of furniture’. Dutch ‘informatie’ has the same idea, but ‘meubels’ and ‘huiswerkopdrachten’ make the plural tempting.`,
+    explanation: `Some nouns can't be counted in English: information, furniture, equipment, homework. Say ‘some information’ or ‘a piece of furniture’. Dutch has plurals for some of these (meubels, adviezen), English doesn't.`,
   }),
   examples: { wrong: 'Thanks for the informations.', flag: 'informations', fix: 'information', right: 'Thanks for the information.', ok: ['Thanks for the information.'] },
 })
@@ -365,7 +365,7 @@ export const explainMe = regexRule({
   title: 'explain me → explain to me',
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>(?<v>explain(?:s|ed|ing)?)\s+(?<o>me|him|her|us|you))\s+(?<n>how|what|why|where|when|which|who|the|that|this|everything|something|it)\b/gi,
+  re: /\b(?<w>(?<v>explain(?:s|ed|ing)?)\s+(?<o>me|him|her|us|you))\s+(?<n>how|what|why|where|when|which|who|the|that|this|these|those|all|my|your|his|her|our|their|a|an|everything|something|it)\b/gi,
   target: (m) => {
     const ix = m.indices?.groups
     if (!ix?.w) return null
@@ -424,6 +424,59 @@ export const marriedWith = regexRule({
   },
 })
 
+export const irregularPast = regexRule({
+  id: 'en.irregular-past',
+  title: 'buyed → bought',
+  category: 'grammar',
+  confidence: 'high',
+  re: new RegExp(`\\b(?:${[...IRREGULAR_PAST.keys()].join('|')})\\b`, 'gi'),
+  // skip names in CamelCase (ComEd)
+  when: (f) => f.text.slice(1) === f.text.slice(1).toLowerCase() || f.text === f.text.toUpperCase(),
+  fix: (f) => [IRREGULAR_PAST.get(f.text.toLowerCase())!],
+  msg: (f, fixes) => ({
+    message: `Irregular verb: ${q(fixes[0]?.toLowerCase() ?? '')}`,
+    explanation: `${q(f.text.toLowerCase())} looks regular, but this verb has its own past form: ${fixes[0]?.toLowerCase()}. Dutch has the same thing (kopen, kocht), the forms are just different.`,
+  }),
+  examples: { wrong: 'I buyed a new laptop.', flag: 'buyed', fix: 'bought', right: 'I bought a new laptop.', ok: ['I bought a new laptop.', 'She seeded the lawn.', 'ComEd sent the bill.'] },
+})
+
+export const interestedIn = regexRule({
+  id: 'en.interested-in',
+  title: 'interested for → interested in',
+  category: 'grammar',
+  confidence: 'medium',
+  re: /\binterested\s+(?<w>for|about|on)\b/gi,
+  target: 'w',
+  fix: () => ['in'],
+  msg: { message: `It's ${q('interested in')}`, explanation: `interested always takes in: interested in this job, interested in music. Dutch says ‘geïnteresseerd in’ too, but ‘interesse voor’ pulls towards for.` },
+  examples: { wrong: 'I am interested for this role.', flag: 'for', fix: 'in', right: 'I am interested in this role.', ok: ['Anyone interested, for more details call me.', 'She is interested in history.'] },
+})
+
+export const lookForwardTo = regexRule({
+  id: 'en.look-forward-to',
+  title: 'look forward to hear → hearing',
+  category: 'grammar',
+  confidence: 'high',
+  re: /\blook(?:s|ed|ing)?\s+forward\s+to\s+(?<v>hear|see|meet|work|receive|speak|talk|get|go|visit|read|welcome|discuss|start|join|have|be)\b/gi,
+  target: 'v',
+  fix: (f) => [ingForm(f.g.v!)],
+  msg: (_f, fixes) => ({
+    message: `After ${q('look forward to')} use the -ing form: ${q(`to ${fixes[0]}`)}`,
+    explanation: `In ‘look forward to’ the word to is a preposition, not part of a verb, so an -ing form follows: I look forward to hearing from you.`,
+  }),
+  examples: { wrong: 'I look forward to hear from you.', flag: 'hear', fix: 'hearing', right: 'I look forward to hearing from you.', ok: ['I look forward to the weekend.', 'We are looking forward to seeing you.'] },
+})
+
+/** hear -> hearing, have -> having, get -> getting */
+function ingForm(v: string) {
+  const w = v.toLowerCase()
+  if (w.endsWith('ing')) return w
+  if (w === 'be' || w === 'see') return `${w}ing`
+  if (/[^aeiou]e$/.test(w)) return `${w.slice(0, -1)}ing`
+  if (/^(?:get|stop|run|sit|swim|begin)$/.test(w)) return `${w}${w.at(-1)}ing`
+  return `${w}ing`
+}
+
 export const grammarRules: EnRule[] = [
   sinceDuration,
   sincePresent,
@@ -447,4 +500,7 @@ export const grammarRules: EnRule[] = [
   discussAbout,
   dependOf,
   marriedWith,
+  irregularPast,
+  interestedIn,
+  lookForwardTo,
 ]

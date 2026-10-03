@@ -44,6 +44,41 @@ export const doMistake = regexRule({
   examples: { wrong: 'I always do the same mistake.', flag: 'do', fix: 'make', right: 'I always make the same mistake.', ok: ['Does a mistake matter?'] },
 })
 
+const MAKE_TO: Record<string, [string, string]> = {
+  make: ['do', 'take'],
+  makes: ['does', 'takes'],
+  made: ['did', 'took'],
+  making: ['doing', 'taking'],
+}
+
+export const makeDo = regexRule({
+  id: 'en.make-do',
+  title: 'make yoga / make an exam → do / take',
+  category: 'grammar',
+  confidence: 'medium',
+  re: /\b(?<v>make|makes|made|making)\s+(?:(?<exam>(?:a|an|the|my|your|his|her|our|their|this|that)\s+(?:exam|test|quiz))|(?:(?:my|your|his|her|our|their|some|the|a|an)\s+)?(?:first\s+|full\s+|daily\s+)?(?<act>yoga|sports?|exercises?|workouts?|a\s+workout|pilates|fitness|the\s+dishes|the\s+laundry|the\s+shopping|the\s+cleaning|research))\b(?=\s*[.,!?;:)]|\s*$|\s+(?:on|in|at|every|each|with|together|before|after|today|tonight|tomorrow|yesterday|now|for|and|but|because|twice|once|again|without|this|next|last|first|three|four|regularly)\b)/gi,
+  target: 'v',
+  fix: (f) => {
+    const [doForm, takeForm] = MAKE_TO[f.g.v!.toLowerCase()]
+    const done = f.g.v!.toLowerCase() === 'made' && afterHave(f)
+    if (f.g.exam) return done ? ['taken', 'done'] : [takeForm, doForm]
+    return [done ? 'done' : doForm]
+  },
+  msg: (f) => ({
+    message: f.g.exam ? `In English you ${q('take')} an exam` : `In English you ${q(`do ${f.g.act!.toLowerCase().replace(/\s+/g, ' ')}`)}`,
+    explanation: f.g.exam
+      ? `You take (or, in British English, sit) an exam or a test. Dutch ‘een toets maken’ sounds right but isn't. (A teacher who writes the test does make it.)`
+      : `Activities and chores take do in English: do yoga, do sports, do the dishes, do exercises. make is for creating something.`,
+  }),
+  examples: {
+    wrong: 'I make yoga on Sundays.',
+    flag: 'make',
+    fix: 'do',
+    right: 'I do yoga on Sundays.',
+    ok: ['She made a cake.', 'They make sports cars.', 'I did my first full workout.'],
+  },
+})
+
 export const makeAWalk = regexRule({
   id: 'en.make-a-walk',
   title: 'make a walk → go for a walk',
@@ -224,6 +259,7 @@ export const collocationRules: EnRule[] = [
   makeHomework,
   makePhoto,
   doMistake,
+  makeDo,
   makeAWalk,
   makeFun,
   borrowMe,

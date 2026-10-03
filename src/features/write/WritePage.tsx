@@ -390,7 +390,7 @@ export default function WritePage() {
     if (!ltOn) return undefined
     if (!online || status.lt === 'offline') return { text: 'Grammar check is offline right now. Spelling still works and your text is saved.', warn: true }
     if (status.lt === 'limited') return { text: 'The grammar service is rate-limited. Try again in a minute; your text stays here.', warn: true }
-    if (status.lt === 'blocked') return { text: status.ltMessage || 'Grammar check is offline right now. Spelling still works and your text is saved.', warn: true }
+    if (status.lt === 'blocked') return { text: 'Grammar check is offline right now. Spelling still works and your text is saved.', detail: status.ltMessage, warn: true }
     if (status.lt === 'checking') return { text: 'Asking LanguageTool for a second opinion.', warn: false }
     if (status.lt === 'ok') return { text: 'LanguageTool checked it too.', warn: false }
     return { text: `LanguageTool joins in when you press ${s.mode === 'done' ? 'Review' : 'Finish'}.`, warn: false }
@@ -585,7 +585,7 @@ function Strip({ phase, lines, secondsLeft, found, left, resumedAt, onReveal, on
   if (resumedAt && phase === 'writing') {
     return (
       <div className="wp-strip">
-        <p>Picked up your draft from {draftWhen(resumedAt)}.</p>
+        <p>Picked up your draft, last edited {draftWhen(resumedAt)}.</p>
         <div className="wp-strip-tools">
           <Button variant="ghost" size="sm" onClick={onNew}>
             Start a new one

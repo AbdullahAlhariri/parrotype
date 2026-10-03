@@ -161,9 +161,10 @@ export interface ReOptions {
 
 export function reRule(base: Base, re: RegExp, o: ReOptions): ArRule {
   const flags = [...new Set(`${re.flags}gud`)].join('')
+  const r = new RegExp(re.source, flags)
   return arRule(base, (ctx) => {
     const out: RuleHit[] = []
-    const r = new RegExp(re.source, flags)
+    r.lastIndex = 0
     let m: RegExpExecArray | null
     while ((m = r.exec(ctx.text))) {
       if (!m[0].length) {

@@ -1,7 +1,7 @@
 import { useMemo, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import type { SessionRecord } from '@/types'
 import { Segmented } from '@/components/ui'
-import { MODE_LABELS, historyScale, historySeries, nearestIndex, type HistoryMetric, type HistoryPoint, type LangFilter } from './aggregate'
+import { MODE_LABELS, historyScale, historySeries, nearestIndex, sessionConfig, type HistoryMetric, type HistoryPoint, type LangFilter } from './aggregate'
 import { pct, shortDate, when } from './format'
 import { SectionHead } from './parts'
 import { useWidth } from './useWidth'
@@ -11,6 +11,9 @@ const TARGET = 97
 const PAD = { l: 38, r: 14, t: 14, b: 28 }
 
 type Range = 50 | 200 | 0
+
+/** "type, time 30" or just "daily" */
+const runLabel = (s: SessionRecord) => [MODE_LABELS[s.mode] ?? s.mode, sessionConfig(s)].filter(Boolean).join(', ')
 
 export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; filter: LangFilter }) {
   const [metric, setMetric] = useState<HistoryMetric>('accuracy')
@@ -60,13 +63,8 @@ export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; 
         {showTarget && <line className="st-target" x1={PAD.l} x2={PAD.l + iw} y1={ys(TARGET)} y2={ys(TARGET)} />}
         <g className="st-axis-x">
           {n > 0 &&
-            xTicks.map((i, k) => (
-              <text
-                key={i}
-                x={xs(i)}
-                y={PAD.t + ih + 20}
-                textAnchor={xTicks.length === 1 ? 'middle' : k === 0 ? 'start' : k === xTicks.length - 1 ? 'end' : 'middle'}
-              >
+            xTicks.map((i) => (
+              <text key={i} x={xs(i)} y={PAD.t + ih + 20} textAnchor={n === 1 ? 'middle' : i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}>
                 {shortDate(pts[i].session.at)}
               </text>
             ))}
@@ -106,7 +104,7 @@ export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; 
 
   const active: HistoryPoint | null = hover !== null && pts[hover] ? pts[hover] : null
   const describe = (p: HistoryPoint) =>
-    `${fmt(p.value)}, average ${fmt(p.avg)}, ${when(p.session.at)}, ${MODE_LABELS[p.session.mode]} ${p.session.config}`
+    `${fmt(p.value)}, average ${fmt(p.avg)}, ${when(p.session.at)}, ${runLabel(p.session)}`
 
   const ranges: { value: Range; label: string }[] = [
     { value: 50, label: 'last 50' },
@@ -190,7 +188,7 @@ export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; 
             {n > 1 && <div>average {fmt(active.avg)}</div>}
             <div className="st-tip-meta">{when(active.session.at)}</div>
             <div className="st-tip-meta">
-              {MODE_LABELS[active.session.mode]}, {active.session.config}
+              {runLabel(active.session)}
               {filter === 'all' && <>, {active.session.lang}</>}
             </div>
           </div>

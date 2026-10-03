@@ -46,9 +46,7 @@ export function RuleList({ rules, filter }: { rules: RuleRow[]; filter: LangFilt
                 {r.gym && (
                   <PracticeLink to={gymHref(r.gym)} practiceLang={r.gym.lang} className="st-rule-link">
                     Drill{' '}
-                    <Practice lang={r.gym.lang} className="st-rule-pack">
-                      {r.gym.title}
-                    </Practice>{' '}
+                    <bdi lang={r.gym.lang}>{r.gym.title}</bdi>{' '}
                     in the gym
                   </PracticeLink>
                 )}

@@ -84,17 +84,34 @@ export class LanguageToolError extends Error {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-/** Accepts "https://api.languagetool.org", ".../v2" or ".../v2/check". */
+/** The same-origin Vercel Function in /api that forwards to the public API (no CORS needed). */
+export const PROXY_PATH = '/api/languagetool'
+
+/**
+ * Accepts "https://api.languagetool.org", ".../v2" or ".../v2/check" for a LanguageTool server, and
+ * any address with its own path as is: the proxy ("/api/languagetool", relative or absolute).
+ */
 export function endpointUrl(url: string): string {
   const u = (url || 'https://api.languagetool.org').trim().replace(/\/+$/, '')
   if (/\/v2\/check$/.test(u)) return u
   if (/\/v2$/.test(u)) return `${u}/check`
-  return `${u}/v2/check`
+  const path = u.startsWith('/') ? u : u.replace(/^[a-z][a-z\d+.-]*:\/\/[^/]*/i, '')
+  return path ? u : `${u}/v2/check`
 }
 
+/** endpointUrl as a URL; a relative address resolves against this page. Throws when malformed. */
+function parseEndpoint(url: string): URL {
+  const e = endpointUrl(url)
+  if (!e.startsWith('/') && !/^https?:\/\//i.test(e)) throw new TypeError(`Not a LanguageTool address: ${url}`)
+  const origin = typeof location !== 'undefined' && location.origin !== 'null' ? location.origin : 'http://localhost'
+  return new URL(e, origin)
+}
+
+/** The public server, directly or through the proxy: both share the public rate limits. */
 export const isPublicEndpoint = (url: string) => {
   try {
-    return new URL(endpointUrl(url)).hostname.endsWith('languagetool.org')
+    const u = parseEndpoint(url)
+    return u.hostname.endsWith('languagetool.org') || u.pathname.replace(/\/+$/, '') === PROXY_PATH
   } catch {
     return false
   }
@@ -438,8 +455,13 @@ export async function checkWithLanguageTool(text: string, lang: Lang, signal?: A
 /** For a "Test connection" button: does this LanguageTool address answer? */
 export async function testLanguageTool(url: string = getSettings().languageToolUrl): Promise<{ ok: boolean; message: string }> {
   try {
+    parseEndpoint(url)
+  } catch {
+    return { ok: false, message: 'That address does not look right. It should start with https://' }
+  }
+  try {
     await languageTool.ping(url)
-    return { ok: true, message: `LanguageTool answered at ${new URL(endpointUrl(url)).host}.` }
+    return { ok: true, message: `LanguageTool answered at ${parseEndpoint(url).host}.` }
   } catch (err) {
     if (err instanceof LanguageToolError) {
       if (err.kind === 'network') return { ok: false, message: MSG.blocked }

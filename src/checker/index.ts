@@ -36,11 +36,11 @@ export interface CheckOptions {
 /* recent local results, so the LanguageTool pass of the same text does not redo the local work */
 const memo = new Map<string, CheckResult>()
 
-async function localCheck(text: string, lang: Lang, strictness: 'normal' | 'strict', signal?: AbortSignal) {
+async function localCheck(text: string, lang: Lang, strictness: 'normal' | 'strict', signal?: AbortSignal, dictWaitMs?: number) {
   const key = [lang, strictness, getSettings().englishVariant, usePersonalStore.getState().version, text].join('\u0000')
   const hit = memo.get(key)
   if (hit) return hit
-  const r = await workerCheck(text, lang, strictness, signal)
+  const r = await workerCheck(text, lang, strictness, signal, dictWaitMs)
   if (r.spell) {
     memo.set(key, r)
     if (memo.size > 8) memo.delete(memo.keys().next().value!)
@@ -49,11 +49,16 @@ async function localCheck(text: string, lang: Lang, strictness: 'normal' | 'stri
 }
 
 /** Spelling + grammar issues in `text`, sorted by offset, never overlapping. */
-export async function checkText(text: string, lang: Lang, opts: CheckOptions = {}): Promise<Issue[]> {
+export function checkText(text: string, lang: Lang, opts: CheckOptions = {}): Promise<Issue[]> {
+  return check(text, lang, { strictness: opts.strictness, languageTool: opts.languageTool, signal: opts.signal })
+}
+
+/** checkText, plus how long to wait for a dictionary that is still downloading (see useChecker) */
+async function check(text: string, lang: Lang, opts: CheckOptions & { dictWaitMs?: number }): Promise<Issue[]> {
   const { strictness = 'normal', signal } = opts
   if (signal?.aborted) throw abortError()
   if (!text.trim()) return []
-  const local = await localCheck(text, lang, strictness, signal)
+  const local = await localCheck(text, lang, strictness, signal, opts.dictWaitMs)
   if (opts.languageTool === false || !getSettings().languageTool) return local.issues
   const lt = await checkWithLanguageTool(text, lang, signal)
   if (signal?.aborted) throw abortError()
@@ -118,9 +123,13 @@ export interface CheckerState {
 
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError'
 
+/** before the dictionary has arrived, show the rule issues after this long and check again once it is there */
+const QUICK_DICT_WAIT_MS = 400
+
 /**
  * Debounced checking for an editor: local checks shortly after typing stops, LanguageTool
  * (if enabled) after a longer pause. Re-checks when the personal dictionary changes.
+ * While a dictionary is still downloading, the rule issues show first and spelling follows.
  */
 export function useChecker(text: string, lang: Lang, opts: UseCheckerOptions = {}): CheckerState {
   const { strictness = 'normal', delay = 250, ltDelay = 1500, enabled = true } = opts
@@ -137,7 +146,10 @@ export function useChecker(text: string, lang: Lang, opts: UseCheckerOptions = {
   }, [lang, variant])
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled) {
+      setChecking(false)
+      return
+    }
     if (!text.trim()) {
       setResult({ text, issues: [] })
       setChecking(false)
@@ -148,7 +160,12 @@ export function useChecker(text: string, lang: Lang, opts: UseCheckerOptions = {
     setChecking(true)
     const run = (withLt: boolean, last: boolean) => async () => {
       try {
-        const issues = await checkText(text, lang, { strictness, languageTool: withLt, signal: ac.signal })
+        const issues = await check(text, lang, {
+          strictness,
+          languageTool: withLt,
+          signal: ac.signal,
+          dictWaitMs: dictReady ? undefined : QUICK_DICT_WAIT_MS,
+        })
         if (!withLt && ltDone) return // a slow local pass must not overwrite the merged result
         ltDone ||= withLt
         setResult({ text, issues })

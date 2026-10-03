@@ -18,7 +18,7 @@ import {
   type LangFilter,
 } from './aggregate'
 import { plural, shortDate } from './format'
-import { LANG_ADJ } from './parts'
+import { LANG_ADJ, PracticeLink } from './parts'
 import { Details, Headline } from './Headline'
 import { HistoryChart } from './HistoryChart'
 import { PracticeCalendar } from './PracticeCalendar'
@@ -66,7 +66,6 @@ export default function StatsPage() {
   const nest = useMemo(() => nestSummary(nestItems ?? [], filter), [nestItems, filter])
   const bestRows = useMemo(() => bestsList(bests ?? {}, allSessions ?? [], filter), [bests, allSessions, filter])
 
-  const setPracticeLang = useSettings((s) => s.set)
   const nothingAtAll =
     !allSessions?.length &&
     !nestItems?.length &&
@@ -129,9 +128,9 @@ export default function StatsPage() {
                 Start typing
               </Link>
             ) : (
-              <Link to="/" className="btn btn-primary" onClick={() => setPracticeLang('lang', filter)}>
+              <PracticeLink to="/" practiceLang={filter} className="btn btn-primary">
                 Type in {LANG_ADJ[filter]}
-              </Link>
+              </PracticeLink>
             )}
             {otherLangs.length > 0 && <Button onClick={() => setFilter('all')}>Show all languages</Button>}
           </div>

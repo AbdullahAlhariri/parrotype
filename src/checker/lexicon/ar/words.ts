@@ -379,3 +379,13 @@ export const MASUUL = map({ مسئول: 'مسؤول', مسئولة: 'مسؤول�
 
 /** words that end in ى, used to order suggestions for a Persian ی at the end of a word */
 export const MAQSURA_WORDS = set('على إلى حتى متى لدى مستشفى أخرى إحدى أعلى أدنى مدى مستوى معنى ملتقى منتدى مقهى عسى سوى')
+
+/**
+ * Exact wrong -> right map for the spell checker's suggestion ranking (same shape as EN_MISSPELLINGS).
+ * Only unambiguous non-words; the rules above explain them in context.
+ */
+export const AR_MISSPELLINGS: ReadonlyMap<string, { right: string; note?: string }> = new Map(
+  [HIDDEN_ALIF, WASL_NOUNS, HAMZA_WORDS, DAD_DHA, INTERDENTAL, EXTRA_ALIF, WAW_JAMAA, YA_FOR_MAQSURA]
+    .flatMap((m) => [...m])
+    .map(([wrong, fixes]): [string, { right: string }] => [wrong, { right: fixes[0] }]),
+)

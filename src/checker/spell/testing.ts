@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import { createHunspellFromStrings } from 'hunspell-wasm'
 import type { Lang } from '@/types'
-import { CheckerCore, type DictId, type HunspellLike } from './core'
+import { CheckerCore, type CoreLoaders, type DictId, type HunspellLike } from './core'
 import { parseFreqList, type FreqRanks } from './freq'
 
 const root = new URL('../../../', import.meta.url)
@@ -38,14 +38,19 @@ export function loadFreq(lang: Lang): FreqRanks {
   return f
 }
 
-/** A CheckerCore wired to the files on disk (fresh Hunspell instances, so personal words don't leak). */
-export function nodeCore(): CheckerCore {
-  return new CheckerCore({
+/** Loaders that read the files on disk, the same ones the worker fetches. */
+export function nodeLoaders(): CoreLoaders {
+  return {
     fetchText: async (path) => {
       const m = /^dicts\/(.+)\.(aff|dic)\.txt$/.exec(path)
       if (m) return read(`${DICT_FILES[m[1] as DictId]}.${m[2]}`)
       return read(`public/${path}`)
     },
     createHunspell: (aff, dic) => createHunspellFromStrings(aff, dic),
-  })
+  }
+}
+
+/** A CheckerCore wired to the files on disk (fresh Hunspell instances, so personal words don't leak). */
+export function nodeCore(): CheckerCore {
+  return new CheckerCore(nodeLoaders())
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copy lint: flags banned marketing words and the em dash (U+2014) in UI copy.
+ * Copy lint: flags banned marketing words, sparkle/rocket emoji and the em dash (U+2014) in UI copy.
  *
  *   node scripts/lint-copy.mjs            # src/ and index.html
  *   node scripts/lint-copy.mjs src/features/write
@@ -12,7 +12,7 @@
  * Exits 1 and lists every hit.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative, extname, sep } from 'node:path'
+import { join, relative, resolve, extname, sep } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const BANNED = [
@@ -27,6 +27,17 @@ const BANNED = [
   /\bget started\b/i,
   /\blearn more\b/i,
   /\bmagic(al|ally)?\b/i,
+  // the rest of the list in docs/research/design-not-ai.md section 4.9
+  /(^\s*|[.!?]\s+)ready to\b/i,
+  /\bleverag(e|es|ed|ing)\b/i,
+  /\bdelv(e|es|ed|ing)\b/i,
+  /\brevolutioni[sz](e|es|ed|ing)\b/i,
+  /\bgame[- ]changer\b/i,
+  /\bnext[- ]level\b/i,
+  /\bcutting[- ]edge\b/i,
+  /\bsay goodbye to\b/i,
+  /\bpowered by ai\b/i,
+  /[\u2728\u{1F680}]/u,
 ]
 const EM_DASH = '—'
 const EXTS = new Set(['.ts', '.tsx', '.css', '.html'])
@@ -198,7 +209,7 @@ function htmlCopy(src) {
 }
 
 const targets = process.argv.slice(2)
-const roots = targets.length ? targets.map((t) => join(process.cwd(), t)) : [join(ROOT, 'src'), join(ROOT, 'index.html')]
+const roots = targets.length ? targets.map((t) => resolve(process.cwd(), t)) : [join(ROOT, 'src'), join(ROOT, 'index.html')]
 const files = roots.flatMap((r) => walk(r, []))
 const hits = []
 const contentDir = `${sep}src${sep}content${sep}`

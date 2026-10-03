@@ -167,10 +167,3 @@ export function expectedGlyphs(t: GradedToken): Glyph[] {
   }
   return out
 }
-
-/* ------------------------------------------------------------------ */
-/* Retype check                                                        */
-/* ------------------------------------------------------------------ */
-
-/** After the reveal: is the retyped sentence right? Same rules as grading (punctuation free). */
-export const retypeOk = (expected: string, typed: string, lang: Lang) => gradeAttempt(expected, typed, lang).perfect

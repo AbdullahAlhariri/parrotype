@@ -3,7 +3,7 @@ import type { Dictionary } from '@/types'
 import { loadTestDictionary } from '@/test/dict'
 import { arRules } from '.'
 import { DRILLS, EVERYDAY, EXTRA_OK, MUST_FLAG, PROVERBS, TRICKY } from './fixtures'
-import { runAr, showIssues } from './testing'
+import { rawHits, runAr, showIssues } from './testing'
 
 // Correct Arabic from the research (proverbs, everyday sentences, drills, tricky cases) must come out
 // with zero flags, even in strict mode; every known error must be caught by its rule with the full pack.
@@ -23,6 +23,7 @@ describe('arabic regression', () => {
       for (const d of [undefined, dict]) {
         const issues = runAr(s, arRules, { dict: d, strictness: 'strict' })
         expect(issues, `${s}\n${showIssues(issues)}`).toEqual([])
+        expect(rawHits(s, arRules, { dict: d }), s).toEqual([])
       }
     }
   })

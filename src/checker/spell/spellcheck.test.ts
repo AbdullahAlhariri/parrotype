@@ -34,6 +34,42 @@ describe('Dutch', () => {
     expect(check('Gisteren zag ik Yusra, Sanne en Mohammed bij de Albert Heijn.', 'nl')).toEqual([])
   })
 
+  it('does not flag unknown names at the start of a sentence either', () => {
+    // Yusra has no near word at all, Aylin is nearest to another name (Aydin)
+    expect(check('Yusra komt morgen. Aylin leest een boek.', 'nl')).toEqual([])
+    // but a sentence-initial typo of a common word is still caught
+    const issues = check('Gistren ging ik naar huis. Ondaks de regen.', 'nl')
+    expect(issues.map((i) => [i.text, i.replacements[0]])).toEqual([
+      ['Gistren', 'Gisteren'],
+      ['Ondaks', 'Ondanks'],
+    ])
+  })
+
+  it('catches a long capitalised typo mid-sentence', () => {
+    expect(fixFor(check('Dit is een Huiswerkopdrcht van school.', 'nl'), 'Huiswerkopdrcht')).toBe('Huiswerkopdracht')
+  })
+
+  it('prefers the common word over a name that differs only in case', () => {
+    const issues = check('Het was een betje koud.', 'nl')
+    expect(issues[0]).toMatchObject({ text: 'betje', category: 'spelling' })
+    expect(issues[0].replacements[0]).toBe('beetje')
+  })
+
+  it('collapses drawn-out chat spelling', () => {
+    expect(fixFor(check('Het is heeeel leuk.', 'nl'), 'heeeel')).toBe('heel')
+    expect(fixFor(check('Jaaa, dat wil ik.', 'nl'), 'Jaaa')).toBe('Ja')
+  })
+
+  it('never offers a two-word split in Dutch when a compound fits', () => {
+    const issues = check('Ik ga vandag naar school.', 'nl')
+    expect(issues[0].replacements).toContain('vandaag')
+    expect(issues[0].replacements).not.toContain('van dag')
+  })
+
+  it('keeps the suggestion list free of rare far-off compounds', () => {
+    expect(check('Een ontwikkelling.', 'nl')[0].replacements).toEqual(['ontwikkeling'])
+  })
+
   it('suggests eigenlijk for eigelijk, first', () => {
     const issues = check('Dat is eigelijk best leuk.', 'nl')
     expect(flagged(issues)).toEqual(['eigelijk'])
@@ -59,6 +95,9 @@ describe('Dutch', () => {
     expect(check('Twee auto’s, typed with a curly apostrophe.', 'nl').map((i) => i.text)).not.toContain('auto’s')
     expect(fixFor(check('Twee autos staan buiten.', 'nl'), 'autos')).toBe("auto's")
     expect(fixFor(check("Twee computer's staan aan.", 'nl'), "computer's")).toBe('computers')
+    const e = check("Twee garage's en drie café's.", 'nl')
+    expect(e.map((i) => i.replacements[0])).toEqual(['garages', 'cafés'])
+    expect(e[1].explanationLocal).toMatch(/Alleen woorden op a, i, o, u of y/)
   })
 
   it('generates Dutch candidates and validates them', () => {
@@ -98,6 +137,10 @@ describe('Dutch', () => {
     const ij = check('Ijsland is koud.', 'nl')
     expect(ij[0]).toMatchObject({ text: 'Ijsland', category: 'capitalization', message: 'IJ takes two capitals' })
     expect(ij[0].replacements[0]).toBe('IJsland')
+    // a capital-only fix is not mistaken for a name in mid-sentence
+    expect(check('We gaan naar Ijsland.', 'nl')[0]).toMatchObject({ text: 'Ijsland', replacements: ['IJsland'] })
+    const brands = check('Ik stuur het via youtube.', 'nl')
+    expect(brands[0]).toMatchObject({ replacements: ['YouTube'], message: 'Check the capitals', messageLocal: 'Let op de hoofdletters' })
   })
 
   it('checks hyphenated words part by part', () => {
@@ -155,6 +198,8 @@ describe('English', () => {
   it('follows the chosen variant', () => {
     expect(flagged(check('The colour is nice.', 'en', 'en-US'))).toEqual(['colour'])
     expect(check('The colour is nice.', 'en', 'en-GB')).toEqual([])
+    expect(fixFor(check('We need an organisaton.', 'en', 'en-GB'), 'organisaton')).toBe('organisation')
+    expect(fixFor(check('We need an organisaton.', 'en', 'en-US'), 'organisaton')).toBe('organization')
   })
 })
 
@@ -168,6 +213,21 @@ describe('Arabic', () => {
 
   it('ignores tashkeel and tatweel, and Latin words', () => {
     expect(check('ذَهَبْتُ إلى المدرسةِ وقرأتُ كتـــابًا عن Python.', 'ar')).toEqual([])
+  })
+
+  it('fixes hamza and the last letter together, and never suggests a misspelling', () => {
+    // the frequency list holds الى (a misspelling) as a common word; the dictionary must veto it
+    const issues = check('ذهبت الي البيت.', 'ar')
+    expect(issues[0].replacements[0]).toBe('إلى')
+    expect(issues[0].replacements).not.toContain('الى')
+  })
+
+  it('explains hamzat al-wasl as a hamza that should go', () => {
+    const issues = check('إستخدام الإنترنت مفيد.', 'ar')
+    expect(issues[0]).toMatchObject({ text: 'إستخدام' })
+    expect(issues[0].replacements[0]).toBe('استخدام')
+    expect(issues[0].explanation).toMatch(/hamzat al-wasl/)
+    expect(issues[0].explanationLocal).toMatch(/همزة وصل/)
   })
 
   it('prefers the frequent word over a rare hamza form', () => {

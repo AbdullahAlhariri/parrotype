@@ -57,8 +57,9 @@ export default function TypingPage() {
 
   const finish = (result: TypingResult) => {
     const label = configLabel(config)
-    const typed = result.keyEvents.some((e) => e.typed !== 'Backspace')
-    const isPb = typed ? recordTypingRun(result, 'typing', label).isPb : false
+    // an AFK run (a key or two, then the clock ran out) is shown but not stored
+    const typed = result.chars.correct + result.chars.incorrect + result.chars.extra
+    const isPb = typed >= 3 ? recordTypingRun(result, 'typing', label).isPb : false
     setDone({ result, isPb, label, run })
     setRunning(false)
   }
@@ -81,7 +82,7 @@ export default function TypingPage() {
           {q && (
             <p className="tp-source">
               <span className="tp-source-by">{q.source}</span>
-              {q.meaning && <span className="tp-meaning"> {q.meaning}</span>}
+              {q.meaning && <span className="tp-meaning">{q.meaning}</span>}
             </p>
           )}
           <button

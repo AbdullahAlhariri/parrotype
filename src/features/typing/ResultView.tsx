@@ -52,9 +52,10 @@ export function ResultView({ result, title, configLabel, isPb = false, onAgain, 
   useEffect(() => {
     setMood(first)
     if (!word) return
-    const t = window.setTimeout(() => setMood('repeat'), first === 'idle' ? LAND_MS + 200 : REPEAT_AFTER_MS)
+    const delay = reduced ? 300 : first === 'idle' ? LAND_MS + 200 : REPEAT_AFTER_MS
+    const t = window.setTimeout(() => setMood('repeat'), delay)
     return () => window.clearTimeout(t)
-  }, [first, word])
+  }, [first, word, reduced])
 
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true })

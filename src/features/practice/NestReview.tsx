@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { Link } from '@/lib/router'
 import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
@@ -68,9 +68,11 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
 
   const say = () => speak(item.target, lang, { rate, voiceName })
 
-  // every new item starts covered-or-shown, depending on the mode
-  useEffect(() => {
+  // every new item starts shown (look) or spoken (listen); before paint, so the previous
+  // item's verdict never flashes up with the next word
+  useLayoutEffect(() => {
     setTyped('')
+    setAnswer('')
     setRetype('')
     setRetypeMiss(false)
     setPhase(listen ? 'recall' : 'show')
@@ -360,11 +362,7 @@ function ReviewDone({ lang, items, ccc, startedAt }: { lang: Lang; items: Map<st
           <h2 id="nest-done-title" className="nest-done-title tabular">
             {sum.reviewed} reviewed, {sum.firstTry} right the first time.
           </h2>
-          <p className="muted">
-            {allRight
-              ? 'Clean sweep. Everything moved up a box.'
-              : `${sum.missed.length} went back to box 1${sum.fixed.length ? `; you got ${sum.fixed.length === sum.missed.length ? (sum.missed.length === 1 ? 'it' : 'all of them') : sum.fixed.length} right on the second go` : ''}. They come back tomorrow or sooner.`}
-          </p>
+          <p className="muted">{doneLine(sum.missed.length, sum.fixed.length)}</p>
           <ul className="nest-done-list">
             {[...items.values()].map((it) => {
               const now = nestItems.find((x) => x.id === it.id)
@@ -393,6 +391,14 @@ function ReviewDone({ lang, items, ccc, startedAt }: { lang: Lang; items: Map<st
       </section>
     </div>
   )
+}
+
+function doneLine(missed: number, fixed: number): string {
+  const one = missed === 1
+  if (missed === 0) return 'Clean sweep. Everything moved up a box.'
+  if (fixed === missed) return `${missed} went back to box 1 and ${one ? 'was' : 'were all'} right on the second go, so ${one ? 'it is' : 'they are'} back tomorrow.`
+  if (fixed === 0) return `${missed} went back to box 1 and ${one ? 'stays' : 'stay'} due until ${one ? 'it is' : 'they are'} right.`
+  return `${missed} went back to box 1. You fixed ${fixed} on the second go; those are back tomorrow, the rest stay due.`
 }
 
 function NothingDue({ lang }: { lang: Lang }) {

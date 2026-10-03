@@ -145,6 +145,11 @@ function startWorker(): Worker | null {
       if (import.meta.env?.DEV) console.warn('[checker] worker failed, using the main-thread fallback', e.message)
       w.terminate()
       worker = null
+      // nothing is loading any more: don't leave "Loading the Dutch dictionary" on screen
+      const st = useDictionaryStatus.getState()
+      useDictionaryStatus.setState(
+        Object.fromEntries(Object.entries(st).map(([k, v]) => [k, v === 'loading' ? 'failed' : v])) as typeof st,
+      )
       const left = [...pending.values()]
       pending.clear()
       for (const p of left) {
@@ -232,8 +237,9 @@ export function workerCheck(
   lang: Lang,
   strictness: 'normal' | 'strict' = 'normal',
   signal?: AbortSignal,
+  dictWaitMs?: number,
 ): Promise<CheckResult> {
-  return call<CheckResult>({ op: 'check', text, strictness, ...common(lang) }, signal)
+  return call<CheckResult>({ op: 'check', text, strictness, dictWaitMs, ...common(lang) }, signal)
 }
 
 export const workerSuggest = (word: string, lang: Lang, limit?: number, signal?: AbortSignal) =>

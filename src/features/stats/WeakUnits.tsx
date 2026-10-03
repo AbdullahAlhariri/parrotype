@@ -2,20 +2,18 @@ import { Fragment, useMemo } from 'react'
 import type { KeyStat, Lang } from '@/types'
 import type { Weakness } from '@/engine/keystats'
 import { useSettings } from '@/state/settings'
-import { drillHref, drillUnits, practiceLangFor, weakUnits, type LangFilter } from './aggregate'
+import { MIN_KEY_SAMPLES, drillHref, drillUnits, practiceLangFor, weakUnits, type LangFilter } from './aggregate'
 import { pct } from './format'
 import { Practice, PracticeLink, SectionHead } from './parts'
 
-/** "d", "d and ij", "d, ij and ei", each unit in the practice font */
+/** "d", "d and ij", "d, ij and ei", each unit isolated so Arabic letters keep their order */
 function UnitList({ units, lang }: { units: string[]; lang: Lang }) {
   return (
     <>
       {units.map((u, i) => (
         <Fragment key={u}>
           {i > 0 && (i === units.length - 1 ? ' and ' : ', ')}
-          <Practice lang={lang} className="st-cta-unit">
-            {u}
-          </Practice>
+          <bdi lang={lang}>{u}</bdi>
         </Fragment>
       ))}
     </>
@@ -80,7 +78,7 @@ export function WeakUnits({ keys, bigrams, filter }: { keys: Record<string, KeyS
         <p className="st-empty-line">
           {anyData
             ? 'No misses worth mentioning. Kees checked twice.'
-            : 'Not enough keystrokes yet. Kees needs about 20 presses per key before he points a claw.'}
+            : `Not enough keystrokes yet. Kees needs about ${MIN_KEY_SAMPLES} presses per key before he points a claw.`}
         </p>
       ) : (
         <>
@@ -90,7 +88,10 @@ export function WeakUnits({ keys, bigrams, filter }: { keys: Record<string, KeyS
           </div>
           {units.length > 0 && (
             <PracticeLink to={drillHref(units, filter)} practiceLang={lang} className="btn btn-subtle btn-sm st-cta">
-              Drill <UnitList units={units} lang={lang} />
+              {/* one span: .btn is a flex row and would put gaps around every comma */}
+              <span>
+                Drill <UnitList units={units} lang={lang} />
+              </span>
             </PracticeLink>
           )}
         </>

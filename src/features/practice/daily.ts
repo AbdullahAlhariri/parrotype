@@ -47,6 +47,18 @@ export function dailyChallenge(lang: Lang, day: string = dayKey()): DailyChallen
   return { day, lang, sentence, words }
 }
 
+/** More words for very fast typists (time mode asks when fewer than 40 are left). Same for everyone on the day. */
+export function dailyMoreWords(lang: Lang, day: string, round: number, count = 60): string[] {
+  const rand = seeded(dailySeed(day, lang) + round * 7919)
+  const list = wordList(lang, 200).filter((w) => lang !== 'en' || w !== 'i')
+  const out: string[] = []
+  while (out.length < count && list.length) {
+    const w = list[Math.floor(rand() * list.length)]
+    if (w !== out[out.length - 1]) out.push(w)
+  }
+  return out
+}
+
 export const dailyConfig = (day: string) => `daily ${day}`
 
 /** Today's daily runs for a language, best first. */

@@ -91,8 +91,8 @@ export default function AboutPage() {
         <dl className="about-method">
           <dt>Accuracy first</dt>
           <dd>
-            Speed comes later. Every typo costs a backspace and a retype, so a clean 50 wpm beats a messy 60. Parrotype only pushes the pace once you get about 96% of
-            the letters right.
+            Speed comes later. Every typo costs a backspace and a retype, so a clean 50 wpm beats a messy 60. The weak-spot drills only ask for more speed after three
+            rounds in a row at 97% or better.
           </dd>
           <dt>Two kinds of mistakes</dt>
           <dd>
@@ -107,12 +107,12 @@ export default function AboutPage() {
           <dt>Spaced repetition</dt>
           <dd>
             Words you get wrong go into the mistake nest, five Leitner boxes. Get a word right and it comes back after 1, 3, 7 and then 16 days. Get it wrong and it
-            starts again tomorrow. Right after 16 days, and it leaves the nest.
+            goes back to the first box, ready for your next review. Right after 16 days, and it leaves the nest.
           </dd>
           <dt>Feedback at the right moment</dt>
           <dd>
-            In a typing test letters change colour at once, because that is what fingers need. In free writing, spelling and grammar notes wait until you finish the
-            sentence and first only point at the word, so you get a moment to spot it yourself.
+            In a typing test letters change colour at once, because that is what fingers need. In free writing the notes wait until you say you are done. First only
+            the lines with a mistake are marked, so you get a moment to spot it yourself, and then the words are underlined.
           </dd>
           <dt>Only the right spelling, repeated</dt>
           <dd>
@@ -160,8 +160,8 @@ export default function AboutPage() {
         <h2 id="about-privacy">Privacy</h2>
         <div className="about-text prose">
           <p>
-            Everything stays in your browser: settings, stats, the mistakes you make. There is no account, no tracking and no cookies. Parrotype works offline once it
-            has loaded.
+            Everything stays in your browser: settings, stats, the mistakes you make. There is no account, no tracking and no cookies. Apart from loading the app
+            itself, nothing needs the internet.
           </p>
           <p>
             The one exception is LanguageTool, and only if you switch it on in <Link to="/settings#checker">settings</Link>. Then the text you write in free-writing

@@ -1,4 +1,5 @@
 import { useQuery } from '@/lib/router'
+import { useSettings } from '@/state/settings'
 import { PracticeHub } from './PracticeHub'
 import { NestReview } from './NestReview'
 import { FocusDrill } from './FocusDrill'
@@ -17,7 +18,9 @@ import './practice.css'
  */
 export default function PracticePage() {
   const q = useQuery()
-  const key = q.toString()
+  const lang = useSettings((s) => s.lang)
+  // a new query or practice language starts the sub-page fresh
+  const key = `${lang}|${q.toString()}`
   const mode = q.get('mode')
 
   if (q.has('words')) return <WordRepair key={key} words={parseWordsParam(q.get('words'))} />

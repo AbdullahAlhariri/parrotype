@@ -114,8 +114,8 @@ export function summarise(results: readonly ItemResult[]): SessionSummary {
   }
 }
 
-/** "wordt. wordt. wordt." Kees only ever repeats the correct form. */
-export const keesRepeat = (word: string, times = 3) => Array.from({ length: times }, () => `${word}.`).join(' ')
+/** ["wordt.", "wordt.", "wordt."]: Kees only ever repeats the correct form (his bubble shows them one by one). */
+export const keesRepeat = (word: string, times = 3) => Array.from({ length: times }, () => `${word}.`)
 
 /** "3 min 12 s", "48 s" */
 export function formatDuration(ms: number): string {

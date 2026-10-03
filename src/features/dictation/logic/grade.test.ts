@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expectedGlyphs, gradeAttempt, normaliseAttempt, retypeOk, typedGlyphs } from './grade'
+import { expectedGlyphs, gradeAttempt, normaliseAttempt, typedGlyphs } from './grade'
 
 describe('normaliseAttempt', () => {
   it('straightens quotes, collapses spaces and drops tatweel', () => {
@@ -111,12 +111,5 @@ describe('glyph helpers', () => {
     expect(typedGlyphs(m, 1)).toHaveLength(1)
     expect(typedGlyphs(m, 2)).toHaveLength(4)
     expect(expectedGlyphs(m).map((x) => x.ch).join('')).toBe('elke')
-  })
-})
-
-describe('retypeOk', () => {
-  it('needs every word right, punctuation free', () => {
-    expect(retypeOk('Hij wordt morgen twintig jaar.', 'Hij wordt morgen twintig jaar', 'nl')).toBe(true)
-    expect(retypeOk('Hij wordt morgen twintig jaar.', 'Hij word morgen twintig jaar.', 'nl')).toBe(false)
   })
 })

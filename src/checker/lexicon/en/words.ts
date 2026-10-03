@@ -73,7 +73,32 @@ export const BASE_TO_PARTICIPLE: Readonly<Record<string, string>> = {
   wait: 'been waiting',
   stay: 'stayed',
   learn: 'been learning',
+  be: 'been',
 }
 
 /** past simple -> base, for "When went you home?" -> "When did you go home?" */
 export const PAST_TO_BASE: Readonly<Record<string, string>> = { went: 'go', came: 'come', ate: 'eat', said: 'say' }
+
+/**
+ * Regular -ed on an irregular verb (buyed -> bought). Checked in irregular.test.ts: no wrong form is in the
+ * Hunspell lists (leaved, hided, teared and payed are, so they are left out).
+ */
+export const IRREGULAR_PAST: ReadonlyMap<string, string> = new Map(
+  `
+  buyed/bought bringed/brought catched/caught teached/taught thinked/thought fighted/fought seeked/sought
+  goed/went comed/came becomed/became eated/ate drinked/drank swimmed/swam runned/ran writed/wrote
+  speaked/spoke choosed/chose falled/fell feeled/felt keeped/kept meeted/met sayed/said selled/sold
+  sended/sent sitted/sat sleeped/slept spended/spent standed/stood taked/took telled/told
+  understanded/understood winned/won growed/grew knowed/knew throwed/threw drawed/drew hurted/hurt cutted/cut
+  hitted/hit losed/lost maked/made gived/gave begined/began breaked/broke builded/built digged/dug
+  drived/drove forgetted/forgot freezed/froze getted/got holded/held lended/lent rided/rode shaked/shook
+  stealed/stole sticked/stuck striked/struck weared/wore finded/found feeded/fed flyed/flew forgived/forgave
+  heared/heard layed/laid readed/read rised/rose shooted/shot shutted/shut sinked/sank slided/slid
+  spinned/spun splitted/split spreaded/spread sweared/swore sweeped/swept swinged/swung weeped/wept
+  blowed/blew bited/bit bleeded/bled breeded/bred meaned/meant setted/set stinked/stank withdrawed/withdrew
+  overcomed/overcame
+`
+    .trim()
+    .split(/\s+/)
+    .map((p) => p.split('/') as [string, string]),
+)

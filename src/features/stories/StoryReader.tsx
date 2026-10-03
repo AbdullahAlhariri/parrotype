@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Link, navigate } from '@/lib/router'
-import { useSettings } from '@/state/settings'
 import { isRtl, LANG_TAGS, type TypingResult } from '@/types'
 import { sentenceToWords } from '@/engine'
 import { storiesFor, type Story } from '@/content/stories'
@@ -23,8 +22,6 @@ export function StoryReader({ story }: { story: Story }) {
   const progress = useStoryProgress((s) => s.progress[story.id])
   const recordPage = useStoryProgress((s) => s.recordPage)
   const goTo = useStoryProgress((s) => s.goTo)
-  const stopOnError = useSettings((s) => s.stopOnError)
-  const showKeyboard = useSettings((s) => s.showKeyboard)
   const [page, setPage] = useState(() => openingPage(story))
   const [attempt, setAttempt] = useState(0)
   const [phase, setPhase] = useState<Phase>({ kind: 'typing' })
@@ -83,10 +80,9 @@ export function StoryReader({ story }: { story: Story }) {
           onFinish={onFinish}
           onRestart={again}
           resetKey={`${story.id}:${page}:${attempt}`}
-          stopOnError={stopOnError}
-          showKeyboard={showKeyboard}
           showLiveStats
           autoFocus
+          label={`${story.title}, page ${page + 1} of ${total}`}
           className="story-surface"
         />
       )}

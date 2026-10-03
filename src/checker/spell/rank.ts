@@ -143,9 +143,10 @@ export function rankSuggestions(word: string, ctx: RankContext, limit = 8): Rank
   const best = Math.min(...scored.map((s) => s.score + (s.kind === 'map' ? 100 : 0)))
   const cutoff = best + 1.6
   const rare = (s: RankedSuggestion) =>
-    (s.kind === 'hunspell' || s.kind === 'split') &&
-    s.score > best + RARE_MARGIN &&
-    s.word.toLowerCase().split(/[ -]/).some((p) => rankOf(p) === undefined)
+    (lang === 'nl' && s.kind === 'split') || // vandag -> "van dag" is never what a Dutch writer meant
+    ((s.kind === 'hunspell' || s.kind === 'split') &&
+      s.score > best + RARE_MARGIN &&
+      s.word.toLowerCase().split(/[ -]/).some((p) => rankOf(p) === undefined))
   const seen = new Set<string>()
   const out: RankedSuggestion[] = []
   for (const s of scored) {

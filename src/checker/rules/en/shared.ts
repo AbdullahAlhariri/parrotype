@@ -126,6 +126,8 @@ function span(spec: RegexSpec, m: RegExpExecArray, src: string): [number, number
 
 export function regexRule(spec: RegexSpec): EnRule {
   const flags = [...new Set(`${spec.re.flags}gd`)].join('')
+  // compiled once; check() is synchronous, so resetting lastIndex makes reuse safe
+  const re = new RegExp(spec.re.source, flags)
   return {
     id: spec.id,
     lang: 'en',
@@ -136,7 +138,7 @@ export function regexRule(spec: RegexSpec): EnRule {
     examples: spec.examples,
     check(ctx) {
       const { text: src } = prepare(ctx)
-      const re = new RegExp(spec.re.source, flags)
+      re.lastIndex = 0
       const out: RuleHit[] = []
       let m: RegExpExecArray | null
       while ((m = re.exec(src))) {
@@ -150,7 +152,7 @@ export function regexRule(spec: RegexSpec): EnRule {
         const [start, end] = sp
         const f: Found = { text: ctx.text.slice(start, end), g: m.groups ?? {}, m, ctx, src, start, end }
         if (spec.when && !spec.when(f)) continue
-        const raw = spec.fix?.(f) ?? []
+        const raw = (spec.fix?.(f) ?? []).map((r) => apostrophes(ctx, f.text, r))
         const fixes = spec.keepCase === false ? raw : raw.map((r) => preserveCase(f.text, r))
         const msg = typeof spec.msg === 'function' ? spec.msg(f, fixes) : spec.msg
         out.push({ offset: start, length: end - start, replacements: fixes, ...msg })
@@ -163,6 +165,13 @@ export function regexRule(spec: RegexSpec): EnRule {
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                       */
 /* ------------------------------------------------------------------ */
+
+/** write apostrophes in a fix the way the writer does: curly (’) if they type curly ones */
+export function apostrophes(ctx: RuleContext, original: string, fix: string) {
+  if (!fix.includes("'")) return fix
+  const curly = original.includes('’') || (!original.includes("'") && ctx.text.includes('’') && !ctx.text.includes("'"))
+  return curly ? fix.replace(/'/g, '’') : fix
+}
 
 /** quote a word for messages */
 export const q = (s: string) => `‘${s}’`

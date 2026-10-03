@@ -118,6 +118,21 @@ export const prepIts = regexRule({
   examples: { wrong: "The cat licked all of it's fur.", flag: "it's", fix: 'its', right: 'The cat licked all of its fur.', ok: ["In it's been a long time, nothing."] },
 })
 
+export const verbItsNoun = regexRule({
+  id: 'en.verb-its-noun',
+  title: "wagged it's tail → its tail",
+  category: 'grammar',
+  confidence: 'high',
+  re: /\b(?:wag|wags|wagged|lost|loses|changed|changes|change|shook|shakes|raised|raises|showed|shows|opened|opens|closed|closes|lifted|turned|turns|hurt|hurts|broke|did|does|do|made|makes|lowered|spread|spreads|flapped|flaps|licked|licks|wiped|cleaned|keeps|kept)\s+(?<w>it's)\s+(?:tail|head|name|mind|way|best|job|colour|color|shape|value|place|ears|paws|wings|eyes|door|doors|mouth|leg|legs|feet|nose|face|fur|own|share|part|work|thing)\b/gi,
+  target: 'w',
+  fix: () => ['its'],
+  msg: {
+    message: `Belonging to it: ${q('its')}, no apostrophe`,
+    explanation: `The owner word ‘its’ has no apostrophe, like ‘his’: the dog wagged its tail. ${q("it's")} always means ‘it is’ or ‘it has’.`,
+  },
+  examples: { wrong: "The dog wagged it's tail.", flag: "it's", fix: 'its', right: 'The dog wagged its tail.', ok: ["I think it's a dog.", "Whatever it does, it's fine."] },
+})
+
 /* ------------------------------------------------------------------ */
 /* your / you're                                                       */
 /* ------------------------------------------------------------------ */
@@ -127,7 +142,7 @@ export const yourYoure = regexRule({
   title: "your → you're",
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>[Yy]our)\s+(?:(?:not(?!\s+\w+ing\b)|gonna|always|never|already|probably|definitely|actually|kidding|joking|a|an|the)\b(?![-/])|(?:welcome|right|wrong|sure|late|early)(?=\s*[.!?,;]|\s*$))/g,
+  re: /\b(?<w>[Yy]our)\s+(?:(?:not(?!\s+\w+ing\b)|gonna|always|never|already|probably|definitely|actually|kidding|joking|a|an|the)\b(?![-/])|(?:welcome|right|wrong|sure|late|early)(?=\s*[.!?,;]|\s*$)|welcome(?=\s+to\s+(?:join|come|stay|use|take|ask|bring|visit|call|try|have|borrow|share)\b))/g,
   target: 'w',
   fix: () => ["you're"],
   msg: {
@@ -139,7 +154,7 @@ export const yourYoure = regexRule({
     flag: 'Your',
     fix: "You're",
     right: "You're welcome!",
-    ok: ['Your right hand is cold.', 'Thanks for your welcome speech.', 'Your A grade is great.', 'Your very own room.', 'Fix your a/c system.', 'Your not eating vegetables is bad.'],
+    ok: ['Your right hand is cold.', 'Thanks for your welcome speech.', 'Your welcome to the team was warm.', 'Your A grade is great.', 'Your very own room.', 'Fix your a/c system.', 'Your not eating vegetables is bad.'],
   },
 })
 
@@ -226,11 +241,11 @@ export const theirTheyre = regexRule({
   title: "their going → they're going",
   category: 'grammar',
   confidence: 'medium',
-  re: /\b(?<w>[Tt]heir)\s+(?:gonna|going\s+to\s+(?:be|go|do|come|have|make|get|see|win|lose)|not\s+(?:going|coming|sure|ready|here|home))\b/g,
+  re: /\b(?<w>[Tt]heir)\s+(?:gonna|going\s+to\s+(?:be|go|do|come|have|make|get|see|win|lose|the|a|an)|not\s+(?:going|coming|sure|ready|here|home))\b/g,
   target: 'w',
   fix: () => ["they're"],
   msg: { message: `Here you mean ${q("they're")} (they are)`, explanation: thereExpl },
-  examples: { wrong: 'Their going to be late.', flag: 'Their', fix: "They're", right: "They're going to be late.", ok: ['Their going-away party was fun.'] },
+  examples: { wrong: 'Their going to be late.', flag: 'Their', fix: "They're", right: "They're going to be late.", ok: ['Their going-away party was fun.', 'Their goal is to win.'] },
 })
 
 /* ------------------------------------------------------------------ */
@@ -296,7 +311,7 @@ export const loseLooseObj = regexRule({
   title: 'loose my keys → lose my keys',
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>loos(?:e|es|ing))\s+(?:(?:my|your|his|her|our|their|the|a|all|some|much|any|so\s+much|too\s+much)\s+)?(?:weight|money|keys?|job|jobs|game|games|match|way|time|mind|patience|control|interest|hope|phone|wallet|track|touch|focus|friends?|sleep|temper|faith|everything)\b/gi,
+  re: /\b(?<w>loos(?:e|es|ing))\s+(?:(?:my|your|his|her|our|their|the|a|all|some|much|any|so\s+much|too\s+much)\s+)?(?:weight|money|keys?|job|jobs|game|games|match|way|time|mind|patience|control|interest|hope|phone|wallet|track|touch|focus|friends?|sleep|temper|faith|everything|something|anything|nothing)\b/gi,
   target: 'w',
   fix: (f) => [LOOSE_TO_LOSE[f.text.toLowerCase()] ?? 'lose'],
   msg: (_f, fixes) => ({ message: `To not have something any more is ${q(fixes[0]?.toLowerCase() ?? 'lose')} (one o)`, explanation: loseExpl }),
@@ -371,7 +386,7 @@ export const whosWhose = regexRule({
   title: "who's phone → whose phone",
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>[Ww]ho's)\s+(?:car|bag|book|phone|idea|house|turn|fault|job|money|name|side|dog|cat|coat|keys|pen|seat|responsibility|birthday|child|children|mother|father|wife|husband)\b/g,
+  re: /\b(?<w>[Ww]ho's)\s+(?:car|cars|bag|bags|book|books|phone|phones|idea|ideas|house|houses|turn|fault|job|jobs|money|name|names|side|dog|dogs|cat|cats|coat|coats|keys|pen|pens|seat|seats|responsibility|birthday|child|children|mother|father|parents|wife|husband|toys|clothes|shoes)\b/g,
   target: 'w',
   fix: () => ['whose'],
   msg: { message: `Asking about the owner: ${q('whose')}`, explanation: whoseExpl },
@@ -413,11 +428,11 @@ export const toToo = regexRule({
   title: 'to hot → too hot',
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?:is|are|was|were|be|been|it's|that's|way|not|much|far)\s+(?<w>to)\s+(?<a>late|early|soon|much|many|big|small|hot|cold|expensive|fast|slow|long|short|difficult|hard|easy|young|old|tired|busy)\b(?=\s*[.!?,;]|\s*$|\s+(?:for|to|and|but|because|today|now|here|there|outside|inside)\b)/gi,
+  re: /\b(?:is|are|was|were|be|been|it's|that's|way|not|much|far|fall|falls|fell|falling)\s+(?<w>to)\s+(?<a>late|early|soon|much|many|big|small|hot|cold|expensive|fast|slow|long|short|difficult|hard|easy|young|old|tired|busy|bad|far|heavy|loud|dangerous|dark|wet|windy|full|tight|weak|close|sweet|salty|spicy|complicated|risky|boring|quiet|warm|crowded)\b(?=\s*[.!?,;]|\s*$|\s+(?:for|to|and|but|because|today|now|here|there|outside|inside|behind)\b)/gi,
   target: 'w',
   fix: () => ['too'],
   msg: (f) => ({ message: `More than enough is ${q(`too ${f.g.a!.toLowerCase()}`)}, with two o's`, explanation: tooExpl }),
-  examples: { wrong: 'It is to hot today.', flag: 'to', fix: 'too', right: 'It is too hot today.', ok: ['From early to late.', 'We went to old castles.'] },
+  examples: { wrong: 'It is to hot today.', flag: 'to', fix: 'too', right: 'It is too hot today.', ok: ['From early to late.', 'We went to old castles.', 'The money is to good causes.', 'It was put to good use.'] },
 })
 
 export const meToo = regexRule({
@@ -561,6 +576,7 @@ export const confusableRules: EnRule[] = [
   itsTime,
   itsOwn,
   prepIts,
+  verbItsNoun,
   yourYoure,
   youreYour,
   theirIs,

@@ -252,3 +252,12 @@ describe('copy rules', () => {
     }
   })
 })
+
+describe('daily top-up words', () => {
+  it('is deterministic per round and differs between rounds', async () => {
+    const { dailyMoreWords } = await import('./daily')
+    expect(dailyMoreWords('nl', '2026-10-03', 1)).toEqual(dailyMoreWords('nl', '2026-10-03', 1))
+    expect(dailyMoreWords('nl', '2026-10-03', 2)).not.toEqual(dailyMoreWords('nl', '2026-10-03', 1))
+    expect(dailyMoreWords('ar', '2026-10-03', 1)).toHaveLength(60)
+  })
+})

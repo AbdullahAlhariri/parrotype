@@ -32,41 +32,83 @@ const NL_PAIRS: [string, string, TypoTag][] = [
   ['alleen', 'allen', 'lexical'], ['beide', 'beiden', 'lexical'],
 ]
 
+/** one key more or less in a copy test (jou/jouw, u/uw, alleen/allen): as likely a slip as a mix-up */
+const oneKeyApart = (c: Ctx) =>
+  c.mode === 'copy' && !/'/.test(c.el + c.tl) && Math.abs(c.el.length - c.tl.length) === 1 && osaDistance(c.el, c.tl) === 1
+
 function confusableNl(c: Ctx): TypoLabel | null {
   const hit = NL_PAIRS.find(([a, b]) => (c.el === a && c.tl === b) || (c.el === b && c.tl === a))
-  return hit ? label(c, 'spelling', 'cognitive', `'${c.E}', not '${c.T}'`, hit[2], hit[2]) : null
+  return hit ? label(c, 'spelling', oneKeyApart(c) ? 'unknown' : 'cognitive', `'${c.E}', not '${c.T}'`, hit[2], hit[2]) : null
 }
 
 const NL_SUBJ_T = new Set(['hij', 'zij', 'ze', 'het', 'u', 'men', 'er', 'dit', 'dat', 'die', 'wat', 'wie', 'jij', 'je', 'iemand', 'niemand', 'iedereen'])
 const NL_AUX = new Set(['heb', 'hebt', 'heeft', 'hebben', 'had', 'hadden', 'ben', 'bent', 'is', 'zijn', 'was', 'waren', 'word', 'wordt', 'worden', 'werd', 'werden', 'geworden'])
+
+/**
+ * Participle-like words: ge- (also after a separable particle: opgehaald) or an inseparable
+ * prefix, where the participle (-d) and the 3rd person (-t) sound alike (gebeurd/gebeurt).
+ */
+const NL_PREFIXED =
+  /^(?:(?:op|aan|af|uit|in|mee|na|om|door|over|terug|weg|toe|voor|bij|samen|vast|los|neer|tegen|achter|thuis)?ge|be|ver|ont|her|er)\p{L}{3,}$/u
+/** common ge-/be-/ver- words that are not verb forms: no verb rule for gezond/gezont */
+const NL_NOT_VERB = new Set(['gezond', 'gebied', 'geluid', 'gezicht', 'gedicht', 'gerecht', 'gevecht', 'gewicht', 'bericht', 'verstand', 'verband'])
+/** a context word without punctuation, lowercased */
+const bareWord = (w?: string) => w?.toLowerCase().replace(/[^\p{L}\p{M}']/gu, '')
 
 function dtRule(c: Ctx): TypoLabel | null {
   const re = /^(.*?[aeiouy].*?)(dt|d|t)$/
   const me = re.exec(c.el)
   const mt = re.exec(c.tl)
   if (!me || !mt || me[1] !== mt[1] || me[2] === mt[2]) return null
-  const prev = c.o.prev?.toLowerCase()
-  const next = c.o.next?.toLowerCase()
-  const endsT = me[2] !== 'd'
-  let key = 'dt'
-  if (prev === 'ik' && !endsT) key = 'dt-ik'
-  else if ((next === 'je' || next === 'jij') && !endsT) key = 'dt-inversion'
-  else if (prev && NL_SUBJ_T.has(prev) && endsT) key = 'dt-3rd'
-  else if (prev && NL_AUX.has(prev) && !endsT) key = 'dt-participle'
-  return label(c, 'spelling', 'cognitive', `d/t ending: '${c.E}', not '${c.T}'`, key, 'dt', { prev: c.o.prev ?? '' })
+  const [e, t] = [me[2], mt[2]]
+  const dt = (key: string, nature: TypoNature = 'cognitive') =>
+    label(c, 'spelling', nature, `d/t ending: '${c.E}', not '${c.T}'`, key, 'dt', { prev: c.o.prev ?? '' })
+  // a d added to a t-word (het -> hedt, weet -> weedt) is a rolled key when copying
+  if (e === 't' && t === 'dt') return c.mode === 'copy' ? null : dt('dt')
+  // the stem's d left out (wordt -> wort): the same question from memory, one dropped key when copying
+  if (e === 'dt' && t === 't') return dt('dt-stem', soft(c))
+  const prev = bareWord(c.o.prev)
+  const next = bareWord(c.o.next)
+  const endsT = e !== 'd'
+  if (prev === 'ik' && !endsT) return dt('dt-ik')
+  if ((next === 'je' || next === 'jij') && !endsT) return dt('dt-inversion')
+  if (prev && NL_SUBJ_T.has(prev) && endsT) return dt('dt-3rd')
+  if (prev && NL_AUX.has(prev) && !endsT) return dt('dt-participle')
+  // only verb forms end in -dt: word/wordt is the classic
+  if (e === 'dt' || t === 'dt') return dt('dt')
+  if (NL_PREFIXED.test(c.el) && !NL_NOT_VERB.has(c.el)) {
+    // gemaakt/gemaakd, geleefd/geleeft: the participle follows 't kofschip
+    if (/[kfspxh]$/.test(me[1])) return label(c, 'spelling', 'cognitive', `participle ending: '${c.E}', not '${c.T}'`, 'kofschip', 'kofschip')
+    return dt('dt-prefix') // gebeurd/gebeurt, betaald/betaalt
+  }
+  // other words (hand, goed, kind): a final d sounds like t, the longer form shows it (handen)
+  if (e === 'd') return label(c, 'spelling', 'cognitive', `final d: '${c.E}', not '${c.T}'`, 'final-d', 'final-d')
+  return null // met -> med: left to the generic sound-alike label
 }
+
+const KOFSCHIP_STEM = /(?:[tkfspx]|ch|sh)$/
 
 function kofschipRule(c: Ctx): TypoLabel | null {
   const re = /^(.{3,}?)(dde|tte|de|te)(n?)$/
   const me = re.exec(c.el)
   const mt = re.exec(c.tl)
   if (!me || !mt || me[1] !== mt[1] || me[3] !== mt[3] || me[2] === mt[2]) return null
-  // -de vs -te is the kofschip choice; a lost double (wachtte -> wachte) is the classic slip too,
-  // but an extra double (zitten -> zittten, houden -> houdden) is just a bounce
   const doubledE = me[2].length === 3
   const doubledT = mt[2].length === 3
-  if (me[2].at(-2) === mt[2].at(-2) && !(doubledE && !doubledT)) return null
-  return label(c, 'spelling', 'cognitive', `past-tense ending: '${c.E}', not '${c.T}'`, 'kofschip', 'kofschip')
+  if (me[2].at(-2) === mt[2].at(-2)) {
+    // a lost double is the classic slip (wachtte -> wachte), an extra one just a bounce (zittten)
+    if (!doubledE || doubledT) return null
+    // after one short vowel the double is the ordinary closed-syllable rule (platte -> plate)
+    if (/[^aeiouy][aeiouy]$/.test(me[1])) return null
+  } else {
+    // -de vs -te: only when 't kofschip explains the expected ending (not grote/grode),
+    // or the v/z trap where the infinitive decides (leven -> leefde, reizen -> reisde)
+    const stem = doubledE ? me[1] + me[2][0] : me[1]
+    const isTe = me[2].at(-2) === 't'
+    const trap = !isTe && /[fs]$/.test(stem)
+    if (KOFSCHIP_STEM.test(stem) !== isTe && !trap) return null
+  }
+  return label(c, 'spelling', 'cognitive', `-de or -te: '${c.E}', not '${c.T}'`, 'kofschip', 'kofschip')
 }
 
 function digraphRule(c: Ctx): TypoLabel | null {
@@ -89,8 +131,15 @@ function apostropheRule(c: Ctx): TypoLabel | null {
   if (c.lang === 'en' && bare(c.el) === 'its') {
     return label(c, 'spelling', 'cognitive', `'${c.E}', not '${c.T}'`, 'its-its', 'its-its')
   }
-  return label(c, 'spelling', 'cognitive', `apostrophe: '${c.E}'`, 'apostrophe', 'apostrophe')
+  // Dutch: the plural 's (auto's) has its own rule; zo'n, 's ochtends and m'n mark left-out letters
+  const tipKey = c.lang === 'nl' && !/'s$/.test(c.el) && !/'s$/.test(c.tl) ? 'elision' : 'apostrophe'
+  return label(c, 'spelling', 'cognitive', `apostrophe: '${c.E}'`, tipKey, 'apostrophe')
 }
+
+/** first parts whose -en is part of the word itself, not a linking -en- (binnenkort, keukentafel) */
+const NL_RADICAL_EN = new Set(['binnen', 'buiten', 'beneden', 'keuken', 'morgen', 'gisteren', 'examen', 'kussen', 'kuiken', 'verleden', 'seizoen', 'christen'])
+/** suffixes, not second parts of a compound (gelegenheid, eigendom) */
+const NL_SUFFIX = /^(?:lijk|heid|schap|baar|loos|dom|zaam)/
 
 function tussenNRule(c: Ctx): TypoLabel | null {
   const [long, short] = c.el.length > c.tl.length ? [c.el, c.tl] : [c.tl, c.el]
@@ -98,7 +147,7 @@ function tussenNRule(c: Ctx): TypoLabel | null {
   // compound shape: a first part of 4+ letters, linking e(n), then a 3+ letter part starting with a consonant
   for (let k = 5; k <= long.length - 4; k++) {
     if (long[k] !== 'n' || long[k - 1] !== 'e' || long[k + 1] === 'n' || isVowel(long[k + 1])) continue
-    if (long.startsWith('lijk', k + 1)) continue
+    if (NL_SUFFIX.test(long.slice(k + 1)) || NL_RADICAL_EN.has(long.slice(0, k + 1))) continue
     if (long.slice(0, k) + long.slice(k + 1) === short) {
       return label(c, 'spelling', 'cognitive', `linking -e(n)-: '${c.E}'`, 'tussen-n', 'tussen-n')
     }
@@ -139,8 +188,7 @@ function homophoneEn(c: Ctx): TypoLabel | null {
   const tag = group.words[0] === 'its' ? 'its-its' : 'homophone'
   // to/too, two/to, by/bye in a copy test are as likely one extra or missing key as a mix-up
   // (an apostrophe is a deliberate key, so its/it's stays a knowledge error)
-  const oneKey = c.mode === 'copy' && !/'/.test(c.el + c.tl) && Math.abs(c.el.length - c.tl.length) === 1 && osaDistance(c.el, c.tl) === 1
-  const out = label(c, 'spelling', oneKey ? 'unknown' : 'cognitive', `'${c.E}', not '${c.T}'`, tag, tag)
+  const out = label(c, 'spelling', oneKeyApart(c) ? 'unknown' : 'cognitive', `'${c.E}', not '${c.T}'`, tag, tag)
   out.tip = { en: group.tip }
   return out
 }
@@ -150,15 +198,19 @@ function ieEiRule(c: Ctx): TypoLabel | null {
   return label(c, 'spelling', soft(c), `ie/ei: '${c.E}'`, 'ie-ei', 'ie-ei')
 }
 
-/** Words with a dagger (hidden) alif: pronounced but not written (هذا, not هاذا). */
-const HIDDEN_ALIF = new Set(['هذا', 'هذه', 'هذان', 'هذين', 'هكذا', 'ذلك', 'لكن', 'هؤلاء', 'أولئك', 'الله', 'إله', 'الرحمن', 'طه'])
+/** Words with a dagger (hidden) alif, and how they look with the pronounced alif written (هذا, not هاذا). */
+const HIDDEN_ALIF = new Map([
+  ['هذا', 'هاذا'], ['هذه', 'هاذه'], ['هذان', 'هاذان'], ['هذين', 'هاذين'], ['هكذا', 'هاكذا'], ['ذلك', 'ذالك'],
+  ['لكن', 'لاكن'], ['هؤلاء', 'هاؤلاء'], ['أولئك', 'أولائك'], ['الله', 'اللاه'], ['إله', 'إلاه'], ['الرحمن', 'الرحمان'], ['طه', 'طاه'],
+])
 
 function arabicRule(c: Ctx): TypoLabel | null {
   const ops = plainOps(c.E, c.T)
   if (!ops.length) return null
   // only Shift differs (غ for إ, ى for آ, ـ for ت): a motor slip, labelled by the generic step
   if (ops.every((o) => o.op === 'sub' && sameKey(o.e, o.t, c.layout))) return null
-  if (HIDDEN_ALIF.has(stripTashkeel(c.E)) && !c.T.includes('اا') && ops.every((o) => o.op === 'ins' && o.t === 'ا')) {
+  // only the alif where it is pronounced (ذالك), not an alif rolled in elsewhere (ذلاك)
+  if (HIDDEN_ALIF.get(stripTashkeel(c.E)) === stripTashkeel(c.T)) {
     return label(c, 'spelling', 'cognitive', `'${c.E}' has a hidden alif: it is not written`, 'hidden-alif', 'hidden-alif')
   }
   const wawAlif = (a: string, b: string) => a.endsWith('وا') && a.slice(0, -1) === b

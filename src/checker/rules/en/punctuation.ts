@@ -28,6 +28,36 @@ export const pluralApostrophe = regexRule({
   },
 })
 
+/** nouns Dutch writes with an apostrophe in the plural (foto's, auto's, video's) */
+const DUTCH_APOSTROPHE_NOUNS =
+  'photo|video|auto|euro|menu|pizza|radio|idea|camera|agenda|villa|sofa|kilo|logo|demo|memo|studio|cafe|café|taxi|kiwi|mango|tomato|potato|piano|disco|casino|avocado|tattoo|emoji|selfie|movie|cookie|zero|hero|echo|solo|duo|trio|hobby|baby'
+
+export const pluralApostropheDutch = regexRule({
+  id: 'en.plural-apostrophe-dutch',
+  title: "the photo's are → photos",
+  category: 'punctuation',
+  confidence: 'medium',
+  re: new RegExp(
+    `\\b(?<w>(?<n>${DUTCH_APOSTROPHE_NOUNS})'s)(?=\\s+(?:are|were|have|look|show|from|of|that|which|you|we|they|I|on|in|at|with|tonight|today|tomorrow|later|again|now)\\b|\\s+(?:and|or)\\b(?<!(?:baby|hobby)'s\\s+(?:and|or))|\\s*[.,!?;:]|\\s*$)`,
+    'g',
+  ),
+  target: 'w',
+  fix: (f) => [plural(f.g.n!)],
+  keepCase: false,
+  msg: (_f, fixes) => ({
+    message: `No apostrophe in an English plural: ${q(fixes[0])}`,
+    explanation: `English plurals never take an apostrophe: photos, videos, euros, babies. Dutch writes foto's and video's to keep the vowel long, English doesn't need to.`,
+    learnMore: LINKS.pluralApostrophe,
+  }),
+  examples: {
+    wrong: "I'll send you the photo's tonight.",
+    flag: "photo's",
+    fix: 'photos',
+    right: "I'll send you the photos tonight.",
+    ok: ["The photo's colours are bright.", "The baby's and the mother's health is good.", "My video's sound is off.", 'Ten euros, please.'],
+  },
+})
+
 export const spaceBeforePunct = regexRule({
   id: 'en.space-before-punct',
   title: 'no space before , . ! ?',
@@ -39,7 +69,7 @@ export const spaceBeforePunct = regexRule({
     message: `No space before ${q(f.g.p!)}`,
     explanation: `In English , . ! ? : and ; sit right after the word, with one space after them. (French puts a space before ! and ?, English doesn't.)`,
   }),
-  examples: { wrong: 'Hello , how are you?', flag: ' ,', fix: ',', right: 'Hello, how are you?', ok: ['Wait ... what?', 'Nice :)'] },
+  examples: { wrong: 'Hello , how are you ?', flag: ' ,', fix: ',', right: 'Hello, how are you?', ok: ['Wait ... what?', 'Nice :)'] },
 })
 
 export const spaceAfterComma = regexRule({
@@ -125,4 +155,4 @@ export const wordRepeat = regexRule({
   },
 })
 
-export const punctuationRules: EnRule[] = [pluralApostrophe, spaceBeforePunct, spaceAfterComma, spaceAfterPeriod, multiSpace, arabicPunct, doublePunct, wordRepeat]
+export const punctuationRules: EnRule[] = [pluralApostrophe, pluralApostropheDutch, spaceBeforePunct, spaceAfterComma, spaceAfterPeriod, multiSpace, arabicPunct, doublePunct, wordRepeat]

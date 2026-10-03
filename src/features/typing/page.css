@@ -95,6 +95,10 @@ body[data-typing]:not([data-focus-mode='off']) .tp-config:focus-within {
 .tp-source {
   margin-bottom: var(--s-4);
 }
+.tp-source-by,
+.tp-meaning {
+  display: block;
+}
 .tp-source-by {
   color: var(--text);
 }

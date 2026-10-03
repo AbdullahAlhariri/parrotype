@@ -10,7 +10,7 @@ import { relevantIssues, type ExplainIn } from './explain'
  * Mistakes that only make sense in their sentence (d/t, de/het, then/than...) go to the
  * mistake nest as the whole sentence; spelling mistakes go in as single words.
  */
-export const SENTENCE_TAGS = new Set([
+const SENTENCE_TAGS = new Set([
   'dt', 'kofschip', 'de-het', 'die-dat', 'jou-jouw', 'me-mijn', 'hun-hen', 'als-dan', 'lexical', 'its-its', 'homophone',
 ])
 

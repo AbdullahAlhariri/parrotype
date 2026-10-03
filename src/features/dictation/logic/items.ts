@@ -56,12 +56,12 @@ export const DEFAULT_CONFIG: DictationConfig = {
   playback: 'listen',
 }
 
-/** Human-readable config for the session record, e.g. "nl level 2 dt". */
-export function configLabel(lang: Lang, c: DictationConfig, memory: boolean): string {
+/** Human-readable config for the session record, e.g. "nl level 2 dt", "en which one then/than". */
+export function configLabel(lang: Lang, c: DictationConfig, memory: boolean, pairName: (id: string) => string = (id) => id): string {
   const parts: string[] = [lang]
   if (c.mode === 'pairs') {
     parts.push('which one')
-    if (c.pairs.length) parts.push(c.pairs.join(' '))
+    if (c.pairs.length) parts.push(c.pairs.map(pairName).join(' '))
   } else {
     parts.push(`level ${c.level}`)
     if (c.focus.length) parts.push(c.focus.join(' '))

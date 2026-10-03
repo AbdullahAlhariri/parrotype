@@ -71,6 +71,8 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
+  /* the last icon button has 8px of air around its glyph; line the glyph up with the column */
+  margin-right: calc((20px - 2.25rem) / 2);
 }
 .header-tools .segmented {
   flex-wrap: nowrap;
@@ -80,8 +82,9 @@
   font-weight: 620;
 }
 
-/* narrow: brand and tools on one row, nav scrolls sideways below */
-@media (max-width: 960px) {
+/* narrow: brand and tools on one row, nav scrolls sideways below. Seven modes plus the
+   tools need about 1060px in one row, so the header splits below 1120px. */
+@media (max-width: 1120px) {
   .app-header {
     grid-template-columns: auto 1fr;
     grid-template-areas:
@@ -95,6 +98,8 @@
   }
   .main-nav {
     margin-inline: calc(-1 * var(--gutter));
+    /* room for focus rings, which overflow: auto would otherwise clip */
+    margin-block: calc(-1 * var(--s-2));
     overflow-x: auto;
     scrollbar-width: none;
     mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
@@ -104,7 +109,7 @@
   }
   .main-nav ul {
     width: max-content;
-    padding-inline: var(--gutter);
+    padding: var(--s-2) var(--gutter);
   }
 }
 @media (max-width: 420px) {
@@ -290,14 +295,24 @@ body[data-typing] .app-main {
   white-space: nowrap;
 }
 .palette-hint {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--sub);
   font-size: var(--fs-xs);
 }
+/* a fixed slot, so swatches and hints line up whether or not the row is the current value */
 .palette-current {
-  color: var(--sub);
-  font-size: var(--fs-xs);
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  color: var(--main);
 }
 .palette-swatch {
+  flex: none;
   display: inline-flex;
   gap: 3px;
   padding: 4px 6px;
@@ -337,7 +352,13 @@ body[data-typing] .app-main {
     inset-block-start: var(--s-5);
   }
   .palette-group {
-    min-width: 0;
+    min-width: 4.5rem;
+  }
+  .palette-row {
+    gap: var(--s-3);
+  }
+  .palette-hint {
+    display: none;
   }
 }
 

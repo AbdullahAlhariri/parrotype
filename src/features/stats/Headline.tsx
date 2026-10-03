@@ -17,10 +17,12 @@ export function Headline({ h }: { h: HeadlineData }) {
   return (
     <section className="st-headline" aria-label="Summary">
       <div className="st-hl st-hl-hero">
-        <div className="st-hl-label">accuracy</div>
-        <div className="st-hl-value">
-          {acc.value === null ? '–' : acc.value.toFixed(1)}
-          {acc.value !== null && <span className="st-hl-unit">%</span>}
+        <div className="st-hl-top">
+          <div className="st-hl-label">accuracy</div>
+          <div className="st-hl-value">
+            {acc.value === null ? '–' : acc.value.toFixed(1)}
+            {acc.value !== null && <span className="st-hl-unit">%</span>}
+          </div>
         </div>
         <div className="st-hl-sub">
           {acc.value === null ? 'no typing runs yet' : windowLabel(acc)}
@@ -29,8 +31,10 @@ export function Headline({ h }: { h: HeadlineData }) {
       </div>
 
       <div className="st-hl">
-        <div className="st-hl-label">wpm</div>
-        <div className="st-hl-value">{wpm.value === null ? '–' : Math.round(wpm.value)}</div>
+        <div className="st-hl-top">
+          <div className="st-hl-label">wpm</div>
+          <div className="st-hl-value">{wpm.value === null ? '–' : Math.round(wpm.value)}</div>
+        </div>
         <div className="st-hl-sub">
           {wpm.value === null ? 'no typing runs yet' : windowLabel(wpm)}
           <Delta value={wpm.delta} digits={0} suffix="vs the 10 before" flat="level with the 10 before" />
@@ -38,20 +42,24 @@ export function Headline({ h }: { h: HeadlineData }) {
       </div>
 
       <div className="st-hl">
-        <div className="st-hl-label">streak</div>
-        <div className="st-hl-value">{h.streak}</div>
+        <div className="st-hl-top">
+          <div className="st-hl-label">streak</div>
+          <div className="st-hl-value">{h.streak}</div>
+        </div>
         <div className="st-hl-sub">{streakNote(h)}</div>
       </div>
 
       <div className="st-hl">
-        <div className="st-hl-label">practice time</div>
-        <div className="st-hl-value">
-          {durationParts(h.totalMs).map((p) => (
-            <span key={p.unit} className="st-hl-part">
-              {p.value}
-              <span className="st-hl-unit">{p.unit}</span>
-            </span>
-          ))}
+        <div className="st-hl-top">
+          <div className="st-hl-label">practice time</div>
+          <div className="st-hl-value">
+            {durationParts(h.totalMs).map((p) => (
+              <span key={p.unit} className="st-hl-part">
+                {p.value}
+                <span className="st-hl-unit">{p.unit}</span>
+              </span>
+            ))}
+          </div>
         </div>
         <div className="st-hl-sub">in {plural(h.sessions, 'session')}</div>
       </div>

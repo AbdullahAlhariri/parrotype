@@ -17,7 +17,7 @@ interface Base {
 }
 
 export type WorkerRequest =
-  | (Base & { op: 'check'; text: string; strictness?: 'normal' | 'strict'; disabledRules?: string[] })
+  | (Base & { op: 'check'; text: string; strictness?: 'normal' | 'strict'; disabledRules?: string[]; dictWaitMs?: number })
   | (Base & { op: 'suggest'; word: string; limit?: number })
   | (Base & { op: 'isWord'; word: string })
   | (Base & { op: 'preload' })
@@ -64,6 +64,7 @@ async function handle(req: Exclude<WorkerRequest, { op: 'cancel' }>): Promise<un
         variant: req.variant,
         personalWords: req.personalWords,
         disabledRules: req.disabledRules,
+        dictWaitMs: req.dictWaitMs,
         shouldStop: () => cancelled.has(req.id),
       }) satisfies Promise<CheckResult>
     case 'suggest':

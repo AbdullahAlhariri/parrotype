@@ -3,7 +3,7 @@ import type { Dictionary } from '@/types'
 import { loadTestDictionary } from '@/test/dict'
 import { enRules } from '.'
 import { DICTATION, PARAGRAPHS_GB, PARAGRAPHS_US } from './fixtures'
-import { runEn, serious, showIssues } from './testing'
+import { rawHits, runEn, serious, showIssues } from './testing'
 
 // No rule may fire on correct text: the 55 dictation targets (any confidence, strict mode) and paragraphs
 // of correct English (nothing of medium or high confidence).
@@ -23,6 +23,7 @@ describe('english regression: correct text stays clean', () => {
       for (const dict of [undefined, us]) {
         const issues = runEn(s, enRules, { dict, strictness: 'strict' })
         expect(issues, `${s}\n${showIssues(issues)}`).toEqual([])
+        expect(rawHits(s, enRules, { dict }), s).toEqual([])
       }
     }
   })
@@ -32,6 +33,7 @@ describe('english regression: correct text stays clean', () => {
       for (const dict of [undefined, us]) {
         const issues = serious(runEn(p, enRules, { dict, strictness: 'strict' }))
         expect(issues, `${p}\n${showIssues(issues)}`).toEqual([])
+        expect(rawHits(p, enRules, { dict }).filter((h) => h.confidence !== 'low'), p).toEqual([])
       }
     }
   })
@@ -41,6 +43,7 @@ describe('english regression: correct text stays clean', () => {
       for (const dict of [undefined, gb]) {
         const issues = serious(runEn(p, enRules, { dict, strictness: 'strict' }))
         expect(issues, `${p}\n${showIssues(issues)}`).toEqual([])
+        expect(rawHits(p, enRules, { dict }).filter((h) => h.confidence !== 'low'), p).toEqual([])
       }
     }
   })

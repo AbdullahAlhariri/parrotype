@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { seeded } from '@/lib/random'
 import { findPack, type DrillItem } from '@/content/drills'
-import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, pickRound } from './round'
+import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, pickRound, settledForm } from './round'
 import { useGym } from './store'
 
 const item = (sentence: string, answer: string, alternatives: string[] = [], accept?: string[]): DrillItem => ({ sentence, answer, alternatives, accept })
@@ -22,6 +22,13 @@ describe('answers', () => {
     const dt = item('Ik {{word}} moe.', 'word', ['wordt'])
     expect(isRight(dt, 'wordt', 'nl')).toBe(false)
     expect(isRight(dt, 'word ', 'nl')).toBe(true)
+  })
+
+  it('settles on the right spelling, keeping an accepted variant and the capital', () => {
+    const it1 = item('{{Zij}} hebben een auto.', 'Zij', ['Hun'], ['ze'])
+    expect(settledForm(it1, 'zij', 'nl')).toBe('Zij')
+    expect(settledForm(it1, 'ze', 'nl')).toBe('Ze')
+    expect(settledForm(item('Ik {{word}} moe.', 'word', ['wordt']), 'WORD', 'nl')).toBe('word')
   })
 
   it('keeps the hamza when checking Arabic', () => {

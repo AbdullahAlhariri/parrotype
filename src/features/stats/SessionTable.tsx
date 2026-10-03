@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { SessionRecord } from '@/types'
 import { Button } from '@/components/ui'
-import { MODE_LABELS, newestPage, type LangFilter } from './aggregate'
+import { MODE_LABELS, newestPage, sessionConfig, type LangFilter } from './aggregate'
 import { pct, when } from './format'
 import { LangTag, SectionHead } from './parts'
 
@@ -47,7 +47,7 @@ export function SessionTable({ sessions, filter }: { sessions: SessionRecord[]; 
               <tr key={s.id}>
                 <td className="st-dim st-when st-col-when">{when(s.at, now)}</td>
                 <td className="st-what">
-                  <span className="st-mode">{MODE_LABELS[s.mode] ?? s.mode}</span> <span className="st-config">{s.config}</span>
+                  <span className="st-mode">{MODE_LABELS[s.mode] ?? s.mode}</span> <span className="st-config">{sessionConfig(s)}</span>
                   {/* narrow screens: the date moves under the mode instead of taking a column (CSS shows one of the two) */}
                   <span className="st-when-inline">{when(s.at, now)}</span>
                 </td>

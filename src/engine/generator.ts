@@ -8,9 +8,17 @@ import { graphemes, normalizeTypingText } from './text'
 
 // Word lists for typing tests and weakness drills (real words, interleaved).
 
-const LISTS: Record<Lang, string[]> = { nl: nl.words, en: en.words, ar: ar.words }
+// The lists come from subtitles: drop contraction fragments (don't -> don), fillers and
+// abbreviations so tests only show real words. English 'i' only appears as 'I' (punctuation mode).
+const JUNK: Record<Lang, Set<string>> = {
+  nl: new Set(['ie', 'ms', 'km', 'to', 'on', 'uh', 'eh', 'hè']),
+  en: new Set(['don', 'll', 're', 'ed', 'ls', 'id', 'em', 'uh', 'um', 'mm', 'hmm', 'er', 'ow', 'aw', 'eh', 'huh', 'ya', 'yo', 'i']),
+  ar: new Set(),
+}
+const clean = (lang: Lang, words: string[]) => words.filter((w) => !JUNK[lang].has(w))
+const LISTS: Record<Lang, string[]> = { nl: clean('nl', nl.words), en: clean('en', en.words), ar: clean('ar', ar.words) }
 
-/** The frequency-ranked word list for a language (top `size` words). */
+/** The frequency-ranked word list for a language (top `size` words, junk fragments removed). */
 export const wordList = (lang: Lang, size?: number): string[] => (size ? LISTS[lang].slice(0, size) : LISTS[lang])
 
 export interface GenerateOptions {
@@ -31,7 +39,7 @@ const MARKS: Record<Lang, { comma: string; question: string; semicolon: string }
 /** Uniform random words without repeating either of the previous two (Monkeytype style). */
 export function generateWords(lang: Lang, opts: GenerateOptions): string[] {
   const rand = opts.rand ?? Math.random
-  const pool = LISTS[lang].slice(0, opts.list ?? 200).filter((w) => opts.punctuation || lang !== 'en' || w !== 'i')
+  const pool = LISTS[lang].slice(0, opts.list ?? 200).concat(opts.punctuation && lang === 'en' ? ['I'] : [])
   const out: string[] = []
   if (!pool.length) return out
   while (out.length < opts.count) {
@@ -59,7 +67,6 @@ function punctuate(words: string[], lang: Lang, rand: () => number): string[] {
   let inSentence = 0
   words.forEach((word, i) => {
     let w = start ? capitalise(word, lang) : word
-    if (lang === 'en' && w === 'i') w = 'I'
     start = false
     inSentence++
     const r = rand()

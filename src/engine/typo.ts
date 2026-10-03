@@ -1,4 +1,4 @@
-import type { Lang } from '@/types'
+import type { Lang, TypoKind } from '@/types'
 import { areAdjacent, decomposeDeadKey, isMirror, keyOf, layoutFor, neighbourChar, sameFinger, sameHand, sameKey, type LayoutId } from './keyboard'
 import { alignUnits, keyboardCosts, osaDistance, type EditOp } from './osa'
 import { graphemes, isArabic, normalizeTypingText, stripMarks } from './text'
@@ -20,8 +20,10 @@ export type { TypoTag } from './tips'
 const norm = (s: string) => normalizeTypingText(s).trim()
 
 // sentence punctuation around a word (not apostrophes or hyphens, which belong to words)
-const LEAD_RE = /^[.,;:!?"()[\]{}«»¿¡،؛؟…]+/u
-const TRAIL_RE = /[.,;:!?"()[\]{}«»¿¡،؛؟…]+$/u
+const PUNCT = '.,;:!?"()[\\]{}«»¿¡،؛؟…'
+const LEAD_RE = new RegExp(`^[${PUNCT}]+`, 'u')
+const TRAIL_RE = new RegExp(`[${PUNCT}]+$`, 'u')
+const PUNCT_RE = new RegExp(`[${PUNCT}]`, 'gu')
 
 /** Drops punctuation that both words share at the edges ("wordt," vs "word,"), so the word rules see bare words. */
 function stripSharedPunct(E: string, T: string): [string, string] {
@@ -57,6 +59,7 @@ export function classifyTypo(expected: string, typed: string, lang: Lang, layout
     deadKeyRule(c) ??
     diacriticRule(c) ??
     spaceRule(c) ??
+    punctRule(c) ??
     languageRule(c) ??
     doublingRule(c) ??
     cutShortRule(c) ??
@@ -88,6 +91,8 @@ function caseRule(c: Ctx): TypoLabel | null {
   })
   const detail =
     missing && !extra ? `missed the capital in '${c.E}'` : extra && !missing ? `no capital needed: '${c.E}'` : `capitals differ: '${c.E}'`
+  // Dutch IJ is one letter: Ijs for IJs is a spelling question, not a Shift slip
+  if (c.lang === 'nl' && /IJ/.test(c.E) && /Ij/.test(c.T)) return label(c, 'case', 'cognitive', `capital IJ: '${c.E}'`, 'ij-capital', 'capital')
   return c.mode === 'dictation'
     ? label(c, 'case', 'cognitive', detail, `case.${c.lang}`, 'capital')
     : label(c, 'case', 'motor', detail, 'case', 'capital')
@@ -171,9 +176,16 @@ function spaceRule(c: Ctx): TypoLabel | null {
   return null
 }
 
-/* ------------------------------------------------------------------ */
-/* Language spelling rules                                              */
-/* ------------------------------------------------------------------ */
+/** Only sentence punctuation differs (huis. vs huis, wat? vs wat!). */
+function punctRule(c: Ctx): TypoLabel | null {
+  const bare = (s: string) => s.replace(PUNCT_RE, '')
+  if (bare(c.E) !== bare(c.T)) return null
+  const pe = c.E.length - bare(c.E).length
+  const pt = c.T.length - bare(c.T).length
+  const [kind, detail]: [TypoKind, string] =
+    pt < pe ? ['omission', `punctuation missing: '${c.E}'`] : pt > pe ? ['insertion', `extra punctuation: '${c.E}' has less`] : ['substitution', `wrong punctuation: '${c.E}'`]
+  return label(c, kind, soft(c), detail, 'punctuation', 'punctuation')
+}
 
 
 /* ------------------------------------------------------------------ */
@@ -271,7 +283,7 @@ function realWordRule(c: Ctx): TypoLabel | null {
 /* ------------------------------------------------------------------ */
 
 const PHONETIC: Record<Lang, string[]> = {
-  nl: ['ck', 'sz', 'fv', 'dt'],
+  nl: ['ck', 'sz', 'fv', 'dt', 'bp'],
   en: ['ck', 'cs', 'sz'],
   ar: ['ضظ', 'ذز', 'ثس', 'صس', 'طت', 'قك', 'حه', 'ذد', 'ظز'],
 }

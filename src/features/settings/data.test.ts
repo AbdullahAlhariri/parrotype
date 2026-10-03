@@ -55,6 +55,26 @@ describe('settings data', () => {
     expect(dst.getItem('other-app')).toBe('untouched')
   })
 
+  test('round trip keeps odd values byte for byte', () => {
+    const src = new FakeStore()
+    const values: Record<string, string> = {
+      'parrotype.write.mode': 'done',
+      'parrotype.json-string': JSON.stringify('words'),
+      'parrotype.number': '1.50',
+      'parrotype.bool': 'true',
+      'parrotype.pretty': '{\n  "a": 1\n}',
+      'parrotype.null': 'null',
+      'parrotype.empty': '',
+    }
+    for (const [k, v] of Object.entries(values)) src.setItem(k, v)
+    const parsed = parseBackup(JSON.stringify(collectData(src)))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const dst = new FakeStore()
+    applyBackup(dst, parsed.backup)
+    for (const [k, v] of Object.entries(values)) expect(dst.getItem(k), k).toBe(v)
+  })
+
   test('rejects files that are not backups, with plain messages', () => {
     expect(parseBackup('nope')).toMatchObject({ ok: false })
     expect(parseBackup('[]')).toMatchObject({ ok: false })

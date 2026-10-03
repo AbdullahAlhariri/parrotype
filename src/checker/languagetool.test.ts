@@ -5,10 +5,12 @@ import {
   SlidingWindow,
   checkWithLanguageTool,
   endpointUrl,
+  isPublicEndpoint,
   languageTool,
   ltCategory,
   matchToIssue,
   splitParagraphs,
+  testLanguageTool,
   useLanguageToolStatus,
   type LTMatch,
 } from './languagetool'
@@ -43,6 +45,12 @@ describe('helpers', () => {
     expect(endpointUrl('https://api.languagetool.org/v2/check')).toBe('https://api.languagetool.org/v2/check')
     expect(endpointUrl('https://api.languagetool.org')).toBe('https://api.languagetool.org/v2/check')
     expect(endpointUrl('http://localhost:8010/v2/')).toBe('http://localhost:8010/v2/check')
+    // the Vercel proxy has its own path: used as is, relative or absolute
+    expect(endpointUrl('/api/languagetool')).toBe('/api/languagetool')
+    expect(endpointUrl('https://parrotype.vercel.app/api/languagetool/')).toBe('https://parrotype.vercel.app/api/languagetool')
+    expect(isPublicEndpoint('/api/languagetool')).toBe(true)
+    expect(isPublicEndpoint('https://api.languagetool.org')).toBe(true)
+    expect(isPublicEndpoint('http://localhost:8010')).toBe(false)
   })
 
   it('maps categories', () => {
@@ -186,6 +194,33 @@ describe('checkWithLanguageTool', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({}, 429))
     expect(await checkWithLanguageTool('Hun hebben gelijk.', 'nl')).toBeNull()
     expect(useLanguageToolStatus.getState().state).toBe('rate-limited')
+  })
+
+  it('tells a malformed address apart from an unreachable one', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch')
+    expect(await testLanguageTool('not a url')).toMatchObject({ ok: false, message: expect.stringMatching(/does not look right/) })
+    expect(await testLanguageTool('ftp://lt.example.org')).toMatchObject({ ok: false })
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRejectedValue(new TypeError('Failed to fetch'))
+    expect(await testLanguageTool('https://down.example.org')).toMatchObject({ ok: false, message: expect.stringMatching(/CORS/) })
+    spy.mockResolvedValue(json({ matches: [] }))
+    expect(await testLanguageTool('https://up.example.org/v2')).toEqual({ ok: true, message: 'LanguageTool answered at up.example.org.' })
+    expect(spy).toHaveBeenLastCalledWith('https://up.example.org/v2/check', expect.anything())
+  })
+
+  it('sends checks through the proxy path unchanged, with the public limits', async () => {
+    const { calls, fetchFn } = fakeServer()
+    const urls: string[] = []
+    let now = 0
+    const lt = new LanguageToolClient({
+      fetch: ((u: string, init?: RequestInit) => (urls.push(u), fetchFn(u, init))) as typeof fetch,
+      now: () => now,
+      maxWaitMs: 0,
+    })
+    const text = Array.from({ length: 20 }, (_, i) => `Zin ${i}.`).join('\n')
+    await lt.check(text, { url: '/api/languagetool', lang: 'nl' })
+    expect(urls[0]).toBe('/api/languagetool')
+    expect(calls).toHaveLength(18)
   })
 
   it('returns issues and reports ok', async () => {

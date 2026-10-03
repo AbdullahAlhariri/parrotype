@@ -149,7 +149,8 @@ describe('Dutch spelling rules', () => {
     expect(cls('gebeurt', 'gebeurd').tag).toBe('dt')
     expect(cls('werd', 'werdt').tag).toBe('dt')
     expect(cls('wordt', 'wort').tag).toBe('dt')
-    expect(cls('hond', 'hont').tag).toBe('dt')
+    // a noun's final d is not the verb rule: it gets the "say a longer form" tip
+    expect(cls('hond', 'hont')).toMatchObject({ tag: 'final-d', nature: 'cognitive', detail: "final d: 'hond', not 'hont'" })
   })
 
   it("past tense endings ('t kofschip)", () => {
@@ -394,5 +395,104 @@ describe('names and tips', () => {
     expect(tipFor('kofschip', 'nl').local).toMatch(/kofschip/)
     expect(tipFor('case', 'en').en).toMatch(/capitalises/) // language-specific tip wins
     expect(tipFor('adjacent', 'ar').local).toMatch(/المفتاح المجاور/)
+  })
+})
+
+describe('review regressions: fewer false rule labels', () => {
+  const d = { mode: 'dictation' } as const
+
+  it('keeps the verb d/t rule for verb forms only', () => {
+    // -dt only exists in verbs, and participle-shaped words (also with a separable particle)
+    expect(cls('wordt', 'word').tag).toBe('dt')
+    expect(cls('gebeurd', 'gebeurt')).toMatchObject({ tag: 'dt', nature: 'cognitive' })
+    expect(cls('gebeurd', 'gebeurt').tip.en).toMatch(/is gebeurd/)
+    expect(cls('opgehaald', 'opgehaalt').tag).toBe('dt')
+    expect(cls('betaald', 'betaalt').tag).toBe('dt')
+    // nouns and adjectives: the final d sounds like t, which is not the verb rule
+    for (const [e, t] of [['hand', 'hant'], ['goed', 'goet'], ['kind', 'kint'], ['paard', 'paart'], ['gezond', 'gezont']]) {
+      expect(cls(e, t)).toMatchObject({ tag: 'final-d', nature: 'cognitive' })
+    }
+    expect(cls('hand', 'hant').tip.local).toMatch(/langere vorm/)
+    // a d typed for a final t is not a d/t-rule question either: just sound-alike letters
+    for (const [e, t] of [['dat', 'dad'], ['met', 'med'], ['niet', 'nied']]) {
+      expect(cls(e, t).tag).not.toBe('dt')
+      expect(cls(e, t).tag).toBe('phonetic')
+    }
+    // context still picks the verb rule and its tip
+    expect(cls('vind', 'vint', 'nl', { prev: 'ik' }).tag).toBe('dt')
+    expect(cls('vindt', 'vind', 'nl', { prev: 'Hij,' }).tip.en).toMatch(/After 'Hij,'/)
+  })
+
+  it("labels 't kofschip only where the rule explains the ending", () => {
+    // participles follow 't kofschip too, including the v/z trap
+    expect(cls('gemaakt', 'gemaakd')).toMatchObject({ tag: 'kofschip', detail: "participle ending: 'gemaakt', not 'gemaakd'" })
+    expect(cls('geleefd', 'geleeft').tag).toBe('kofschip')
+    expect(cls('reisde', 'reiste').tag).toBe('kofschip')
+    expect(cls('werkte', 'werkde').tip.en).toMatch(/leven → leefde/)
+    // grote is no past tense: 't kofschip would even predict the wrong ending
+    expect(cls('grote', 'grode').tag).not.toBe('kofschip')
+    // a lost double after one short vowel is the closed-syllable rule, not a past tense
+    expect(cls('platte', 'plate')).toMatchObject({ kind: 'missed-double', nature: 'unknown' })
+    expect(cls('platte', 'plate').tag).toBeUndefined()
+    expect(cls('gladde', 'glade', 'nl', d).tag).toBe('double-consonant')
+    expect(cls('spotte', 'spote').tag).not.toBe('kofschip')
+    // after a consonant or a long vowel the double is the stem t + -te
+    expect(cls('praatte', 'prate').kind).toBe('missed-double') // two letters dropped: not this rule
+    expect(cls('praatte', 'praate').tag).toBe('kofschip')
+    expect(cls('rustte', 'ruste').tag).toBe('kofschip')
+  })
+
+  it('does not call a radical -en- or a suffix a tussen-n', () => {
+    expect(cls('ziekenhuis', 'ziekehuis').tag).toBe('tussen-n')
+    expect(cls('binnenkort', 'binnekort').tag).toBeUndefined()
+    expect(cls('keukentafel', 'keuketafel').tag).toBeUndefined()
+    expect(cls('gelegenheid', 'gelegeheid').tag).toBeUndefined()
+    expect(cls('binnenkort', 'binnekort').kind).toBe('omission')
+  })
+
+  it('treats one key more or less on a confusable pair as undecided in a copy test', () => {
+    expect(cls('jouw', 'jou')).toMatchObject({ tag: 'jou-jouw', nature: 'unknown' })
+    expect(cls('jouw', 'jou', 'nl', d).nature).toBe('cognitive')
+    expect(cls('alleen', 'allen').nature).toBe('unknown')
+    expect(cls('dan', 'als').nature).toBe('cognitive')
+    expect(cls('kan', 'ken').nature).toBe('cognitive')
+  })
+
+  it('picks the right apostrophe tip and spots the Dutch IJ capital', () => {
+    expect(cls("zo'n", 'zon').tip.local).toMatch(/weggelaten letters/)
+    expect(cls("auto's", 'autos').tip.local).toMatch(/Meervoud/)
+    expect(cls("don't", 'dont', 'en').tip.en).toMatch(/missing letters/)
+    expect(cls('IJsland', 'Ijsland')).toMatchObject({ kind: 'case', nature: 'cognitive', tag: 'capital' })
+    expect(cls('IJsland', 'Ijsland').tip.local).toMatch(/IJs/)
+    expect(cls('Amsterdam', 'amsterdam').nature).toBe('motor')
+  })
+
+  it('hears a final b as p in Dutch', () => {
+    expect(cls('heb', 'hep', 'nl', d)).toMatchObject({ tag: 'phonetic', nature: 'cognitive' })
+  })
+
+  it('never calls a single slip garbled, even in a one-letter word', () => {
+    expect(cls('a', 's', 'en')).toMatchObject({ kind: 'adjacent', tag: 'neighbour' })
+    expect(cls('a', 'an', 'en').kind).toBe('insertion')
+    expect(cls('a', 'q', 'en').kind).toBe('adjacent')
+    expect(cls('in', 'ob', 'en').detail).toMatch(/several letters/)
+  })
+
+  it('looks through punctuation both words share, and labels punctuation-only slips', () => {
+    expect(cls('wordt,', 'word,')).toMatchObject({ tag: 'dt', detail: "d/t ending: 'wordt', not 'word'" })
+    expect(cls('"hallo"', '"halo"').kind).toBe('missed-double')
+    expect(cls('ziekenhuis.', 'zieken huis.').detail).toBe("split 'ziekenhuis' into two words")
+    expect(cls('huis.', 'huis')).toMatchObject({ kind: 'omission', tag: 'punctuation' })
+    expect(cls('huis', 'huis,')).toMatchObject({ kind: 'insertion', tag: 'punctuation' })
+    expect(cls('wat?', 'wat!')).toMatchObject({ kind: 'substitution', tag: 'punctuation' })
+    expect(cls('huis.', 'huis').tip.local).toMatch(/Leestekens/)
+    expect(classifyTypo('.', '.', 'nl')).toBeNull()
+    expect(cls('.', ',').kind).toBe('substitution')
+  })
+
+  it('folds quotes exactly like the typing session (a backtick is a different key)', () => {
+    expect(classifyTypo("auto's", 'auto’s', 'nl')).toBeNull()
+    expect(classifyTypo("auto's", 'autoʼs', 'nl')).toBeNull()
+    expect(classifyTypo("auto's", 'auto`s', 'nl')).not.toBeNull()
   })
 })

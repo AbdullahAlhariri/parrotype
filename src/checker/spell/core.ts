@@ -36,6 +36,11 @@ export interface CheckParams {
   personalWords?: string[]
   /** rule ids the user switched off */
   disabledRules?: string[]
+  /**
+   * How long to wait for a dictionary that is still loading before answering with the rules alone
+   * (default 12 s). An editor passes a short wait and checks again once the dictionary is ready.
+   */
+  dictWaitMs?: number
   /** checked once the dictionary is there: return early when the caller lost interest */
   shouldStop?: () => boolean
 }
@@ -50,16 +55,20 @@ interface LoadedDict {
   h: HunspellLike
   /** words added to this Hunspell instance from the personal dictionary */
   added: Set<string>
+  /** word -> ranked suggestions for this dictionary (en-US and en-GB differ: organisation) */
+  suggestions: Map<string, RankedSuggestion[]>
 }
 
 const LOAD_TIMEOUT_MS = 12_000
+/** after a failed download, wait this long before trying again (each try is megabytes) */
+const RETRY_AFTER_MS = 20_000
 
 export class CheckerCore {
   private dicts = new Map<DictId, Promise<LoadedDict>>()
   private ready = new Map<DictId, LoadedDict>()
   private freqs = new Map<Lang, Promise<FreqRanks | undefined>>()
   private freqReady = new Map<Lang, FreqRanks>()
-  private suggestCache = new Map<string, RankedSuggestion[]>()
+  private failedAt = new Map<DictId, number>()
   private loaders: CoreLoaders
 
   constructor(loaders: CoreLoaders) {
@@ -75,7 +84,7 @@ export class CheckerCore {
     const { text, lang } = p
     if (!text.trim()) return { issues: [], spell: false }
     const id = dictIdFor(lang, p.variant)
-    const d = await this.dictWithin(id, LOAD_TIMEOUT_MS)
+    const d = await this.dictWithin(id, p.dictWaitMs ?? LOAD_TIMEOUT_MS)
     const freq = d ? await this.freq(lang) : undefined
     if (p.shouldStop?.()) return { issues: [], spell: false }
     const personal = this.syncPersonal(d, p.personalWords)
@@ -94,7 +103,7 @@ export class CheckerCore {
     const spell = checkSpelling(text, lang, d.h, freq, {
       personal,
       misspellings: misspellingsFor(lang),
-      cache: this.suggestCache,
+      cache: d.suggestions,
     })
     return { issues: combineLocal(rules, spell), spell: true }
   }
@@ -134,18 +143,22 @@ export class CheckerCore {
   private dict(id: DictId): Promise<LoadedDict> {
     let p = this.dicts.get(id)
     if (!p) {
+      const failed = this.failedAt.get(id)
+      if (failed !== undefined && Date.now() - failed < RETRY_AFTER_MS) return Promise.reject(new Error(`${id}: failed recently`))
       this.loaders.onDictState?.(id, 'loading')
       p = Promise.all([this.loaders.fetchText(`dicts/${id}.aff.txt`), this.loaders.fetchText(`dicts/${id}.dic.txt`)])
         .then(([aff, dic]) => this.loaders.createHunspell(aff, dic))
         .then((h) => {
-          const d = { h, added: new Set<string>() }
+          const d: LoadedDict = { h, added: new Set<string>(), suggestions: new Map() }
+          this.failedAt.delete(id)
           this.ready.set(id, d)
           this.loaders.onDictState?.(id, 'ready')
           return d
         })
         .catch((err) => {
-          // forget the failure so the next request tries again (offline now, online later)
+          // forget the failure so a later request tries again (offline now, online later)
           this.dicts.delete(id)
+          this.failedAt.set(id, Date.now())
           this.loaders.onDictState?.(id, 'failed')
           throw err
         })
@@ -208,7 +221,7 @@ export class CheckerCore {
           changed = true
         }
       }
-      if (changed) this.suggestCache.clear()
+      if (changed) d.suggestions.clear()
     }
     return want
   }

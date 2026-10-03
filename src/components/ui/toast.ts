@@ -19,7 +19,8 @@ export const useToasts = create<ToastStore>()((set) => ({
   push: (message, tone = 'info') => {
     const id = next++
     set((s) => ({ items: [...s.items, { id, message, tone }].slice(-3) }))
-    setTimeout(() => set((s) => ({ items: s.items.filter((t) => t.id !== id) })), 3200)
+    // problems stay up longer: they usually ask you to do something
+    setTimeout(() => set((s) => ({ items: s.items.filter((t) => t.id !== id) })), tone === 'bad' ? 6500 : 3200)
   },
   dismiss: (id) => set((s) => ({ items: s.items.filter((t) => t.id !== id) })),
 }))

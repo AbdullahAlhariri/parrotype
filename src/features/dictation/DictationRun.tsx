@@ -13,7 +13,7 @@ import { gradeAttempt } from './logic/grade'
 import type { DictationItem } from './logic/items'
 import { initialItem, itemReducer, type ItemAction, type ItemState } from './logic/ladder'
 import { recordFirstCheck, recordIssues } from './logic/record'
-import type { ItemResult } from './logic/summary'
+import { keesRepeat, type ItemResult } from './logic/summary'
 import type { KeesVoice } from './useKeesVoice'
 
 interface Props {
@@ -36,7 +36,7 @@ const INTERACTIVE = 'input, textarea, select, button, a, [contenteditable], dial
 function repeatWords(s: ItemState): string[] {
   const words = [...new Set((s.first?.wrong ?? []).filter((t) => t.status !== 'extra' && t.op.expected).map((t) => t.op.expected!))]
   if (!words.length) return []
-  return words.length === 1 ? [words[0], words[0], words[0]].map((w) => `${w}.`) : words.slice(0, 3).map((w) => `${w}.`)
+  return words.length === 1 ? keesRepeat(words[0]) : words.slice(0, 3).map((w) => `${w}.`)
 }
 
 export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, notice, autoStart = false }: Props) {

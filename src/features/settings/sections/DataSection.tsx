@@ -54,8 +54,8 @@ export function DataSection() {
       title="Data"
       intro={
         sessions + nest === 0
-          ? 'Everything lives in this browser and nothing is sent anywhere. So far that is just your settings.'
-          : `Everything lives in this browser and nothing is sent anywhere: ${what}, about ${kb(bytes)}.`
+          ? 'Everything lives in this browser. So far that is just your settings.'
+          : `Everything lives in this browser: ${what}, about ${kb(bytes)}.`
       }
     >
       <div className="set-row">
@@ -92,7 +92,10 @@ export function DataSection() {
           <Button
             variant="ghost"
             onClick={() => {
+              // keep 'onboarded': resetting the look should not replay the first-visit intro
+              const { onboarded } = useSettings.getState()
               resetSettings()
+              useSettings.getState().set('onboarded', onboarded)
               setFont('recursive')
               setKees('lively')
               toast('Settings are back to the defaults.')

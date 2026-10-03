@@ -10,6 +10,8 @@ interface Props {
   /** dead key / IME composition in progress at [composeAt, composeAt + composeLen) */
   composeAt?: number
   composeLen?: number
+  /** stop on error: the letter a wrong key was refused at */
+  blockedAt?: number
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * LTR: one inline span per letter (exact caret maths, per-letter underline).
  * RTL (Arabic): inline runs with zero-width joiners so letters keep joining.
  */
-export const Word = memo(function Word({ view, index, rtl, active, composeAt = -1, composeLen = 0 }: Props) {
+export const Word = memo(function Word({ view, index, rtl, active, composeAt = -1, composeLen = 0, blockedAt = -1 }: Props) {
   let cls = 'ts-w'
   if (view.committed && !view.correct) cls += ' ts-w--error'
   if (active) cls += ' ts-w--active'
@@ -27,7 +29,7 @@ export const Word = memo(function Word({ view, index, rtl, active, composeAt = -
   if (rtl) {
     const { runs } = buildRuns(
       view.letters.map((l) => l.char),
-      view.letters.map((l) => l.state),
+      view.letters.map((l, i) => (i === blockedAt ? 'incorrect' : l.state)),
     )
     return (
       <div className={cls} data-wi={index}>
@@ -45,6 +47,7 @@ export const Word = memo(function Word({ view, index, rtl, active, composeAt = -
       {view.letters.map((l, i) => {
         let c = `ts-l is-${l.state}`
         if (composeLen > 0 && i >= composeAt && i < composeAt + composeLen) c += ' is-composing'
+        if (i === blockedAt) c += ' is-blocked'
         return (
           <span key={i} className={c}>
             {l.char}

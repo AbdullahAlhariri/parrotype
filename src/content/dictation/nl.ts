@@ -513,7 +513,7 @@ export const DICTATION_NL: DictationSentence[] = [
     text: "De baby's slapen al in hun bedjes.",
     level: 1,
     focus: ['apostrophe'],
-    note: { en: "baby's: an English word ending in y gets 's.", local: "baby's: een Engels woord op -y krijgt 's." },
+    note: { en: "baby's: a consonant + y at the end gets 's (but: jockeys).", local: "baby's: medeklinker + y aan het eind krijgt 's (maar: jockeys)." },
   },
   {
     id: 'nl-d08',

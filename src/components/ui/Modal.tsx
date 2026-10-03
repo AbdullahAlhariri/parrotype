@@ -1,4 +1,17 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type MouseEvent, type ReactNode } from 'react'
+
+/**
+ * True when a click on a <dialog> landed on its ::backdrop. e.target alone is not enough:
+ * clicks in the dialog's own padding also report the dialog as the target.
+ */
+export function isBackdropClick(e: MouseEvent<HTMLDialogElement>): boolean {
+  const d = e.currentTarget
+  if (e.target !== d) return false
+  // keyboard-generated clicks have no position; never treat them as backdrop clicks
+  if (e.clientX === 0 && e.clientY === 0 && e.detail === 0) return false
+  const r = d.getBoundingClientRect()
+  return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom
+}
 
 interface Props {
   open: boolean
@@ -33,7 +46,7 @@ export function Modal({ open, onClose, title, children, className = '' }: Props)
         e.stopPropagation()
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose()
+        if (isBackdropClick(e)) onClose()
       }}
     >
       {title && (

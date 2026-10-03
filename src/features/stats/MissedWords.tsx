@@ -10,8 +10,9 @@ export function MissedWords({ words, filter }: { words: MissedWord[]; filter: La
   const top = words.slice(0, SHOW)
   const current = useSettings((s) => s.lang)
   const set = practiseSet(top, filter === 'all' ? current : filter)
-  const n = set.words.length
-  const label = n === 1 ? `Practise ${set.mixed ? `this ${LANG_ADJ[set.lang]} word` : 'this word'}` : `Practise these ${n} ${set.mixed ? `${LANG_ADJ[set.lang]} ` : ''}words`
+  // in the all-languages view the button names the language it takes: "Practise these 7 Dutch words"
+  const adj = set.mixed ? `${LANG_ADJ[set.lang]} ` : ''
+  const label = set.words.length === 1 ? `Practise this ${adj}word` : `Practise these ${set.words.length} ${adj}words`
   return (
     <section className="st-section st-words" aria-labelledby="st-words-title">
       <SectionHead

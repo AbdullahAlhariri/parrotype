@@ -70,11 +70,13 @@ export function buildCommands(ctx: CommandContext): Command[] {
   }
 
   for (const t of THEME_CHOICES) {
+    const auto = t.id === AUTO_THEME_ID
     out.push({
       id: `theme:${t.id}`,
       group: 'theme',
-      label: t.name,
-      keywords: t.id === AUTO_THEME_ID ? 'system dark light' : getTheme(t.id).species,
+      label: auto ? 'auto' : t.name,
+      hint: auto ? `follows your system, now ${resolveTheme(AUTO_THEME_ID).name}` : undefined,
+      keywords: auto ? 'system follows dark light' : getTheme(t.id).species,
       current: s.theme === t.id,
       previewTheme: t.id,
       run: () => set('theme', t.id),
@@ -170,10 +172,23 @@ export function buildCommands(ctx: CommandContext): Command[] {
     label: 'import or reset',
     hint: 'in settings',
     keywords: 'restore delete',
-    run: () => navigate('/settings#data'),
+    run: () => goToSettingsSection('data'),
   })
 
   return out
+}
+
+/**
+ * Open a settings section. navigate() alone would not scroll when settings is already open
+ * (same path, no remount), and it scrolls to the top on the way.
+ */
+export function goToSettingsSection(id: string) {
+  if (typeof location !== 'undefined' && location.pathname === '/settings') {
+    history.replaceState(null, '', `/settings#${id}`)
+    document.getElementById(id)?.scrollIntoView({ block: 'start' })
+    return
+  }
+  navigate(`/settings#${id}`)
 }
 
 /** The theme a command previews, resolved ('auto' becomes kea-dark or kea-light). */

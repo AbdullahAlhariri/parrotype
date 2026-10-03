@@ -6,6 +6,7 @@ import { applyTheme, paintTheme } from '@/styles/themes'
 import { setTyping } from '@/lib/focus'
 import { Icon } from '@/components/ui/Icon'
 import { Kbd } from '@/components/ui/Kbd'
+import { isBackdropClick } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/toast'
 import { buildCommands, previewOf, type Command } from './commands'
 import { rank } from './fuzzy'
@@ -143,7 +144,7 @@ function PaletteDialog({ initialQuery, onClose }: { initialQuery: string; onClos
         close()
       }}
       onClick={(e) => {
-        if (e.target === dialogRef.current) close()
+        if (isBackdropClick(e)) close()
       }}
     >
       <div className="palette-search">
@@ -188,13 +189,9 @@ function PaletteDialog({ initialQuery, onClose }: { initialQuery: string; onClos
               <span className="palette-label" lang={c.lang} style={c.fontFamily ? { fontFamily: c.fontFamily } : undefined}>
                 {c.label}
               </span>
+              {c.hint && <span className="palette-hint">{c.hint}</span>}
               {c.previewTheme && <ThemeDots id={c.previewTheme} />}
-              {c.hint && !c.current && <span className="palette-hint">{c.hint}</span>}
-              {c.current && (
-                <span className="palette-current">
-                  <Icon name="check" size={16} label="current" />
-                </span>
-              )}
+              <span className="palette-current">{c.current && <Icon name="check" size={16} label="current" />}</span>
             </li>
           ))}
         </ul>

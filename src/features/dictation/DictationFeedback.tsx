@@ -82,8 +82,13 @@ export function AnswerLine({ grade, lang }: { grade: Grade; lang: Lang }) {
       {lineSegments(grade, 'expected').map((s, i) =>
         s.kind === 'gap' ? (
           s.text
-        ) : s.token.status === 'ok' || s.token.punct ? (
+        ) : s.token.status === 'ok' ? (
           s.token.op.expected
+        ) : s.token.punct ? (
+          // punctuation does not count, but show which mark was missed
+          <span key={i} className="g-fixed">
+            {s.token.op.expected}
+          </span>
         ) : (
           <span key={i} className="w-fixed">
             <Glyphs glyphs={expectedGlyphs(s.token)} />
@@ -177,7 +182,7 @@ export function statusText(s: ItemState, item: DictationItem): string {
   const firstScore = `${first.correct} of ${first.total}`
   if (s.phase === 'done') {
     if (s.attempts === 1 && s.hint === 0) {
-      if (item.target) return first.targetOk ? `${firstScore} words, and the right ${item.target.toLowerCase()}.` : `${firstScore} words.`
+      if (item.target) return `${item.target}: the right one. ${firstScore} words.`
       return g.punctOnly ? `${firstScore} words. The punctuation differs a little, which does not count here.` : `${firstScore} words. Clean.`
     }
     if (s.hint >= 4) return `That's the one. ${firstScore} words were right the first time.`

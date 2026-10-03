@@ -8,8 +8,21 @@ const weak = (unit: string, kind: 'key' | 'bigram', score = 0.5): Weakness => ({
 describe('wordList', () => {
   it('serves frequency-ranked lists per language', () => {
     expect(wordList('nl', 5)).toEqual(['ik', 'je', 'het', 'de', 'dat'])
-    expect(wordList('en').length).toBe(3000)
+    expect(wordList('en').length).toBeGreaterThan(2950)
     expect(wordList('ar').length).toBe(2000)
+  })
+
+  it('drops subtitle fragments and fillers, and lowercase English i', () => {
+    for (const junk of ['don', 'll', 're', 'uh', 'mm', 'i']) expect(wordList('en')).not.toContain(junk)
+    expect(wordList('nl')).not.toContain('ie')
+    expect(wordList('en')).toContain('you')
+    const words = generateWords('en', { count: 400, rand: seeded(3) })
+    expect(words).not.toContain('i')
+    expect(words).not.toContain('don')
+    // in punctuation mode the pronoun shows up, always as a capital
+    const punct = generateWords('en', { count: 3000, punctuation: true, rand: seeded(4) }).map((w) => w.replace(/[^\p{L}]/gu, ''))
+    expect(punct).toContain('I')
+    expect(punct).not.toContain('i')
   })
 })
 

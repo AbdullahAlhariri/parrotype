@@ -81,9 +81,6 @@
 .st-cta {
   margin-top: var(--s-6);
 }
-.st-cta-unit {
-  font-size: 1.05em;
-}
 
 .st-dim {
   color: var(--sub);
@@ -148,6 +145,8 @@
 /* delta labels: "+" in --ok, everything else stays quiet */
 .st-delta {
   color: var(--sub);
+}
+.st-delta-num {
   white-space: nowrap;
 }
 .st-delta.is-up .st-delta-num {
@@ -194,11 +193,24 @@
 /* headline                                                            */
 /* ------------------------------------------------------------------ */
 
+/* Each number is two subgrid rows: label + value share a bottom edge, the notes under them
+   share a top edge, however many lines a note wraps to. */
 .st-headline {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
-  gap: var(--s-6) var(--s-7);
-  align-items: end;
+  gap: 0 var(--s-7);
+}
+.st-hl {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+}
+.st-hl-top {
+  align-self: end;
+}
+.st-hl-sub {
+  align-self: start;
 }
 .st-hl-label {
   color: var(--sub);
@@ -208,6 +220,7 @@
 .st-hl-value {
   margin-top: var(--s-2);
   color: var(--text);
+  font-variant-numeric: tabular-nums;
   font-size: var(--fs-2xl);
   font-weight: 640;
   line-height: 1;
@@ -543,6 +556,9 @@
 .st-session-table th.num {
   width: 5.5rem;
 }
+.st-session-table .st-lang {
+  margin-inline-start: 0;
+}
 .st-mode {
   font-weight: 560;
 }
@@ -792,9 +808,6 @@
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
 }
-.st-rule-pack {
-  font-size: 0.95em;
-}
 .st-rule-foot {
   display: flex;
   flex-wrap: wrap;
@@ -972,7 +985,10 @@
   }
   .st-headline {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: var(--s-6) var(--s-5);
+    column-gap: var(--s-5);
+  }
+  .st-hl:nth-child(n + 3) {
+    margin-top: var(--s-6);
   }
   .st-hl:not(.st-hl-hero) .st-hl-value {
     font-size: var(--fs-xl);
@@ -1012,6 +1028,9 @@
   }
   .st-session-table .st-col-when {
     display: none;
+  }
+  .st-session-table th.num {
+    width: auto;
   }
   .st-session-table .st-what {
     padding-inline-start: 0;

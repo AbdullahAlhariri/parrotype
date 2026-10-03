@@ -33,7 +33,7 @@ export const iLower = regexRule({
 })
 
 export const sentenceStartCap = regexRule({
-  id: 'en.sentence-start-cap',
+  id: 'en.sent-start-cap',
   title: 'capital at the start of a sentence',
   category: 'capitalization',
   confidence: 'high',
@@ -77,14 +77,14 @@ export const monthCap = regexRule({
   title: 'months get a capital',
   category: 'capitalization',
   confidence: 'high',
-  re: /\b(?:january|february|april|june|july|september|october|november|december)\b|(?<=\b(?:in|since|until|till|from|early|late|mid|last|next|before|after|during|\d{1,2}(?:st|nd|rd|th)?)\s+)(?:march|may|august)\b(?!\s+(?:be|have|not|also|still|well|never|need|want|go|come|help|I|you|we|they|he|she|it)\b)/g,
+  re: /\b(?:january|february|april|june|july|september|october|november|december)\b|(?<=\b(?:in|since|until|till|from|early|late|mid|last|next|before|after|during|\d{1,2}(?:st|nd|rd|th)?)\s+)(?:march|august|may(?!\s+(?:be|have|not|also|still|well|never|need|want|go|come|help|I|you|we|they|he|she|it)\b))\b/g,
   fix: (f) => [cap(f.text)],
   msg: (_f, fixes) => ({
     message: `Months get a capital in English: ${q(fixes[0])}`,
     explanation: `English writes months with a capital letter: in July, on 3 March. Dutch writes ‘juli’ in lowercase.`,
     learnMore: LINKS.capitals,
   }),
-  examples: { wrong: 'My birthday is in july.', flag: 'july', fix: 'July', right: 'My birthday is in July.', ok: ['It may rain.', 'We will march on.', 'Before may I ask...'] },
+  examples: { wrong: 'My birthday is in july.', flag: 'july', fix: 'July', right: 'My birthday is in July.', ok: ['It may rain.', 'We will march on.', 'Before may I ask...', 'Since may we leave?'] },
 })
 
 export const langCap = regexRule({

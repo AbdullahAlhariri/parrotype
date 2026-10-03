@@ -463,44 +463,49 @@ export const interdental = lexRule(
 /* Tanween (only matters when harakat are typed)                       */
 /* ------------------------------------------------------------------ */
 
-export const tanweenMissingAlif = reRule(
+const TANWEEN_MISSING = /([بتثجحخدذرزسشصضطظعغفقكلمنهوي])\u064B(?![ا\u0621-\u064A])/u
+const TANWEEN_EXTRA = /(ة|اء)(?:\u064Bا|ا\u064B)/u
+
+export const tanweenMissingAlif: ArRule = arRule(
   {
     id: 'ar.tanween-missing-alif',
     title: 'كتابًا (alif after tanween fath)',
     category: 'spelling',
     confidence: 'high',
-    examples: { flag: [['قرأت كتابً', 'بً', 'بًا']], ok: ['قرأت كتابًا جميلًا.', 'شكرًا جزيلًا.', 'مساءً سعيدًا.', 'مدرسةً كبيرة.'] },
+    examples: { flag: [['قرأت كتابً', 'كتابً', 'كتابًا']], ok: ['قرأت كتابًا جميلًا.', 'شكرًا جزيلًا.', 'مساءً سعيدًا.', 'مدرسةً كبيرة.'] },
   },
-  new RegExp(`([بتثجحخدذرزسشصضطظعغفقكلمنهوي])\\u064B(?![ا${L}])`),
-  {
-    fix: (m) => [`${m[1]}ًا`],
-    msg: {
-      message: `Tanween fath needs an alif after it`,
-      messageLocal: `تنوين النصب تتبعه ألف (كتابًا).`,
-      explanation: `The accusative tanween is followed by an alif: كتابًا، شكرًا. No alif after ة, after اء or after ى: مدرسةً، مساءً، هدًى.`,
-      explanationLocal: `يُكتب بعد تنوين النصب ألف: كتابًا، شكرًا، إلا بعد التاء المربوطة والهمزة المسبوقة بألف والألف المقصورة: مدرسةً، مساءً، هدًى.`,
-    },
-  },
+  (ctx) =>
+    ctx.words
+      .filter((t) => TANWEEN_MISSING.test(t.text))
+      .map((t) =>
+        tokenHit(t, [t.text.replace(TANWEEN_MISSING, '$1\u064Bا')], {
+          message: `Tanween fath needs an alif after it`,
+          messageLocal: `تنوين النصب تتبعه ألف (كتابًا).`,
+          explanation: `The accusative tanween is followed by an alif: كتابًا، شكرًا. No alif after ة, after اء or after ى: مدرسةً، مساءً، هدًى.`,
+          explanationLocal: `يُكتب بعد تنوين النصب ألف: كتابًا، شكرًا، إلا بعد التاء المربوطة والهمزة المسبوقة بألف والألف المقصورة: مدرسةً، مساءً، هدًى.`,
+        }),
+      ),
 )
 
-export const tanweenExtraAlif = reRule(
+export const tanweenExtraAlif: ArRule = arRule(
   {
     id: 'ar.tanween-extra-alif',
     title: 'مساءً (no alif after ة or اء)',
     category: 'spelling',
     confidence: 'high',
-    examples: { flag: [['مساءاً سعيدا', 'اءاً', 'اءً']], ok: ['مساءً سعيدًا.', 'مساء الخير.'] },
+    examples: { flag: [['مساءاً سعيدا', 'مساءاً', 'مساءً']], ok: ['مساءً سعيدًا.', 'مساء الخير.'] },
   },
-  /(ة|اء)(?:ًا|اً)/,
-  {
-    fix: (m) => [`${m[1]}ً`],
-    msg: {
-      message: `No alif after ${q('ة')} or ${q('اء')}: ${q('مساءً')}`,
-      messageLocal: `لا تُكتب ألف التنوين بعد التاء المربوطة ولا بعد الهمزة المسبوقة بألف: مساءً.`,
-      explanation: `After ة and after a hamza that follows an alif, tanween fath stands alone: مدرسةً، مساءً.`,
-      explanationLocal: `بعد التاء المربوطة وبعد الهمزة المسبوقة بألف يُكتب التنوين وحده: مدرسةً، مساءً.`,
-    },
-  },
+  (ctx) =>
+    ctx.words
+      .filter((t) => TANWEEN_EXTRA.test(t.text))
+      .map((t) =>
+        tokenHit(t, [t.text.replace(TANWEEN_EXTRA, '$1\u064B')], {
+          message: `No alif after ${q('ة')} or ${q('اء')}: ${q('مساءً')}`,
+          messageLocal: `لا تُكتب ألف التنوين بعد التاء المربوطة ولا بعد الهمزة المسبوقة بألف: مساءً.`,
+          explanation: `After ة and after a hamza that follows an alif, tanween fath stands alone: مدرسةً، مساءً.`,
+          explanationLocal: `بعد التاء المربوطة وبعد الهمزة المسبوقة بألف يُكتب التنوين وحده: مدرسةً، مساءً.`,
+        }),
+      ),
 )
 
 /* ------------------------------------------------------------------ */
@@ -549,29 +554,44 @@ export const persianLetters: ArRule = arRule(
   },
 )
 
-export const elongation = reRule(
+const TRIPLE = /([\u0621-\u064A])\1{2,}/gu
+
+export const elongation: ArRule = arRule(
   {
     id: 'ar.elongation',
     title: 'the same letter three times',
     category: 'typo',
     confidence: 'medium',
-    examples: { flag: [['جمييييل جدا', 'يييي', 'ي']], ok: ['جميل جدا.', 'هههههه', 'اللغة العربية جميلة.', 'مممم، لا أعرف.', 'آآآه، فهمت.'] },
-  },
-  new RegExp(`([${L}])\\1{2,}`),
-  {
-    // laughter and interjections (ههههه، مممم، آآآه، أوووه) are left alone
-    when: (m, ctx) => {
-      if (m[1] === 'ه' || m[1] === 'م' || m[1] === 'ش') return false
-      const tok = ctx.words.find((t) => t.start <= m.index && m.index < t.end)
-      return !tok || !/^[أآاوهم]+$/.test(bare(tok.text))
+    examples: {
+      flag: [
+        ['جمييييل جدا', 'جمييييل', 'جميل'],
+        ['الللغة العربية', 'الللغة', 'اللغة'],
+      ],
+      ok: ['جميل جدا.', 'هههههه', 'اللغة العربية جميلة.', 'مممم، لا أعرف.', 'آآآه، فهمت.'],
     },
-    fix: (m) => [m[1]],
-    msg: (m) => ({
-      message: `${q(m[1])} repeated: one is enough`,
-      messageLocal: `حرف مكرر؛ لا يتكرر حرف ثلاث مرات في كلمة عربية.`,
-      explanation: `No Arabic word has the same letter three times in a row. Stretching a word (جمييييل) is fine in a chat, not in writing.`,
-      explanationLocal: `لا يتكرر حرف ثلاث مرات متتالية في كلمة عربية. المد للتعبير مقبول في المحادثة، لا في الكتابة.`,
-    }),
+  },
+  (ctx) => {
+    const out: RuleHit[] = []
+    for (const t of ctx.words) {
+      const w = bare(t.text)
+      if (!new RegExp(TRIPLE.source, 'u').test(w)) continue
+      // laughter and interjections (ههههه، مممم، آآآه، أوووه، ششش) are left alone
+      if (/^[أآاوهمش]+$/.test(w)) continue
+      const one = w.replace(TRIPLE, '$1')
+      const two = w.replace(TRIPLE, '$1$1')
+      // a letter may legitimately appear twice (اللغة = ال + لغة), so offer both, a known word first
+      let fixes = /^[وفبك]?الل/.test(two) && !/^[وفبك]?الل/.test(one) ? [two, one] : [one, two]
+      if (ctx.dict) fixes = [...fixes.filter((f) => ctx.dict!.has(f)), ...fixes.filter((f) => !ctx.dict!.has(f))]
+      out.push(
+        tokenHit(t, fixes, {
+          message: `A letter typed three times or more`,
+          messageLocal: `حرف مكرر؛ لا يتكرر حرف ثلاث مرات في كلمة عربية.`,
+          explanation: `No Arabic word has the same letter three times in a row. Stretching a word (جمييييل) is fine in a chat, not in writing.`,
+          explanationLocal: `لا يتكرر حرف ثلاث مرات متتالية في كلمة عربية. المد للتعبير مقبول في المحادثة، لا في الكتابة.`,
+        }),
+      )
+    }
+    return out
   },
 )
 

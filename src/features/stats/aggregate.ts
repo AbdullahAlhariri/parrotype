@@ -5,6 +5,7 @@ import { currentStreak } from '@/state/stats'
 import { keyOf, layoutFor, type LayoutId } from '@/engine/keyboard'
 import { weaknesses, type Weakness } from '@/engine/keystats'
 import { gymPackFor, ruleMark, type GymPack } from './gym'
+import { shortDate } from './format'
 
 // Pure helpers that turn the stats store into what the stats page draws.
 // Everything here takes `now` as an argument so it can be tested.
@@ -580,6 +581,23 @@ export function bestsList(bests: Record<string, number>, sessions: readonly Sess
   }
   const order = (l: Lang | null) => (l === null ? 99 : LANGS.indexOf(l))
   return rows.sort((a, b) => order(a.lang) - order(b.lang) || a.config.localeCompare(b.config, 'en', { numeric: true }))
+}
+
+/**
+ * The config of a session without what the mode column already says: "daily 2026-10-03" in a
+ * daily row on 3 Oct is just "", "daily 2026-09-21" on another day becomes "21 Sept".
+ */
+export function sessionConfig(s: Pick<SessionRecord, 'mode' | 'config' | 'at'>): string {
+  let c = (s.config ?? '').trim()
+  for (const prefix of [MODE_LABELS[s.mode], s.mode]) {
+    if (prefix && c.toLowerCase().startsWith(prefix.toLowerCase() + ' ')) {
+      c = c.slice(prefix.length + 1).trim()
+      break
+    }
+  }
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(c)
+  if (iso) return c === dayKey(new Date(s.at)) ? '' : shortDate(new Date(+iso[1], +iso[2] - 1, +iso[3]).getTime(), s.at)
+  return c
 }
 
 export const MODE_LABELS: Record<Mode, string> = {

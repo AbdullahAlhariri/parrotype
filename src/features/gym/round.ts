@@ -22,6 +22,14 @@ export function isRight(item: DrillItem, typed: string, lang: Lang): boolean {
   return [item.answer, ...(item.accept ?? [])].some((a) => normalizeAnswer(a, lang).toLocaleLowerCase() === t)
 }
 
+/** The right form to show in the sentence once answered: the accepted spelling the user typed, capitalised like the answer. */
+export function settledForm(item: DrillItem, typed: string, lang: Lang): string {
+  const t = normalizeAnswer(typed, lang).toLocaleLowerCase()
+  const match = [item.answer, ...(item.accept ?? [])].find((a) => normalizeAnswer(a, lang).toLocaleLowerCase() === t) ?? item.answer
+  const upper = item.answer[0] !== item.answer[0].toLocaleLowerCase()
+  return upper ? match[0].toLocaleUpperCase() + match.slice(1) : match
+}
+
 export interface ProgressLike {
   known?: string[]
   missed?: Record<string, number>

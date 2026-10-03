@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Issue } from '@/types'
 import { CheckerCore } from './core'
-import { nodeCore } from './testing'
+import { nodeCore, nodeLoaders } from './testing'
 
 const noOverlap = (issues: Issue[]) => {
   for (let i = 1; i < issues.length; i++) {
@@ -39,6 +39,14 @@ describe('CheckerCore', () => {
     expect(us.issues.some((i) => i.text === 'colour')).toBe(true)
     expect(gb.issues.some((i) => i.text === 'colour')).toBe(false)
     expect(gb.issues.find((i) => i.text === 'definately')?.replacements[0]).toBe('definitely')
+  }, 20_000)
+
+  it('keeps suggestions apart per English variant (one shared cache would leak them)', async () => {
+    const text = 'We need an organisaton.'
+    const fix = async (variant: 'en-US' | 'en-GB') =>
+      (await core.check({ text, lang: 'en', variant })).issues.find((i) => i.text === 'organisaton')?.replacements[0]
+    expect(await fix('en-US')).toBe('organization')
+    expect(await fix('en-GB')).toBe('organisation')
   }, 20_000)
 
   it('checks Arabic', async () => {
@@ -86,6 +94,44 @@ describe('CheckerCore', () => {
     expect(r.issues.every((i) => i.source === 'rules')).toBe(true)
     expect(await broken.isWord('eigelijk', 'nl')).toBe(true)
     expect(await broken.suggest('eigelijk', 'nl')).toContain('eigenlijk') // the misspelling map still helps
+  })
+
+  it('answers with the rules alone while the dictionary is still loading, when asked to', async () => {
+    const disk = nodeLoaders()
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const slow = new CheckerCore({
+      ...disk,
+      fetchText: async (path) => {
+        if (path.startsWith('dicts/')) await gate
+        return disk.fetchText(path)
+      },
+    })
+    const text = 'Hij word morgen eigelijk opgehaald.'
+    const quick = await slow.check({ text, lang: 'nl', dictWaitMs: 10 })
+    expect(quick.spell).toBe(false)
+    expect(quick.issues.map((i) => i.text)).toContain('word')
+    release()
+    const full = await slow.check({ text, lang: 'nl', dictWaitMs: 10_000 })
+    expect(full.spell).toBe(true)
+  }, 20_000)
+
+  it('does not download a failed dictionary again on every check', async () => {
+    let fetches = 0
+    const offline = new CheckerCore({
+      fetchText: async () => {
+        fetches++
+        throw new Error('offline')
+      },
+      createHunspell: async () => {
+        throw new Error('unreachable')
+      },
+    })
+    await offline.check({ text: 'Een zin.', lang: 'nl' })
+    const after = fetches
+    await offline.check({ text: 'Nog een zin.', lang: 'nl' })
+    await offline.isWord('zin', 'nl')
+    expect(fetches).toBe(after)
   })
 
   it('stops early when the caller lost interest', async () => {

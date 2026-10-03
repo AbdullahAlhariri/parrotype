@@ -122,6 +122,13 @@ body[data-typing] .ts-stage {
   text-decoration-line: line-through;
   text-decoration-thickness: 0.07em;
 }
+.ts-l.is-blocked {
+  color: var(--error);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.18em;
+  text-decoration-skip-ink: none;
+}
 .ts-l.is-composing {
   text-decoration-line: underline;
   text-decoration-style: solid;
@@ -292,4 +299,10 @@ body[data-typing]:not([data-focus-mode='off']) .ts-restart:not(:focus-visible) {
 
 .ts-keyboard {
   margin-top: var(--s-6);
+}
+/* on phones the system keyboard is what you type on; the physical layout only adds noise */
+@media (pointer: coarse) {
+  .ts-keyboard {
+    display: none;
+  }
 }

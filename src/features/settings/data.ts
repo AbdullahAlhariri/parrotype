@@ -40,16 +40,28 @@ export function ownKeys(store: KeyValueStore): string[] {
   return keys.sort()
 }
 
+/**
+ * How a stored value goes into the backup. JSON (what the zustand stores write) is embedded as
+ * JSON so the file stays readable. Anything else, including JSON-encoded strings and numbers
+ * written differently from JSON.stringify, is kept as the raw string, so import gives back
+ * exactly the same bytes (applyBackup writes strings verbatim).
+ */
+export function encodeValue(raw: string): unknown {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'string' && JSON.stringify(parsed) === raw) return parsed
+  } catch {
+    /* not JSON */
+  }
+  return raw
+}
+
 export function collectData(store: KeyValueStore, now = new Date()): Backup {
   const data: Record<string, unknown> = {}
   for (const k of ownKeys(store)) {
     const raw = store.getItem(k)
     if (raw == null) continue
-    try {
-      data[k] = JSON.parse(raw)
-    } catch {
-      data[k] = raw
-    }
+    data[k] = encodeValue(raw)
   }
   return { app: 'parrotype', version: 1, exportedAt: now.toISOString(), data }
 }

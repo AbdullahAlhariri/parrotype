@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { navigate } from '@/lib/router'
 import { useSettings } from '@/state/settings'
 import { currentStreak, useStats } from '@/state/stats'
@@ -8,7 +8,7 @@ import { Stat } from '@/components/ui'
 import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
-import { DAILY_MS, dailyChallenge, dailyConfig, dailyRuns, formatDay } from './daily'
+import { DAILY_MS, dailyChallenge, dailyConfig, dailyMoreWords, dailyRuns, formatDay } from './daily'
 import { repairHref } from './repair'
 import './practice.css'
 
@@ -16,8 +16,6 @@ type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: 
 
 export default function DailyPage() {
   const lang = useSettings((s) => s.lang)
-  const stopOnError = useSettings((s) => s.stopOnError)
-  const showKeyboard = useSettings((s) => s.showKeyboard)
   const sessions = useStats((s) => s.sessions)
   const days = useStats((s) => s.days)
   const [day] = useState(() => dayKey())
@@ -25,12 +23,15 @@ export default function DailyPage() {
   const [phase, setPhase] = useState<Phase>({ kind: 'typing' })
 
   const challenge = useMemo(() => dailyChallenge(lang, day), [lang, day])
+  const moreRound = useRef(0)
+  const moreWords = () => dailyMoreWords(lang, day, ++moreRound.current)
   const runs = dailyRuns(sessions, lang, day)
   const best = runs[0]
   const streak = currentStreak(days)
   const playedToday = days.includes(day)
 
   const again = () => {
+    moreRound.current = 0
     setAttempt((a) => a + 1)
     setPhase({ kind: 'typing' })
   }
@@ -69,13 +70,13 @@ export default function DailyPage() {
           words={challenge.words}
           lang={lang}
           timeLimitMs={DAILY_MS}
+          onNeedMoreWords={moreWords}
           onFinish={onFinish}
           onRestart={again}
           resetKey={`daily:${day}:${lang}:${attempt}`}
-          stopOnError={stopOnError}
-          showKeyboard={showKeyboard}
           showLiveStats
           autoFocus
+          label="Daily challenge text"
         />
       ) : (
         <ResultView

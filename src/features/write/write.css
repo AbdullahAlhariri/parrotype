@@ -556,6 +556,11 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .il-lt.is-warn {
   color: var(--text);
 }
+.il-lt-detail {
+  display: block;
+  margin-top: var(--s-2);
+  color: var(--sub);
+}
 
 @media (max-width: 880px) {
   .il-stats {

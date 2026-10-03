@@ -6,7 +6,7 @@ import { Button, Icon, Select, Slider } from '@/components/ui'
 import { Row, Section } from '../Row'
 
 const SAMPLES: Record<Lang, string> = {
-  nl: 'Hij wordt morgen dertig, maar hij gedraagt zich als twaalf.',
+  nl: 'Hij wordt morgen dertig, maar hij gedraagt zich als een kind van twaalf.',
   en: 'Their parrot is quieter than they expected.',
   ar: 'صباح الخير، هل تحب القهوة؟',
 }
@@ -100,7 +100,7 @@ export function DictationSection() {
           </Row>
         )
       })}
-      <Row label="Speaking speed" hint={`${Number(s.speechRate.toFixed(2))}× normal speed. Slower helps you hear where the d and the t go.`} labelFor stacked>
+      <Row label="Speaking speed" hint={`${Number(s.speechRate.toFixed(2))}× normal speed. Slower leaves you time to think about the spelling.`} labelFor stacked>
         {({ controlId, hintId }) => (
           <div className="rate-control">
             <span aria-hidden="true">slow</span>

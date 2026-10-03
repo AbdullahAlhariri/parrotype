@@ -4,7 +4,7 @@ import { Button, Kbd, Kees, useReducedMotion, type KeesMood } from '@/components
 import { useSettings } from '@/state/settings'
 import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import { tagName, type ExplainIn } from './logic/explain'
-import { feedbackLine, formatDuration, type SessionSummary } from './logic/summary'
+import { feedbackLine, formatDuration, keesRepeat, type SessionSummary } from './logic/summary'
 
 interface Props {
   lang: Lang
@@ -111,7 +111,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
 
         <div className="dict-sum-side">
           <div className="dict-sum-perch">
-            <Kees mood={mood} size={64} bubble={mood === 'repeat' && top ? [`${top}.`, `${top}.`, `${top}.`] : undefined} bubbleLang={tag} bubblePlacement="left" />
+            <Kees mood={mood} size={64} bubble={mood === 'repeat' && top ? keesRepeat(top) : undefined} bubbleLang={tag} bubblePlacement="left" />
           </div>
           <dl className="dict-sum-details">
             <div>
@@ -147,9 +147,11 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
                     <span className="dict-sum-word mono-text" lang={tag} dir={dir}>
                       {w.word}
                     </span>
-                    <s className="dict-sum-typed mono-text" lang={tag} dir={dir} aria-label={`you typed ${w.typed[0]}`}>
-                      {w.typed[0] || '—'}
-                    </s>
+                    {w.typed[0] && (
+                      <s className="dict-sum-typed mono-text" lang={tag} dir={dir} aria-label={`you typed ${w.typed[0]}`}>
+                        {w.typed[0]}
+                      </s>
+                    )}
                     <span className="dict-sum-tag">
                       {w.tag ? tagName(w.tag, lang, explainIn) : w.kind ? tagName(w.kind, lang, explainIn) : ''}
                       {w.count > 1 && <span className="tabular"> {w.count}x</span>}

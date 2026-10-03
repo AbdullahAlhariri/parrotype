@@ -18,8 +18,6 @@ type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: 
 
 export function FocusDrill({ units }: { units: string[] }) {
   const lang = useSettings((s) => s.lang)
-  const stopOnError = useSettings((s) => s.stopOnError)
-  const showKeyboard = useSettings((s) => s.showKeyboard)
   // frozen for the sitting, so the chips don't shift after each run updates the stats
   const [targets] = useState<Weakness[]>(() => {
     const st = useStats.getState()
@@ -81,10 +79,9 @@ export function FocusDrill({ units }: { units: string[] }) {
           onFinish={onFinish}
           onRestart={again}
           resetKey={`drill:${round}`}
-          stopOnError={stopOnError}
-          showKeyboard={showKeyboard}
           showLiveStats
           autoFocus
+          label={targets.length ? 'Focus drill words' : 'Warm-up drill words'}
         />
       ) : (
         <ResultView

@@ -5,7 +5,7 @@ import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
 import type { Lang } from '@/types'
 import { preloadChecker } from './checker'
-import { loadConfig, loadRecent, pushRecent, saveConfig } from './config'
+import { configFromQuery, loadConfig, loadRecent, pushRecent, saveConfig } from './config'
 import { DictationRun } from './DictationRun'
 import { DictationSetup } from './DictationSetup'
 import { DictationSummary } from './DictationSummary'
@@ -78,7 +78,13 @@ interface Finished {
 export default function DictationPage() {
   const lang = useSettings((s) => s.lang)
   const voice = useKeesVoice(lang)
-  const [config, setConfig] = useState<DictationConfig>(() => loadConfig(lang))
+  const [config, setConfig] = useState<DictationConfig>(() => {
+    const saved = loadConfig(lang)
+    const linked = configFromQuery(saved, new URLSearchParams(location.search))
+    if (!linked) return saved
+    saveConfig(lang, linked)
+    return linked
+  })
   const [session, setSession] = useState<Session>(() => ({ key: 1, items: buildItems(lang, config), config }))
   const [finished, setFinished] = useState<Finished | null>(null)
 
@@ -114,12 +120,10 @@ export default function DictationPage() {
 
   const finish = (results: ItemResult[]) => {
     const summary = summarise(results)
-    const label = session.label ?? configLabel(lang, session.config, memory)
+    const pairName = (id: string) => PAIRS[lang].find((p) => p.id === id)?.words.join('/') ?? id
+    const label = session.label ?? configLabel(lang, session.config, memory, pairName)
     recordSession(lang, summary, label, session.config.mode === 'pairs')
-    pushRecent(
-      lang,
-      results.map((r) => r.item.id),
-    )
+    pushRecent(lang, results.map((r) => r.item.id))
     setFinished({ summary, results, label })
   }
 
@@ -127,8 +131,8 @@ export default function DictationPage() {
     if (!finished) return
     if (session.config.mode === 'pairs') {
       const missed = [...new Set(finished.results.filter((r) => r.first.targetOk === false).map((r) => r.item.pairId!))]
-      const c = { ...session.config, pairs: missed }
-      start(c, { items: selectPairItems(PAIRS[lang], missed, session.config.length), autoStart: true })
+      const ids = missed.length ? missed : session.config.pairs
+      start({ ...session.config, pairs: ids }, { items: selectPairItems(PAIRS[lang], ids, session.config.length), autoStart: true })
       return
     }
     const seen = new Set(finished.results.map((r) => r.item.id))

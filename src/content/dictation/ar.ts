@@ -295,7 +295,7 @@ export const DICTATION_AR: DictationSentence[] = [
     text: 'هذا شيء جميل، والقطار بطيء.',
     level: 2,
     focus: ['hamza'],
-    note: { en: 'شيء and بطيء: hamza on the line after a long vowel.', local: 'شيء وبطيء: الهمزة على السطر بعد حرف مد.' },
+    note: { en: 'شيء and بطيء: hamza on the line after a silent yaa or a long vowel.', local: 'شيء وبطيء: الهمزة على السطر بعد ياء ساكنة أو حرف مد.' },
   },
   {
     id: 'ar-e18',

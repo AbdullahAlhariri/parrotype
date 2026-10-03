@@ -195,17 +195,22 @@ export function computeResult(src: TypingSession | ResultInput): TypingResult {
 }
 
 function attempts(words: ResultWord[], lang: Lang): WordAttempt[] {
-  const typed = words.filter((w) => w.typed !== '')
+  let last = -1
+  words.forEach((w, k) => {
+    if (w.typed !== '') last = k
+  })
   const out: WordAttempt[] = []
-  typed.forEach((w, k) => {
-    const unfinished = k === typed.length - 1 && w.committed === false
+  words.forEach((w, k) => {
+    if (w.typed === '') return
+    const unfinished = k === last && w.committed === false
     const correct = w.typed === w.target
     // an unfinished last word that is right so far is not a mistake
     if (unfinished && !correct && w.target.startsWith(w.typed)) return
     const attempt: WordAttempt = { expected: w.target, typed: w.typed, correct, everWrong: w.everWrong ?? !correct }
     if (!correct) {
       const compareTo = unfinished && w.typed.length < w.target.length ? Array.from(w.target).slice(0, Array.from(w.typed).length).join('') : w.target
-      const kind = classifyTypo(compareTo, w.typed, lang)?.kind
+      // the neighbouring target words sharpen the d/t diagnosis (hij wordt, ik word)
+      const kind = classifyTypo(compareTo, w.typed, lang, { prev: words[k - 1]?.target, next: words[k + 1]?.target })?.kind
       if (kind) attempt.kind = kind
     }
     out.push(attempt)

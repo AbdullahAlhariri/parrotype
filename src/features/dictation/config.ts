@@ -42,6 +42,25 @@ export function loadConfig(lang: Lang): DictationConfig {
   return sanitise(read<Partial<Record<Lang, DictationConfig>>>(CONFIG_KEY)?.[lang])
 }
 
+/**
+ * Deep links from other pages: /listen?focus=dt,participle&level=2 or
+ * /listen?mode=pairs&pairs=word-wordt&length=5. Unknown values fall back to the saved setup.
+ */
+export function configFromQuery(base: DictationConfig, q: URLSearchParams): DictationConfig | null {
+  const keys = ['mode', 'level', 'focus', 'pairs', 'length', 'playback']
+  if (!keys.some((k) => q.has(k))) return null
+  const list = (k: string) => (q.get(k) ?? '').split(',').map((x) => x.trim()).filter(Boolean)
+  const next: Partial<DictationConfig> = { ...base }
+  if (q.has('mode')) next.mode = q.get('mode') as DictationConfig['mode']
+  if (q.has('level')) next.level = Number(q.get('level')) as DictationConfig['level']
+  if (q.has('length')) next.length = Number(q.get('length')) as DictationConfig['length']
+  if (q.has('playback')) next.playback = q.get('playback') as DictationConfig['playback']
+  if (q.has('focus')) next.focus = list('focus')
+  if (q.has('pairs')) next.pairs = list('pairs')
+  if (q.has('pairs') && !q.has('mode')) next.mode = 'pairs'
+  return sanitise(next)
+}
+
 export function saveConfig(lang: Lang, c: DictationConfig) {
   const all = read<Partial<Record<Lang, DictationConfig>>>(CONFIG_KEY) ?? {}
   write(CONFIG_KEY, { ...all, [lang]: c })

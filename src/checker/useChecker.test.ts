@@ -10,13 +10,13 @@ import { useChecker, type CheckerState } from './index'
 
 function mount(initial: string) {
   let state: CheckerState = { issues: [], checking: false, checkedText: '' }
-  const Probe = ({ text }: { text: string }) => {
-    state = useChecker(text, 'nl', { delay: 20 })
+  const Probe = ({ text, enabled }: { text: string; enabled: boolean }) => {
+    state = useChecker(text, 'nl', { delay: 20, enabled })
     return null
   }
   const el = document.createElement('div')
   const root = createRoot(el)
-  const render = (text: string) => act(() => root.render(createElement(Probe, { text })))
+  const render = (text: string, enabled = true) => act(() => root.render(createElement(Probe, { text, enabled })))
   return { render: async () => render(initial), rerender: render, get: () => state, unmount: () => act(() => root.unmount()) }
 }
 
@@ -43,6 +43,15 @@ describe('useChecker', () => {
     // empty text clears
     await m.rerender('')
     expect(m.get().issues).toEqual([])
+    await m.unmount()
+  })
+
+  it('stops reporting "checking" when paused mid-check', async () => {
+    const m = mount('Hij word boos.')
+    await m.render()
+    expect(m.get().checking).toBe(true)
+    await m.rerender('Hij word heel boos.', false)
+    expect(m.get().checking).toBe(false)
     await m.unmount()
   })
 })

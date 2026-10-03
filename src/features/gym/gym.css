@@ -1,0 +1,596 @@
+/* Grammar gym: pack list, rule card, the round, the summary.
+   The sentence is the hero; everything else is quiet text in --sub. Panels are square. */
+
+/* ------------------------------------------------------------------ */
+/* pack list                                                           */
+/* ------------------------------------------------------------------ */
+
+.gym-head {
+  flex-wrap: wrap;
+}
+.gym-head .segmented {
+  padding-bottom: var(--s-1);
+}
+.gym-missing {
+  margin-bottom: var(--s-5);
+  color: var(--sub);
+}
+
+.gym-suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin-bottom: var(--s-7);
+  padding: var(--s-4) var(--s-4) var(--s-4) var(--s-5);
+  background: var(--surface);
+}
+.gym-suggest-title {
+  color: var(--text);
+}
+
+.gym-packs {
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+}
+.gym-pack {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr) 4rem;
+  align-items: baseline;
+  column-gap: var(--s-6);
+  padding: var(--s-4) 0 calc(var(--s-4) + 1px);
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: var(--hairline) solid var(--border);
+}
+.gym-pack:focus-visible {
+  outline-offset: 4px;
+}
+.gym-pack-title-cell {
+  font-size: var(--fs-md);
+  line-height: 1.35;
+  text-align: left;
+  transition: color var(--dur-fast) ease;
+}
+.gym-pack-title-cell[dir='rtl'] {
+  font-size: 1.45rem;
+  line-height: 1.5;
+}
+.gym-pack-blurb {
+  color: var(--sub);
+}
+.gym-pack-meta {
+  text-align: right;
+  font-weight: 600;
+}
+.gym-pack.is-played .gym-pack-meta {
+  color: var(--main);
+}
+/* how much of the pack you know, drawn on the row's own hairline */
+.gym-pack-bar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--main);
+  transform: scaleX(var(--known, 0));
+  transform-origin: left center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gym-pack:hover .gym-pack-title-cell {
+    color: var(--main);
+  }
+}
+.gym-foot {
+  margin-top: var(--s-6);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+
+/* ------------------------------------------------------------------ */
+/* session header                                                      */
+/* ------------------------------------------------------------------ */
+
+.gym-session-head {
+  margin-bottom: var(--s-7);
+}
+.gym-back {
+  display: inline-block;
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-sm);
+}
+.gym-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-6);
+}
+.gym-pack-title {
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  line-height: 1.2;
+}
+.gym-pack-title[dir='rtl'] {
+  font-size: var(--fs-2xl);
+}
+.gym-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+}
+.gym-rule-toggle {
+  font-size: var(--fs-sm);
+  font-weight: 560;
+}
+.gym-blurb {
+  margin-top: var(--s-2);
+  color: var(--sub);
+}
+.gym-fade {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* rule card                                                           */
+/* ------------------------------------------------------------------ */
+
+.gym-intro {
+  display: grid;
+  gap: var(--s-7);
+}
+.gym-rule {
+  max-width: 46rem;
+  padding: var(--s-6);
+  background: var(--surface);
+  animation: gym-in var(--dur-base) var(--ease-out);
+}
+.gym-rule-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  margin-bottom: var(--s-4);
+}
+.gym-rule-label {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.gym-rule-text {
+  max-width: 40rem;
+  color: color-mix(in srgb, var(--text) 82%, var(--sub));
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+.gym-rule-text p + p {
+  margin-top: var(--s-4);
+}
+.gym-rule-text[dir='rtl'] {
+  font-size: 1.2rem;
+  line-height: 1.9;
+}
+.gym-ex {
+  font-family: var(--font-typing, var(--font-mono));
+  font-style: normal;
+  font-size: 0.94em;
+  font-weight: 500;
+  font-variant-ligatures: none;
+  color: var(--text);
+}
+.gym-ex:lang(ar) {
+  font-family: var(--font-arabic);
+}
+.gym-examples {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: var(--hairline) solid var(--border);
+  list-style: none;
+  font-size: var(--fs-md);
+}
+.gym-answer {
+  background: none;
+  color: var(--text);
+  text-decoration: underline 2px var(--main);
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
+}
+.gym-intro-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-5);
+}
+.gym-intro-note {
+  max-width: 30rem;
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.btn .gym-kbd-on-primary {
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+  border-color: color-mix(in srgb, var(--bg) 30%, transparent);
+  color: inherit;
+}
+.btn-subtle .gym-kbd-on-primary,
+.btn-ghost .gym-kbd-on-primary {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.gym-rule-drawer {
+  margin-bottom: var(--s-7);
+}
+
+/* ------------------------------------------------------------------ */
+/* the round                                                           */
+/* ------------------------------------------------------------------ */
+
+.gym-round {
+  --gym-size: clamp(1.25rem, 0.85rem + 2.2vw, var(--typing-font-size, 1.75rem));
+}
+.gym-meter {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-6);
+  color: var(--sub);
+}
+.gym-meter-count {
+  color: var(--main);
+  font-size: var(--fs-md);
+  font-weight: 650;
+}
+.gym-meter-of {
+  color: var(--sub);
+  font-weight: 450;
+}
+.gym-meter-streak {
+  position: relative;
+  /* room for the +1, so nothing moves when it appears */
+  padding-inline-end: 2.4em;
+}
+.gym-plus {
+  position: absolute;
+  right: 0;
+  color: var(--ok);
+  font-weight: 650;
+  animation: gym-plus 700ms var(--ease-out) forwards;
+}
+@keyframes gym-plus {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  20%,
+  60% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.gym-sentence {
+  /* the measure in the sentence's own font: about 66 typing characters */
+  max-width: var(--measure);
+  min-height: calc(var(--gym-size) * 1.7 * 2);
+  margin-block: var(--s-5) var(--s-5);
+  color: var(--text);
+  font-size: var(--gym-size);
+  line-height: 1.7;
+  animation: gym-in var(--dur-fast) var(--ease-out);
+}
+.gym-sentence[dir='rtl'] {
+  /* hug the start of the column like the rest of the round, lines still run right to left */
+  width: fit-content;
+  max-width: 100%;
+  font-size: calc(var(--gym-size) * 1.15);
+  line-height: 1.9;
+}
+
+/* the gap */
+.gym-gap {
+  position: relative;
+  display: inline-block;
+  width: var(--gap-w);
+  max-width: 100%;
+  margin-inline: 0.15ch;
+  vertical-align: baseline;
+}
+.gym-gap-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid var(--sub);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--caret);
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variant-ligatures: inherit;
+  font-kerning: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  outline: none;
+  transition: border-color var(--dur-fast) ease;
+}
+.gym-gap-input:focus {
+  border-bottom-color: var(--caret);
+}
+.gym-gap-input::placeholder {
+  color: var(--main);
+  opacity: 1;
+}
+.gym-gap.is-done {
+  width: auto;
+  margin-inline: 0;
+}
+/* retype: the input's own letters are hidden; the mirror draws them over the ghost answer */
+.gym-gap.has-overlay .gym-gap-input {
+  color: transparent;
+  border-bottom-color: var(--main);
+}
+.gym-gap-mirror {
+  position: absolute;
+  inset: 0 0 2px;
+  white-space: pre;
+  pointer-events: none;
+}
+.gc-ghost {
+  color: var(--main);
+}
+.gc-ok {
+  color: var(--text);
+}
+.gc-err {
+  color: var(--error);
+  text-decoration: underline 2px var(--error);
+  text-underline-offset: 0.15em;
+}
+.gc-extra {
+  color: var(--error-extra);
+  text-decoration: line-through 2px;
+}
+.gym-gap.is-pick {
+  border-bottom: 2px solid var(--sub);
+}
+.gym-gap-blank::before {
+  content: '\00a0';
+}
+
+/* choose mode */
+.gym-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+.gym-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 2.75rem;
+  padding: var(--s-2) var(--s-5) var(--s-2) var(--s-3);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-md);
+  transition: background-color var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
+}
+.gym-option:active {
+  transform: scale(0.97);
+}
+.gym-option .mono-text[dir='rtl'] {
+  font-size: 1.15em;
+  line-height: 1.5;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gym-option:hover {
+    background: color-mix(in srgb, var(--surface) 82%, var(--text));
+  }
+}
+
+/* feedback after a slip */
+.gym-feedback {
+  min-height: 8.5rem;
+}
+.gym-wrong {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--s-4);
+  animation: gym-in var(--dur-base) var(--ease-out);
+}
+/* room above the text for Kees's bubble */
+.gym-wrong-text {
+  padding-top: var(--s-7);
+}
+.gym-typed {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.gym-typed s {
+  font-family: var(--font-typing, var(--font-mono));
+  text-decoration-thickness: 1.5px;
+}
+.gym-typed s:lang(ar) {
+  font-family: var(--font-arabic);
+}
+.gym-hint {
+  max-width: 40rem;
+  margin-top: var(--s-2);
+  color: var(--text);
+}
+.gym-hint[dir='rtl'] {
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+.gym-instr {
+  margin-top: var(--s-3);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.gym-instr b {
+  color: var(--main);
+  font-weight: 500;
+}
+
+.gym-round-foot {
+  max-width: 46rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin-top: var(--s-5);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.gym-round-foot .kbd + .kbd {
+  margin-inline-start: var(--s-1);
+}
+
+/* ------------------------------------------------------------------ */
+/* summary: score on the left, what to revisit on the right            */
+/* ------------------------------------------------------------------ */
+
+.gym-summary {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(0, 2fr);
+  gap: var(--s-8);
+  align-items: start;
+  animation: gym-in var(--dur-base) var(--ease-out);
+}
+.gym-score {
+  color: var(--main);
+  font-size: var(--fs-hero);
+  font-weight: 760;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.gym-score-of {
+  margin-left: 0.08em;
+  color: var(--sub);
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.gym-score-label {
+  margin-top: var(--s-2);
+  color: var(--sub);
+}
+.gym-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  gap: var(--s-5);
+  margin-top: var(--s-6);
+}
+.gym-summary-stats .stat-value {
+  font-size: var(--fs-lg);
+}
+.gym-summary-kees {
+  margin-top: var(--s-6);
+}
+.gym-summary-line {
+  font-size: var(--fs-md);
+  font-weight: 620;
+}
+.gym-revisit-title {
+  margin-top: var(--s-6);
+  color: var(--sub);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.gym-revisit {
+  display: grid;
+  margin-top: var(--s-3);
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+}
+.gym-revisit > li {
+  padding-block: var(--s-4);
+  border-bottom: var(--hairline) solid var(--border);
+}
+.gym-revisit-hint {
+  max-width: 40rem;
+}
+.gym-revisit-hint[dir='rtl'] {
+  line-height: 1.8;
+}
+.gym-revisit-items {
+  display: grid;
+  gap: var(--s-1);
+  margin-top: var(--s-3);
+  list-style: none;
+  font-size: var(--fs-md);
+}
+.gym-nest-note {
+  margin-top: var(--s-5);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.gym-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-4);
+  margin-top: var(--s-7);
+}
+.gym-all-link {
+  font-weight: 560;
+}
+
+@keyframes gym-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* small screens                                                       */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 760px) {
+  .gym-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+  }
+  .gym-summary-kees {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .gym-pack {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--s-1);
+  }
+  .gym-pack-blurb {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: var(--fs-sm);
+  }
+  .gym-suggest {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .gym-rule {
+    padding: var(--s-5);
+  }
+  .gym-meter {
+    gap: var(--s-5);
+  }
+  .gym-tools {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
