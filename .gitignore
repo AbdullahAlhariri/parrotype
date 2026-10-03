@@ -7,3 +7,6 @@ test-results
 playwright-report
 .DS_Store
 *.log
+*.whl
+*.tar.gz
+__pycache__
