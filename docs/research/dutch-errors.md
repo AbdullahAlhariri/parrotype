@@ -453,7 +453,7 @@ worden (word/wordt), vinden (vind/vindt), houden (houd~hou/houdt), rijden (rijd~
 
 ### 6.4 Strong, mixed & irregular verbs (134 verbs; the d/t angle: mostly **no -de/-te past, no -d/-t participle**)
 
-Key point for learners: these verbs **never** take *-de/-te* or *-dt* in the past (*hij vond*, not *vondt/vindde*). Their participle ends in **-en** (or is irregular), so *gevonden* is never written *gevondt*. A d-stem among them still takes **dt** in the present (*hij vindt, wordt, houdt, rijdt, biedt, snijdt*). Mixed verbs (weak past, strong participle: *lachen, bakken, heten, raden, laden, braden, scheiden, wassen*) and verbs with a strong past but weak participle (*vragen → vroeg/gevraagd, jagen, waaien*) are marked by their forms. All 134 × 5 forms were verified to exist in the OpenTaal list.
+Key point for learners: the truly strong verbs here **never** take *-de/-te* or *-dt* in the past (*hij vond*, not *vondt/vindde*). Their participle ends in **-en** (or is irregular), so *gevonden* is never written *gevondt*. A d-stem among them still takes **dt** in the present (*hij vindt, wordt, houdt, rijdt, biedt, snijdt*). Mixed verbs (weak past, strong participle: *lachen, bakken, heten, raden, laden, braden, scheiden, wassen*) and verbs with a strong past but weak participle (*vragen → vroeg/gevraagd, jagen, waaien*) are marked by their forms. All 134 × 5 forms were verified to exist in the OpenTaal list.
 
 | Infinitief | 3e pers. (hij) | Verl. tijd ev | Verl. tijd mv | Volt. deelwoord | Hulpww. |
 |---|---|---|---|---|---|
@@ -602,7 +602,7 @@ gebeurd|gebeurt, verteld|vertelt, betekend|betekent, veranderd|verandert, bedoel
 
 **d-stem pairs (participle without t | present with dt):** beantwoord|beantwoordt, verbrand|verbrandt, verspreid|verspreidt, bereid|bereidt, voorbereid|voorbereidt, begeleid|begeleidt, vermoord|vermoordt, vermoed|vermoedt, besteed|besteedt, beïnvloed|beïnvloedt, aanvaard|aanvaardt.
 
-**Participle = present (never flag, nothing to confuse):** gebruikt, verwacht, bezocht, verkocht, ontmoet, besteedt≠besteed (in the d-stem list above). Strong participles like *vergeten, begonnen, verboden* can't be confused with a -t form.
+**Participle = present (never flag, nothing to confuse):** gebruikt, verwacht, bezocht, verkocht, ontmoet. Strong participles like *vergeten, begonnen, verboden* can't be confused with a -t form.
 **Exclude noise pairs** from auto-generated lists: *verband/verbant*, *gepland/geplant* (two different verbs!), *gewend/gewent*, *verlaad/verlaat*, *verwijd/verwijt*, and *bekend/bekent* (keep this one only with care).
 
 Generating more: the OpenTaal list yields 797 `prefix…d / prefix…t` pairs automatically. Filter them with the frequency list and manual review before use.
@@ -813,4 +813,4 @@ Extra short sentences for the "listen and type" mode (also verified):
 - LanguageTool public HTTP API limits: https://dev.languagetool.org/public-http-api
 - hermitdave FrequencyWords (nl_50k, OpenSubtitles 2018): https://github.com/hermitdave/FrequencyWords
 
-**Uncertainty notes.** (1) Most Taaladvies/Onze Taal/Woordenlijst pages could not be fetched directly (egress proxy). Their rules are taken from search-result extracts, from the Onze Taal PDFs and from secondary explainers, and cross-checked where possible. (2) The interpretation of "hoe als" is my own (§3.14). (3) Some genders vary between the Netherlands and Belgium; I took NL usage as the default. (4) I verified the existence of all verb forms and dictee tokens against OpenTaal by script; the grammatical correctness of the dictee sentences and verb paradigms comes from my own review, not from an external checker.
+**Uncertainty notes.** (1) Most Taaladvies/Onze Taal/Woordenlijst pages could not be fetched directly (egress proxy). Their rules are taken from search-result extracts (including extracts of the Onze Taal Taalmaat PDFs) and from secondary explainers, and cross-checked where possible. (2) The interpretation of "hoe als" is my own (§3.14). (3) Some genders vary between the Netherlands and Belgium; I took NL usage as the default. (4) I verified the existence of all verb forms and dictee tokens against OpenTaal by script; the grammatical correctness of the dictee sentences and verb paradigms comes from my own review, not from an external checker.
