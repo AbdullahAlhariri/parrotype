@@ -7,7 +7,7 @@ import { ALL_STORIES, storiesFor, storySentences } from './index'
 const ALLOW = new Set([
   'Kees', 'Sanne', 'Riet', 'Gerrit', 'Utrecht', 'Nieuw-Zeeland', 'Zandvoort', 'Haarlem', 'Overveen',
   'Amersfoort', 'Zwolle', 'Christchurch', 'A12', 'Sam', 'Ada', 'Brooks', 'Layla', 'kea', 'sabr',
-  'gezellig', 'uitwaaien', 'teh', 'Sannes', 'kerfuffle',
+  'gezellig', 'uitwaaien', 'teh', 'Sannes', 'kerfuffle', 'Monty',
 ])
 
 const words = (page: string) =>
@@ -20,7 +20,7 @@ describe('stories content', () => {
   it('has enough stories per language', () => {
     expect(storiesFor('nl').length).toBeGreaterThanOrEqual(4)
     expect(storiesFor('en').length).toBeGreaterThanOrEqual(3)
-    expect(storiesFor('ar').length).toBeGreaterThanOrEqual(1)
+    expect(storiesFor('ar').length).toBeGreaterThanOrEqual(4)
   })
 
   it('has unique ids and matching langs', () => {
@@ -45,7 +45,13 @@ describe('stories content', () => {
       const counts = s.pages.map((p) => words(p).length)
       const total = counts.reduce((a, b) => a + b, 0)
       if (s.lang === 'ar') {
-        for (const c of counts) expect(c).toBeGreaterThanOrEqual(20)
+        // Arabic words carry their prefixes (و، ب، ال), so pages are shorter in words
+        for (const c of counts) {
+          expect(c, `${s.id}: ${c} words`).toBeGreaterThanOrEqual(40)
+          expect(c, `${s.id}: ${c} words`).toBeLessThanOrEqual(60)
+        }
+        expect(total, s.id).toBeGreaterThanOrEqual(150)
+        expect(total, s.id).toBeLessThanOrEqual(350)
         continue
       }
       for (const c of counts) {
@@ -72,9 +78,32 @@ describe('stories content', () => {
     expect(unknown).toEqual([])
   }, 30_000)
 
+  it('keeps Arabic pages to standard letters: no tashkeel, tatweel, Latin letters or digits', () => {
+    for (const s of storiesFor('ar')) {
+      for (const p of s.pages) {
+        expect(p, s.id).not.toMatch(/[\u064B-\u0652\u0670\u0640]/)
+        expect(p, s.id).not.toMatch(/[A-Za-z0-9\u0660-\u0669]/)
+        // Arabic punctuation, not the Latin comma or question mark
+        expect(p, s.id).not.toMatch(/[,?;]/)
+      }
+    }
+  })
+
+  it('names the parrot per language: Kees in Dutch, Monty in English, فستق in Arabic', () => {
+    const text = (lang: 'nl' | 'en' | 'ar') => storiesFor(lang).flatMap((s) => [s.title, s.blurb, ...s.pages]).join(' ')
+    expect(text('en')).not.toMatch(/Kees/)
+    expect(text('en')).toMatch(/Monty/)
+    expect(text('ar')).toMatch(/فستق/)
+    expect(text('ar')).not.toMatch(/كيس/)
+    expect(text('nl')).toMatch(/Kees/)
+  })
+
   it('extracts whole sentences for the daily challenge', () => {
     const nl = storySentences('nl')
     expect(nl.length).toBeGreaterThan(50)
     expect(nl).toContain('Sanne werkt thuis.')
+    const ar = storySentences('ar')
+    expect(ar.length).toBeGreaterThan(40)
+    expect(ar).toContain('يعيش فستق مع سارة في شقة صغيرة قريبة من البحر.')
   })
 })

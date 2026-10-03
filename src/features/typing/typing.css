@@ -71,6 +71,17 @@ body[data-typing] .ts-stage {
   cursor: none;
 }
 
+/*
+ * One glyph per keystroke. Recursive's Dutch 'locl' draws i+j as a single ĳ under lang=nl, and
+ * Chrome shapes across the per-letter spans (they differ only in colour), so the j collapses to
+ * zero width and the caret skips it. Turn off locl and every ligature for Latin text; Arabic keeps
+ * the font defaults so letters still join.
+ */
+.ts-root:not(.is-rtl) .ts-viewport {
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'clig' 0, 'dlig' 0, 'calt' 0, 'locl' 0;
+}
+
 .ts-viewport {
   position: relative;
   height: calc(var(--ts-lh) * 3);

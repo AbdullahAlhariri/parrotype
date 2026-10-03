@@ -3,10 +3,13 @@ import { errorStats } from '@/engine'
 import { LANG_NAMES, LANG_TAGS, type TypingResult } from '@/types'
 import { Button, Icon, Kbd } from '@/components/ui'
 import { Kees, featherBurst, useReducedMotion, type KeesMood } from '@/components/kees'
+import { playReaction, type ReactionId } from '@/lib/audio'
+import { mascotName } from '@/lib/mascot'
 import { CountUp } from './result/CountUp'
 import { WpmChart } from './result/WpmChart'
 import { PractiseWords } from './result/PractiseWords'
 import { feedbackLine, fixedWords, formatDuration, keesMood, practiseItems, repeatWord } from './result/feedback'
+import { reactionFor, takeAgainSlot } from './result/reaction'
 import './result.css'
 
 export interface ResultViewProps {
@@ -21,9 +24,14 @@ export interface ResultViewProps {
   onPractice?: (words: string[]) => void
   /** extra content under the actions (quote source, story navigation...) */
   children?: ReactNode
+  /**
+   * The mascot's recorded line. Left out, it is picked from the result (personal best, a
+   * flawless run, a rough one); a ReactionId plays that line instead, false keeps quiet.
+   */
+  reaction?: ReactionId | false
 }
 
-/** reveal sequence: number 0-400 ms, chart line 0-600 ms, Kees lands at 600 ms */
+/** reveal sequence: number 0-400 ms, chart line 0-600 ms, the mascot lands at 600 ms */
 const LAND_MS = 600
 const REPEAT_AFTER_MS = 1500
 
@@ -32,7 +40,7 @@ const REPEAT_AFTER_MS = 1500
  * left, the chart with Kees perched on its top edge, the details and the words to practise
  * on the right. Focus lands on the section, so Tab then Enter is "Again".
  */
-export function ResultView({ result, title, configLabel, isPb = false, onAgain, onPractice, children }: ResultViewProps) {
+export function ResultView({ result, title, configLabel, isPb = false, onAgain, onPractice, children, reaction }: ResultViewProps) {
   const reduced = useReducedMotion()
   const headId = useId()
   const rootRef = useRef<HTMLElement>(null)
@@ -60,6 +68,20 @@ export function ResultView({ result, title, configLabel, isPb = false, onAgain, 
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true })
   }, [])
+
+  // the recorded line plays as the mascot lands; once per result
+  const said = useRef<TypingResult | null>(null)
+  useEffect(() => {
+    if (said.current === result) return
+    const id = reaction === undefined ? reactionFor(result, isPb) : reaction
+    if (!id) return
+    const t = window.setTimeout(() => {
+      said.current = result
+      if (id === 'again' && reaction === undefined && !takeAgainSlot()) return
+      playReaction(result.lang, id)
+    }, reduced ? 150 : LAND_MS)
+    return () => window.clearTimeout(t)
+  }, [result, isPb, reaction, reduced])
 
   useEffect(() => {
     if (!isPb || burstDone.current) return
@@ -92,7 +114,7 @@ export function ResultView({ result, title, configLabel, isPb = false, onAgain, 
           {isPb && (
             <p className="tr-pb">
               <Icon name="feather" size={18} className="tr-pb-icon" />
-              New personal best. Kees is making quite a racket about it.
+              New personal best. {mascotName(result.lang)} is making quite a racket about it.
             </p>
           )}
           <p className="tr-feedback">{feedback}</p>

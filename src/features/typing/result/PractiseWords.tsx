@@ -3,6 +3,7 @@ import { annotate } from 'rough-notation'
 import { LANG_TAGS, type Lang } from '@/types'
 import { Button } from '@/components/ui'
 import { useSettings } from '@/state/settings'
+import { mascotName } from '@/lib/mascot'
 import { practiseWords, type PractiseItem } from './feedback'
 
 type RoughAnnotation = ReturnType<typeof annotate>
@@ -56,7 +57,7 @@ export function PractiseWords({ items, fixed, lang, onPractice, animate, delay =
   if (!items.length) {
     return (
       <section className="tr-practise is-empty" aria-label="Words to practise">
-        <p className="tr-empty">No misspelled words this run. Kees has nothing to repeat.</p>
+        <p className="tr-empty">No misspelled words this run. {mascotName(lang)} has nothing to repeat.</p>
         {fixed.length > 0 && (
           <p className="tr-fixed">
             Fixed along the way:{' '}

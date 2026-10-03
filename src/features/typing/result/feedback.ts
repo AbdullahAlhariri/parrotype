@@ -1,6 +1,7 @@
 import type { TypingResult } from '@/types'
 import { classifyTypo, typoName, type TypoLabel } from '@/engine'
 import type { KeesMood } from '@/components/kees'
+import { mascotName } from '@/lib/mascot'
 
 export interface PractiseItem {
   /** the target word as it appeared in the text */
@@ -38,7 +39,7 @@ export function fixedWords(r: TypingResult): string[] {
   return [...new Set(r.words.filter((w) => w.correct && w.everWrong).map((w) => w.expected))]
 }
 
-/** The word Kees repeats: the first spelling (knowledge) mistake, else the first mistake. */
+/** The word the mascot repeats: the first spelling (knowledge) mistake, else the first mistake. */
 export function repeatWord(items: PractiseItem[]): string | undefined {
   const pick = items.find((it) => it.label?.nature === 'cognitive') ?? items[0]
   return pick ? trimPunct(pick.expected) || pick.expected : undefined
@@ -61,10 +62,11 @@ export function formatDuration(ms: number): string {
 /** One plain, specific sentence about the run. No exclamation marks, no guilt. */
 export function feedbackLine(r: TypingResult, items: PractiseItem[]): string {
   const typed = r.chars.correct + r.chars.incorrect + r.chars.extra
-  if (!typed) return 'Nothing typed. Kees waited politely.'
+  const name = mascotName(r.lang)
+  if (!typed) return `Nothing typed. ${name} waited politely.`
   const wrong = r.words.filter((w) => !w.correct).length
   const fixed = fixedWords(r).length
-  if (!wrong && !fixed && r.accuracy >= 99.99) return 'No typos at all. Kees checked twice.'
+  if (!wrong && !fixed && r.accuracy >= 99.99) return `No typos at all. ${name} checked twice.`
   if (!wrong && fixed) return fixed === 1 ? 'Every word right in the end. You fixed one along the way.' : `Every word right in the end. You fixed ${fixed} along the way.`
   if (r.accuracy < 85 && r.rawWpm >= 45) return `Fast hands, loose letters. Try about ${Math.max(5, Math.round((r.rawWpm * 0.9) / 5) * 5)} wpm next time.`
   if (r.accuracy < 75) return 'Rough run. Your best runs often come right after a slow one.'

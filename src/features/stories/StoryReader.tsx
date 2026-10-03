@@ -8,6 +8,7 @@ import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
 import { useEnterKey } from '@/features/practice/parts'
+import { mascotName } from '@/lib/mascot'
 import { completedRead, storyAverages, useStoryProgress, wordCount } from './progress'
 
 type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; completed: boolean; nextPage: number } | { kind: 'end' }
@@ -150,6 +151,7 @@ function StoryEnd({ story, onAgain }: { story: Story; onAgain: () => void }) {
   const after = list.slice(list.indexOf(story) + 1).concat(list.slice(0, list.indexOf(story)))
   const nextStory = after.find((s) => !(useStoryProgress.getState().progress[s.id]?.reads ?? 0)) ?? after[0]
   const reads = progress?.reads ?? 1
+  const name = mascotName(story.lang)
 
   return (
     <section className="story-end" aria-labelledby="story-end-title">
@@ -167,7 +169,7 @@ function StoryEnd({ story, onAgain }: { story: Story; onAgain: () => void }) {
           )}
           .
         </p>
-        <p className="muted">{reads > 1 ? `That makes ${reads} reads. Kees can recite it now, and frequently does.` : 'Kees would like a sequel. He is not getting one.'}</p>
+        <p className="muted">{reads > 1 ? `That makes ${reads} reads. ${name} can recite it now, and frequently does.` : `${name} would like a sequel. He is not getting one.`}</p>
         <div className="story-end-actions">
           {nextStory && nextStory.id !== story.id && (
             <Button variant="primary" size="lg" autoFocus onClick={() => navigate(`/stories?s=${encodeURIComponent(nextStory.id)}`)}>

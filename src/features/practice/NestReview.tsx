@@ -11,6 +11,7 @@ import { answerCcc, cccDone, cccSummary, currentId, isRightAnswer, MAX_REQUEUE, 
 import { NEST_CONFIG } from './plan'
 import { repairHref } from './repair'
 import { SubHead, dueIn, useLocalPref } from './parts'
+import { mascotName } from '@/lib/mascot'
 
 type Phase = 'show' | 'recall' | 'right' | 'wrong'
 type Mode = 'look' | 'listen'
@@ -158,7 +159,7 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
               onChange={setMode}
               options={[
                 { value: 'look', label: 'look', title: 'Show it for a moment, then cover it' },
-                { value: 'listen', label: 'listen', title: 'Kees says it; you never see it first' },
+                { value: 'listen', label: 'listen', title: `${mascotName(lang)} says it; you never see it first` },
               ]}
             />
           )}
@@ -185,7 +186,7 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
         {phase === 'recall' && (
           <form className="nest-card" onSubmit={onRecall}>
             <p className="nest-cue muted small">
-              {listen ? 'Kees says it. Type what you hear.' : item.kind === 'word' ? 'Now type the word from memory.' : 'Now type the sentence from memory.'}
+              {listen ? `${mascotName(lang)} says it. Type what you hear.` : item.kind === 'word' ? 'Now type the word from memory.' : 'Now type the sentence from memory.'}
             </p>
             {listen && <Kees mood="talk" size={56} className="nest-kees" />}
             <input

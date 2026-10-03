@@ -1,5 +1,6 @@
 import type { Lang, WordMissStat } from '@/types'
 import { tipFor, typoName } from '@/engine'
+import { mascotName } from '@/lib/mascot'
 
 // One quiet tip between runs. Plain and specific, sentence case, no exclamation marks.
 
@@ -54,9 +55,8 @@ export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissSt
       return `Your most frequent slip in "${m.word}" is ${name}. ${tipFor(m.kind, lang).en}`
     }
     const typed = m.typed[0]
-    return typed
-      ? `You typed "${typed}" for "${m.word}" ${m.count} times so far. Kees has written it in his little book.`
-      : `"${m.word}" went wrong ${m.count} times so far. Kees has written it in his little book.`
+    const book = `${mascotName(lang)} has written it in his little book.`
+    return typed ? `You typed "${typed}" for "${m.word}" ${m.count} times so far. ${book}` : `"${m.word}" went wrong ${m.count} times so far. ${book}`
   }
   const pool = [...BY_LANG[lang], ...GENERAL]
   return pool[n % pool.length]

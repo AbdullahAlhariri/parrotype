@@ -1,6 +1,6 @@
 import { alignWords, charDiff, classifyOps, type CharOp, type WordOp } from '@/engine/align'
 import type { TypoLabel } from '@/engine/typo'
-import { graphemes, normalizeInput } from '@/engine/text'
+import { graphemes, normalizeInput, stripTashkeel } from '@/engine/text'
 import type { Lang } from '@/types'
 
 /**
@@ -60,8 +60,10 @@ export function normaliseAttempt(text: string): string {
 const SENTENCE_END = /^[.?!؟:;]$/
 
 export function gradeAttempt(expected: string, typedRaw: string, lang: Lang, target?: string): Grade {
-  const typed = normaliseAttempt(typedRaw)
-  const exp = normaliseAttempt(expected)
+  // tashkeel is optional in Arabic: dropped on both sides, so the letter diff never marks a vowel sign
+  const fold = (s: string) => (lang === 'ar' ? stripTashkeel(s) : s)
+  const typed = fold(normaliseAttempt(typedRaw))
+  const exp = fold(normaliseAttempt(expected))
   const ops = alignWords(exp, typed, { ignoreDiacritics: lang === 'ar' })
   const labels = classifyOps(ops, lang)
   const want = target?.toLowerCase()

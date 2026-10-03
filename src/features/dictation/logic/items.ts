@@ -1,10 +1,12 @@
 import type { DictationLevel, DictationNote, DictationSentence, MinimalPair } from '@/content/dictation'
 import type { Lang } from '@/types'
 
-/** One thing Kees says during a session: a dictation sentence or a minimal-pair sentence. */
+/** One thing the parrot says during a session: a dictation sentence or a minimal-pair sentence. */
 export interface DictationItem {
   /** sentence id, or `${pairId}:${index}` for minimal pairs */
   id: string
+  /** id of the recorded clip: the sentence id, or `${pairId}-${n}` (n from 1) for minimal pairs */
+  clip: string
   lang: Lang
   text: string
   /** what the voice reads, when different from text */
@@ -18,12 +20,13 @@ export interface DictationItem {
 }
 
 export function itemFromSentence(s: DictationSentence, lang: Lang): DictationItem {
-  return { id: s.id, lang, text: s.text, say: s.say, level: s.level, focus: s.focus, note: s.note }
+  return { id: s.id, clip: s.id, lang, text: s.text, say: s.say, level: s.level, focus: s.focus, note: s.note }
 }
 
 export function itemsFromPair(p: MinimalPair): DictationItem[] {
   return p.sentences.map((s, i) => ({
     id: `${p.id}:${i}`,
+    clip: `${p.id}-${i + 1}`,
     lang: p.lang,
     text: s.text,
     focus: [p.id],

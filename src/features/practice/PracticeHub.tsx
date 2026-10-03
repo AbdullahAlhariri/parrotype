@@ -12,6 +12,7 @@ import { PLAN, planStatus, usePlanTicks, type PlanId } from './plan'
 import { dailyRuns } from './daily'
 import { DRILL_WORDS } from './drill'
 import { LANG_IN_ENGLISH, TickIcon, dueIn, pct } from './parts'
+import { mascotName } from '@/lib/mascot'
 
 const BOX_WHEN = BOX_DAYS.map((d) => (d === 0 ? 'same day' : d === 1 ? '1 day' : d === 7 ? '1 week' : `${d} days`))
 
@@ -207,7 +208,7 @@ function DrillSection({ lang, weak, keySamples, primary }: { lang: Lang; weak: W
           {weak.length
             ? `Your weakest keys and letter pairs right now, from ${keySamples.toLocaleString('en')} keystrokes. ${DRILL_WORDS} real words built around them.`
             : keySamples
-              ? `Nothing is clearly weak in ${keySamples.toLocaleString('en')} keystrokes. Kees wants about 20 tries per key before he blames one. Until then, the drill is a mixed warm-up.`
+              ? `Nothing is clearly weak in ${keySamples.toLocaleString('en')} keystrokes. ${mascotName(lang)} wants about 20 tries per key before he blames one. Until then, the drill is a mixed warm-up.`
               : 'No keystrokes yet. Until there are, the drill is a mixed warm-up from the 1000 most common words.'}
         </p>
       </div>
@@ -247,7 +248,7 @@ function RepairSection({ lang, missed }: { lang: Lang; missed: { word: string; c
         <p className="muted">
           {missed.length
             ? 'The words you get wrong most often. Each one three times in a mixed line, then once between common words.'
-            : 'No problem words yet. Do a few runs and Kees will start a list.'}
+            : `No problem words yet. Do a few runs and ${mascotName(lang)} will start a list.`}
         </p>
       </div>
 

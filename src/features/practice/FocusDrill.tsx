@@ -13,6 +13,7 @@ import { DRILL_WORDS, GATE, gateNote, passesGate, unitsToWeaknesses } from './dr
 import { focusConfig } from './plan'
 import { repairHref } from './repair'
 import { SubHead, pct } from './parts'
+import { mascotName } from '@/lib/mascot'
 
 type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; note: string }
 
@@ -46,7 +47,7 @@ export function FocusDrill({ units }: { units: string[] }) {
     const { isPb } = recordTypingRun(result, 'practice', config)
     const nextPasses = passesGate(result.accuracy) ? passes + 1 : 0
     setPasses(nextPasses)
-    setPhase({ kind: 'result', result, isPb, note: gateNote(result.accuracy, nextPasses) })
+    setPhase({ kind: 'result', result, isPb, note: gateNote(result.accuracy, nextPasses, mascotName(lang)) })
   }
 
   return (
@@ -67,7 +68,7 @@ export function FocusDrill({ units }: { units: string[] }) {
             </p>
           </div>
         ) : (
-          <p className="page-lede">Nothing is clearly weak yet, so this is a mixed warm-up from the 1000 most common words. Kees needs about 20 tries per key before he blames one.</p>
+          <p className="page-lede">Nothing is clearly weak yet, so this is a mixed warm-up from the 1000 most common words. {mascotName(lang)} needs about 20 tries per key before he blames one.</p>
         )}
       </SubHead>
 

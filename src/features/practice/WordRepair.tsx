@@ -10,6 +10,7 @@ import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
 import { buildContextLine, buildRepairLine, mostMissed, repairHref, repairTally, type RepairTally } from './repair'
 import { SubHead, useEnterKey } from './parts'
+import { mascotName } from '@/lib/mascot'
 
 type Stage = 'line' | 'context'
 type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; tally: RepairTally[] }
@@ -37,7 +38,7 @@ export function WordRepair({ words: given }: { words?: string[] }) {
     return (
       <div className="page practice repair">
         <SubHead title="Word repair">
-          <p className="page-lede">No problem words yet. Do a few runs and Kees will start a list.</p>
+          <p className="page-lede">No problem words yet. Do a few runs and {mascotName(lang)} will start a list.</p>
         </SubHead>
         <Link to="/" className="btn btn-primary btn-md">
           Take a typing test

@@ -73,6 +73,15 @@ describe('gradeAttempt', () => {
     expect(g.wrong.every((t) => t.label?.tag === 'hamza')).toBe(true)
   })
 
+  it('never marks a vowel sign in the Arabic letter diff', () => {
+    // wrong word typed with tashkeel: only the haa/taa marbuta letter is wrong
+    const g = gradeAttempt('هذه مدرسة كبيرة وجميلة.', 'هذه مَدرَسه كبيرة وجميلة.', 'ar')
+    expect(g.wrong).toHaveLength(1)
+    const marks = typedGlyphs(g.wrong[0], 2).filter((x) => x.kind !== 'ok')
+    expect(marks).toEqual([{ ch: 'ه', kind: 'wrong' }])
+    expect(g.wrong[0].label?.tag).toBe('taa-marbuta')
+  })
+
   it('finds the target word in minimal-pair mode', () => {
     expect(gradeAttempt('Word jij ook zo moe van dit weer?', 'Wordt jij ook zo moe van dit weer?', 'nl', 'Word').targetOk).toBe(false)
     expect(gradeAttempt('Word jij ook zo moe van dit weer?', 'Word jij ook zo moe van dit wer?', 'nl', 'Word').targetOk).toBe(true)

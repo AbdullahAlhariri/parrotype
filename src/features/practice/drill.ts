@@ -5,7 +5,7 @@ import type { Weakness } from '@/engine'
 
 export const DRILL_WORDS = 30
 export const GATE = 97
-/** clean rounds in a row before Kees suggests more speed */
+/** clean rounds in a row before the mascot suggests more speed */
 export const PASSES_TO_SPEED_UP = 3
 
 /** "d,ij,E" -> ['d', 'ij', 'e']; letters only, one or two characters each, at most 5 units. */
@@ -44,9 +44,9 @@ export const gateAccuracy = (accuracy: number) => Math.floor(accuracy + 1e-9)
 export const passesGate = (accuracy: number) => gateAccuracy(accuracy) >= GATE
 
 /** One or two plain sentences under the drill result. */
-export function gateNote(accuracy: number, passesInARow: number): string {
+export function gateNote(accuracy: number, passesInARow: number, mascot = 'Kees'): string {
   const acc = gateAccuracy(accuracy)
-  if (acc < GATE) return `Accuracy ${acc}%. Kees wants ${GATE} before speeding up.`
+  if (acc < GATE) return `Accuracy ${acc}%. ${mascot} wants ${GATE} before speeding up.`
   if (passesInARow >= PASSES_TO_SPEED_UP) return `Accuracy ${acc}%. That is ${passesInARow} clean rounds in a row, so try the next one about 5% faster.`
   const left = PASSES_TO_SPEED_UP - passesInARow
   return `Accuracy ${acc}%. That clears ${GATE}. ${left} more like this and you can push the pace.`

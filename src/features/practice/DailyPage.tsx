@@ -13,7 +13,7 @@ import { repairHref } from './repair'
 import { LANG_IN_ENGLISH } from './parts'
 import './practice.css'
 
-type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; before: number | undefined }
+type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; before: number | undefined; streakUp: boolean }
 
 export default function DailyPage() {
   const lang = useSettings((s) => s.lang)
@@ -39,8 +39,10 @@ export default function DailyPage() {
 
   const onFinish = (result: TypingResult) => {
     const before = best?.wpm
+    const streakBefore = currentStreak(useStats.getState().days)
     const { isPb } = recordTypingRun(result, 'daily', dailyConfig(day))
-    setPhase({ kind: 'result', result, isPb, before })
+    const streakUp = currentStreak(useStats.getState().days) > streakBefore
+    setPhase({ kind: 'result', result, isPb, before, streakUp })
   }
 
   const streakSub = streak === 0 ? 'today can be day one' : playedToday ? 'today included' : 'a run today keeps it'
@@ -87,6 +89,7 @@ export default function DailyPage() {
           isPb={phase.isPb}
           onAgain={again}
           onPractice={(ws) => navigate(repairHref(ws))}
+          reaction={phase.streakUp ? 'streak' : undefined}
         >
           <p className="daily-note tabular">{dailyNote(phase.result.wpm, phase.before, streak)}</p>
         </ResultView>
