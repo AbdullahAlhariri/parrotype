@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os'
 import { promisify } from 'node:util'
 import { DESIGNED, PERSONAS, REACTIONS } from './personas.mjs'
 
+const mascotOf = (lang) => PERSONAS[lang].find((p) => p.mascot).id
+
 const run = promisify(execFile)
 const API = 'https://generativelanguage.googleapis.com/v1beta'
 const TTS_MODEL = process.env.TTS_MODEL ?? 'gemini-3.8-flash-tts'
@@ -192,6 +194,10 @@ export function wordErrors(expected, actual, lang) {
   return d[a.length][b.length]
 }
 
+// A squawk can be misheard as a swear word; such clips are regenerated.
+const RUDE = /\b(fuck\w*|shit\w*|damn\w*|bitch\w*|crap|hell|ass|dick|kut|klote|godver\w*|tering|kanker|lul|shit)\b/i
+export const soundsRude = (heard) => RUDE.test(heard ?? '')
+
 /* ---------------- jobs ---------------- */
 
 /** One clip: synthesize, encode, verify; retries when the transcript does not match. */
@@ -205,7 +211,8 @@ export async function renderJob(job, ids, { maxTries = 3 } = {}) {
     const duration = await encodeMp3(wav, job.out)
     const heard = await transcribe(await readFile(job.out), job.lang)
     const errors = job.skipQa ? 0 : wordErrors(job.text, heard, job.lang)
-    last = { ...job, voice, duration, attempt, heard, errors, ok: errors === 0 }
+    const rude = soundsRude(heard)
+    last = { ...job, voice, duration, attempt, heard, errors, rude, ok: errors === 0 && !rude }
     if (last.ok) return last
   }
   return last
@@ -245,7 +252,7 @@ function sampleJobs(out) {
       jobs.push({ id: 'sample', lang, persona: p.id, text: SAMPLE_TEXT[lang], out: join(out, lang, `${i + 1}-${p.id}.mp3`) })
     })
     for (const r of REACTIONS[lang]) {
-      jobs.push({ id: `reaction-${r.id}`, lang, persona: 'kees', text: r.text, style: r.style, skipQa: true, out: join(out, lang, `kees-reaction-${r.id}.mp3`) })
+      jobs.push({ id: `reaction-${r.id}`, lang, persona: mascotOf(lang), text: r.text, style: r.style, skipQa: true, out: join(out, lang, `reaction-${r.id}.mp3`) })
     }
   }
   return jobs
@@ -263,12 +270,16 @@ async function main() {
   const ids = await ensureDesignedVoices(join(out, 'previews'))
   let jobs
   if (args.includes('--sample')) jobs = sampleJobs(out)
-  else {
+  else if (args.includes('--reactions')) {
+    jobs = Object.entries(REACTIONS).flatMap(([lang, list]) =>
+      list.map((r) => ({ id: r.id, lang, persona: mascotOf(lang), text: r.text, style: r.style, skipQa: true, out: join(out, lang, 'reactions', `${r.id}.mp3`) })),
+    )
+  } else {
     const file = opt('--jobs')
     if (!file) throw new Error('Pass --sample or --jobs <file.json>')
     jobs = JSON.parse(await readFile(file, 'utf8'))
-    if (args.includes('--skip-existing')) jobs = jobs.filter((j) => !existsSync(j.out))
   }
+  if (args.includes('--skip-existing')) jobs = jobs.filter((j) => !existsSync(j.out))
   console.log(`${jobs.length} clips with ${TTS_MODEL}, checked by ${QA_MODEL}`)
   const results = await pool(jobs, concurrency, (j) => renderJob(j, ids))
   const report = opt('--report', join(out, 'report.json'))
