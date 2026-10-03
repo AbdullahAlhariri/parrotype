@@ -1,0 +1,40 @@
+{
+  "name": "parrotype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Parrotype: playful typing, spelling and grammar practice for Dutch, English and Arabic.",
+  "scripts": {
+    "predev": "node scripts/copy-dicts.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-dicts.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dictionary-en": "^4.0.0",
+    "dictionary-nl": "^2.0.0",
+    "motion": "^14.0.0",
+    "nspell": "^2.1.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/nspell": "^2.1.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
