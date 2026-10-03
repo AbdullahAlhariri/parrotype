@@ -144,6 +144,15 @@ export interface Sentence {
   tokens: Token[]
 }
 
+/**
+ * Word-list lookup available to rules (Hunspell-backed in the worker, a Set in tests).
+ * Rules must still work (more conservatively) when it is missing.
+ */
+export interface Dictionary {
+  /** true if the word form exists (case-insensitive for lowercase input) */
+  has(word: string): boolean
+}
+
 export interface RuleContext {
   text: string
   lang: Lang
@@ -151,6 +160,9 @@ export interface RuleContext {
   /** only word tokens, in order */
   words: Token[]
   sentences: Sentence[]
+  dict?: Dictionary
+  /** 'strict' also runs style-level rules (groter als, een hele mooie...) */
+  strictness: 'normal' | 'strict'
 }
 
 /** What a rule returns. The engine turns hits into Issues. */
@@ -175,6 +187,8 @@ export interface Rule {
   title: string
   /** default confidence for hits that don't set one */
   confidence: Confidence
+  /** style-level rule: only runs when strictness is 'strict' */
+  strictOnly?: boolean
   check(ctx: RuleContext): RuleHit[]
 }
 
