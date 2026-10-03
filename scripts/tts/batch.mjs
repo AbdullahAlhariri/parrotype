@@ -104,6 +104,59 @@ async function pool(items, size, fn) {
   return out
 }
 
+// Ledger of clips that passed the transcription check, keyed by output path -> text that was checked.
+// Saved as we go, so an interrupted run never has to re-check finished clips.
+const LEDGER = new URL('./verified.json', import.meta.url)
+async function loadLedger() {
+  return existsSync(LEDGER) ? JSON.parse(await readFile(LEDGER, 'utf8')) : {}
+}
+let ledgerDirty = 0
+async function mark(ledger, job, force = false) {
+  ledger[job.out] = job.text
+  if (++ledgerDirty >= 20 || force) {
+    ledgerDirty = 0
+    await writeFile(LEDGER, JSON.stringify(ledger, null, 1) + '\n')
+  }
+}
+
+/** Re-checks clips on disk that are not in the ledger (or whose text changed). Returns the jobs that must be regenerated. */
+async function verifyExisting(jobs, ledger) {
+  const unchecked = jobs.filter((j) => existsSync(j.out) && ledger[j.out] !== j.text)
+  console.log(`verifying ${unchecked.length} existing clips`)
+  const redo = []
+  let n = 0
+  await pool(unchecked.map((job) => ({ job })), 6, async ({ job }) => {
+    const r = await checkFile(job)
+    if (r.ok) await mark(ledger, job)
+    else {
+      redo.push(job)
+      console.log(`bad clip ${job.lang} ${job.persona} ${job.id}: heard "${r.heard}"`)
+      await import('node:fs/promises').then((fs) => fs.rm(job.out, { force: true }))
+    }
+    if (++n % 100 === 0) console.log(`verified ${n}/${unchecked.length}`)
+    return r
+  })
+  await mark(ledger, { out: '__flush__', text: '' }, true)
+  delete ledger.__flush__
+  return redo
+}
+
+async function checkFile(job) {
+  const mp3 = await readFile(job.out)
+  let heard = ''
+  for (const model of QA_MODELS) {
+    try {
+      heard = await transcribe(mp3, job.lang, model)
+      break
+    } catch (e) {
+      if (!/429|quota/i.test(String(e.message))) throw e
+    }
+  }
+  const errors = job.skipQa ? 0 : wordErrors(job.text, heard, job.lang)
+  const rude = soundsRude(heard)
+  return { ...job, heard, errors, rude, ok: errors === 0 && !rude }
+}
+
 async function main() {
   if (!KEY) throw new Error('Set GEMINI_API_KEY in the environment.')
   const args = process.argv.slice(2)
@@ -112,29 +165,35 @@ async function main() {
   const rounds = Number(opt('--rounds', 3))
   const reportFile = opt('--report', 'tts-batch-report.json')
   const ids = await ensureDesignedVoices()
-  let todo = JSON.parse(await readFile(opt('--jobs'), 'utf8')).filter((j) => !existsSync(j.out))
+  const ledger = await loadLedger()
+  const all = JSON.parse(await readFile(opt('--jobs'), 'utf8'))
+  if (args.includes('--verify-existing')) await verifyExisting(all, ledger)
+  let todo = all.filter((j) => !existsSync(j.out))
   const done = []
   for (let round = 1; round <= rounds && todo.length; round++) {
     console.log(`round ${round}: ${todo.length} clips`)
     const chunks = []
     for (let i = 0; i < todo.length; i += chunk) chunks.push(todo.slice(i, i + chunk))
     const results = (await Promise.all(chunks.map((c, i) => runBatch(c, ids, `parrotype r${round} ${i + 1}/${chunks.length}`)))).flat()
-    const checked = await pool(results, 6, async (r) => (r.audio ? verify(r.job, r.audio) : { ...r.job, ok: false, error: r.error }))
     const failed = []
-    for (const r of checked) {
-      if (r.ok) done.push(r)
-      else {
-        failed.push(r)
-        console.log(`retry ${r.lang} ${r.persona} ${r.id}: ${r.error ?? `heard "${r.heard}"`}`)
+    await pool(results, 6, async (r) => {
+      const v = r.audio ? await verify(r.job, r.audio) : { ...r.job, ok: false, error: r.error }
+      if (v.ok) {
+        done.push(v)
+        await mark(ledger, r.job)
+      } else {
+        failed.push(v)
+        console.log(`retry ${v.lang} ${v.persona} ${v.id}: ${v.error ?? `heard "${v.heard}"`}`)
+        if (existsSync(r.job.out)) await import('node:fs/promises').then((fs) => fs.rm(r.job.out))
       }
-    }
+      return v
+    })
+    await writeFile(LEDGER, JSON.stringify(ledger, null, 1) + '\n')
     todo = failed.map(({ id, lang, persona, text, style, out, skipQa }) => ({ id, lang, persona, text, style, out, skipQa }))
-    // a failed QA leaves a bad file on disk: remove it so the next round regenerates it
-    for (const j of todo) if (existsSync(j.out)) await import('node:fs/promises').then((fs) => fs.rm(j.out))
   }
   await mkdir(dirname(reportFile), { recursive: true }).catch(() => {})
   await writeFile(reportFile, JSON.stringify({ ok: done.length, failed: todo, results: done }, null, 1))
-  console.log(`finished: ${done.length} ok, ${todo.length} still failing. Report: ${reportFile}`)
+  console.log(`finished: ${done.length} generated, ${todo.length} still failing. Report: ${reportFile}`)
 }
 
 main().catch((e) => {
