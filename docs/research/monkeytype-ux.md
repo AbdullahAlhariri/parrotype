@@ -1,8 +1,8 @@
-# Monkeytype and friends: a design and UX teardown for Parrotype
+# Monkeytype and friends: a design and UX teardown for Typewise
 
-> **Audience:** the engineers building Parrotype (repo `parrotype`). Parrotype is a playful, parrot-themed typing trainer built with Vite and TypeScript and deployed to Vercel as a static site. It has one user, who makes many typos in Dutch (most important), English and later Arabic, plus grammar and spelling mistakes in Dutch and English.
+> **Audience:** the engineers building **Typewise** (repo `parrotype`). Typewise is a playful, parrot-themed typing trainer built with Vite and TypeScript and shipped as a static client-side site (GitHub Pages is the target; the repo also carries a `vercel.json`, and nothing here depends on the host). It has one user, who makes many typos in Dutch (most important), English and later Arabic, plus grammar and spelling mistakes in Dutch and English.
 >
-> **Goal:** take apart what makes Monkeytype, keybr and the other polished typing sites *feel* good. Turn that into concrete layout specs, design tokens, timings, DOM/CSS patterns and TypeScript snippets that Parrotype can reuse.
+> **Goal:** take apart what makes Monkeytype, keybr and the other polished typing sites *feel* good. Turn that into concrete layout specs, design tokens, timings, DOM/CSS patterns and TypeScript snippets that Typewise can reuse.
 >
 > **How this was researched (read this first):**
 > - **Monkeytype source.** I cloned `github.com/monkeytypegame/monkeytype` (`master` at commit `1f43321`, 2026-10-02) and read the real code. Every hex value, duration, size and formula below marked **[source]** comes straight from that checkout, with the file path. Monkeytype is mid-migration from jQuery-style TypeScript to **SolidJS + Tailwind v4** (the newest commit is literally "rewrite commandline in solidjs"), so class names and file paths will move. The behaviour and values are stable.
@@ -10,30 +10,33 @@
 > - **typings.gg source.** I cloned `github.com/briano1905/typings`, the site that inspired Monkeytype. **[source]**
 > - **ttyper.** I read the README from GitHub. **[source]**
 > - **Blocked sites.** The live sites (monkeytype.com, keybr.com, typings.gg, typelit.io, 10fastfingers.com, typing.com, typeracer.com, kbd.news, Wikipedia) are **blocked by the egress proxy**. I could not check live visuals, so claims about TypeLit, TypeRacer, 10FastFingers and Typing.com rest on search-engine summaries and are marked **(secondary)**.
-> - **Licences.** Monkeytype is **GPL-3.0**, keybr is **AGPL-3.0** and typings.gg is **GPL-3.0**. Parrotype must **re-implement** ideas, formulas and values, **not copy code, sounds or images**. Colour values, durations and formulas are facts and fine to reuse. The snippets in this doc are written fresh for Parrotype.
+> - **Verification pass.** All 27 theme rows in §11.2 were re-checked programmatically against `themes.ts` (187 themes, 52 with extra CSS), and the contrast ratios in §11.3–11.4 were recomputed. The caret, line-jump, metric and default-config claims were re-read in the source. Two earlier statements were corrected: how the caret replaces a running animation (§5.4), and what the result screen's "correct characters" number counts (§8.1).
+> - **Licences.** Monkeytype is **GPL-3.0**, keybr is **AGPL-3.0** and typings.gg is **GPL-3.0**. Typewise must **re-implement** ideas, formulas and values, **not copy code, sounds or images**. Colour values, durations and formulas are facts and fine to reuse. The snippets in this doc are written fresh for Typewise.
 
 ---
 
-## 0. TL;DR: 18 rules for Parrotype's look and feel
+## 0. TL;DR: 20 rules for Typewise's look and feel
 
 1. **Type in place.** Draw the caret and the letter colours directly on the target text, as Monkeytype and keybr do. Do not use a separate input box like typings.gg, 10FastFingers and TypeRacer. Capture input with a **hidden, focused `<textarea>`** so IME, dead keys (Dutch `ë`, `é`) and mobile keyboards work. **[source: Monkeytype `#wordsInput`]**
-2. **Use one accent colour and 10 colour tokens.** Derive everything else from `--bg`, `--main`, `--caret`, `--sub`, `--sub-alt`, `--text`, `--error`, `--error-extra`, `--colorful-error` and `--colorful-error-extra`. Parrotype adds 2–3 tokens for grammar and spelling (§11.5).
-3. **Use a monospace font for the test text and the whole UI.** Monkeytype uses **Roboto Mono 400** almost everywhere. **Lexend Deca** is used only for the logo wordmark. Preload both as `woff2` with `font-display: block`, so the caret never jumps when a fallback font swaps out.
+2. **Use one accent colour and 10 colour tokens.** Derive everything else from `--bg`, `--main`, `--caret`, `--sub`, `--sub-alt`, `--text`, `--error`, `--error-extra`, `--colorful-error` and `--colorful-error-extra`. Typewise adds 2–3 tokens for grammar and spelling (§11.5).
+3. **Use a monospace font for the test text.** Monkeytype uses **Roboto Mono 400** almost everywhere (UI included). **Lexend Deca** is used only for the logo wordmark, not for the UI as is often assumed. Preload the typing font as `woff2` with `font-display: block`, so the caret never jumps when a fallback font swaps out. (Typewise's actual font picks, Recursive Mono plus a display face, are decided in `design-not-ai.md` §4.3; the mechanics here apply to whichever font is chosen.)
 4. **Text colours:** untyped = `--sub` (dim), correct = `--text` (bright), wrong = `--error`, extra letters = `--error-extra` (darker red). A word committed with mistakes gets a **2px `--error` underline**. Missed letters stay in the untyped colour. There is **no** per-letter underline for missed letters; the whole word is underlined.
 5. **Show only 3 lines.** After the active word drops to line 3, remove line 1 and slide the text up one line, so the user always types on the **middle line** with one line of context above.
-6. **Smooth caret:** a bar `0.1em` wide and `1.2em` tall, centred on the letter. Animate `left/top` (Parrotype: `transform`) over **85 / 100 / 150 ms** (fast / medium / slow). Easing is `inOut(1.25)`, with 100 ms as the default. **Do not blink while typing.** Blink with a 1 s opacity cycle only when idle.
+6. **Smooth caret:** a bar `0.1em` wide and `1.2em` tall, centred on the letter. Animate `left/top` (Typewise: `transform`) over **85 / 100 / 150 ms** (fast / medium / slow). Easing is `inOut(1.25)`, with 100 ms as the default. **Do not blink while typing.** Blink with a 1 s opacity cycle only when idle.
 7. **Focus mode.** On the first keystroke, fade out everything except the words, caret and live timer: nav, config bar, footer, key tips, and the mouse cursor (`cursor:none`). Bring them back when the mouse moves more than **3 px**.
 8. **Fades are 125 ms.** That covers restart fade-out/in, result fade-in, button colour transitions and the focus fade. Mode switches in the config bar take 250 ms. Respect `prefers-reduced-motion` by setting every duration to 0.
 9. **Keep the live stats tiny.** By default only the timer/progress shows, top-left above the words, at the test font size, in `--main`. Live WPM and accuracy are opt-in.
 10. **Make the result screen glanceable:** huge **wpm** and **acc** (4rem numbers, 2rem labels) on the left and a 200 px chart on the right. Below them: raw, characters `correct/incorrect/extra/missed`, consistency and time. "Next test" is one Tab+Enter away.
 11. **Copy the metrics exactly.** WPM = characters of *fully correct* words, including their trailing space, ÷ 5 ÷ minutes. Raw counts every typed character. Accuracy = correct keypresses ÷ all keypresses (backspaced errors still count against you). Consistency = `100·(1−tanh(c + c³/3 + c⁵/5))`, where c is the coefficient of variation of per-second raw WPM. (§9)
 12. **Keyboard first:** Tab then Enter restarts (or an optional single-key quick restart). Esc, Ctrl/Cmd+Shift+P opens a **command palette** that reaches every setting and previews themes live on hover.
-13. **Keep the error colour readable.** Monkeytype's default `serika_dark` error red is only **2.70:1** against its background, and its untyped text is 2.17:1. Dim is fine for untyped text, but **Parrotype's whole point is errors**, so `--error` must be ≥ 4.5:1. Never show an error by colour alone: always add an underline.
+13. **Keep the error colour readable.** Monkeytype's default `serika_dark` error red is only **2.70:1** against its background, and its untyped text is 2.17:1. Dim is fine for untyped text, but **Typewise's whole point is errors**, so `--error` must be ≥ 4.5:1. Never show an error by colour alone: always add an underline.
 14. **Mark corrections, not just errors.** Monkeytype's word history shows letters you *fixed* with a **dotted `--main` underline**. That is great feedback for a typo-heavy user (§4.4).
 15. **Take keybr's per-key model:** an exponential moving average (α = 0.1) of each key's time-to-type. Key colour is a gradient from `--slow-key` to `--fast-key` by confidence. A new letter unlocks only when every included key has *once* reached the target speed. (§15)
 16. **Add a keybr-style keyboard heatmap** for misses and hits (spots scaled by min-max normalised frequency). Add ttyper-style "worst keys" to the result screen. (§15, §16)
 17. **Arabic (phase 2):** set `direction: rtl`. Render letters `display: inline` (not `inline-block`) so the letters can join up (as Monkeytype's `joiningScript` does). Prefer the **CSS Custom Highlight API** for colouring Arabic and free-writing text without breaking that joining (§14.4).
 18. **Keep the parrot quiet.** The mascot appears in the logo, the result screen, empty states and micro-copy, **never** in the typing area. Restraint is the product.
+19. **Look hand-made, not templated.** Monkeytype has zero blurred drop shadows, one gradient, one radius token, colour-inversion hovers and a double-ring focus style (§1.1). Copy that discipline.
+20. **Respect dead keys and IMEs.** Show an in-progress composition (Dutch `"` + `e` → `ë` on US-International) with a thin underline (Monkeytype: a `0.05em` solid bottom border in the untyped colour), and compare NFC-normalised text, so `ë` typed either way counts as correct (§7.5).
 
 ---
 
@@ -41,19 +44,36 @@
 
 The common thread is **restraint plus instant, honest feedback**. Concretely:
 
-| Principle | How Monkeytype / keybr do it | Parrotype takeaway |
+| Principle | How Monkeytype / keybr do it | Typewise takeaway |
 |---|---|---|
 | **The text is the UI** | Words sit in the visual centre (`.pageTest` grid `1fr auto 1fr`). There is no input box: the letters themselves change colour. **[source: `styles/test.scss`]** | Put the words dead centre. The only chrome while typing is the caret and a tiny timer. |
-| **One accent colour** | A theme is just 10 hex values (§11). The accent `--main` is used for the timer, active config buttons, the logo, the result numbers and the chart line. Everything else is `--sub`/`--text` on `--bg`. | Same: Parrotype themes are token sets, not stylesheets. |
+| **One accent colour** | A theme is just 10 hex values (§11). The accent `--main` is used for the timer, active config buttons, the logo, the result numbers and the chart line. Everything else is `--sub`/`--text` on `--bg`. | Same: Typewise themes are token sets, not stylesheets. |
 | **Zero-latency feedback** | DOM updates are batched with `requestDebouncedAnimationFrame` (one rAF per key per frame). The caret position is computed from `offsetLeft/offsetTop` (cheap layout reads). Fonts are preloaded with `font-display: block`. **[source: `elements/caret.ts`, `html/head.html`]** | Never re-render the whole word list per keystroke: patch only the active word. |
 | **No layout shift** | `font-variant: no-common-ligatures`. Extra letters can be hidden (`hideExtraLetters`) "to avoid words jumping lines". Untyped letters reserve a transparent `0.05em` bottom border so dead-key underlines don't shift. | Reserve every border you might show later (transparent by default). |
 | **Calm motion** | Fades are 125 ms. The caret glides in 85–150 ms. Line scroll is 125 ms (optional). Every animation passes through `applyReducedMotion()`. | Use the same timing scale (§12). |
 | **Keyboard first** | Restart with Tab→Enter. Command palette on Esc. Focus mode hides the mouse cursor. | The whole app must be usable without a mouse. |
 | **Progressive disclosure** | The test page shows only 3 config groups. The other 100+ options live in the palette and the settings page. | Show 3–4 controls max on the main screen. |
 | **Personality in the margins** | The logo subtitle reads "monkey see". Caret styles include "banana", "carrot" and "monkey". There is a "fart" click sound. All of these are opt-in. | Parrot jokes go in micro-copy, results and empty states. Defaults stay sober. |
-| **Customisability as delight** | 187 themes. 26 click sounds. 43 fonts. Caret styles. Tape mode. Blind mode. **[source: counts from `constants/themes.ts`, `fonts.ts`, schema]** | Parrotype has one user, so ship 4–6 curated themes and the settings that matter for typo training (§13). |
+| **Customisability as delight** | 187 themes. 26 click sounds. 43 fonts. Caret styles. Tape mode. Blind mode. **[source: counts from `constants/themes.ts`, `fonts.ts`, schema]** | Typewise has one user, so ship 4–6 curated themes and the settings that matter for typo training (§13). |
 
 The Monkeytype README and About page describe the goal as emulating "natural keyboard typing … by unobtrusively presenting the text prompts and displaying typed characters in-place, providing straightforward, real-time feedback on typos, speed, and accuracy." **[source: `components/pages/AboutPage.tsx`]** Monkeytype's author has said he was inspired by **typings.gg**'s "super clean, minimalistic UI" after seeing it on r/mk; Monkeytype launched on 15 May 2020. **(secondary: kbd.news interview via search summary)**
+
+### 1.1 Why Monkeytype does not look "AI-generated" (measured in the source)
+
+The user explicitly asked that Typewise must not look like an AI-made site. Monkeytype is a useful counter-example because its restraint is measurable in its stylesheets (see `design-not-ai.md` for the wider research). **[source: grep over `frontend/src/styles` and `frontend/src/ts/components` @ `1f43321`]**
+
+| Typical "AI template" tell | What Monkeytype does instead |
+|---|---|
+| Soft blurred drop shadows on every card | **Zero blurred drop shadows.** All 17 `box-shadow` declarations in `styles/` are **0-blur spread rings** (focus rings, a `0 0 0 .5em var(--bg-color)` knock-out halo, autofill fills). The only blurred one, `box-shadow: 0 0 10px rgba(0,0,0,.25)`, is **commented out** in `test.scss`. |
+| Purple-blue gradients, glassmorphism | **One** `linear-gradient` in the whole stylesheet (plus edge-fade masks for tape mode). `backdrop-blur` appears only on notification toasts and the XP-bar dropdown. Colour is flat token fills. |
+| Many radii, pill-everything | **One radius token**, `--roundness: .5rem`, with `calc(var(--roundness)/2)` for small items. Themes may override it. |
+| Hover = lift + shadow + scale | **Hover = colour inversion.** Filled buttons are `background: var(--sub-alt-color); color: var(--text-color)`; on hover they become `background: var(--text-color); color: var(--bg-color)`; pressed is `--sub`; disabled is `opacity: .33`. Text buttons just go from `--sub` to `--text`. All of it is a 125 ms colour transition, no movement. **[source: `styles/buttons.scss`]** |
+| Browser-default or glowing focus outline | **Double-ring focus**: `box-shadow: 0 0 0 .1rem var(--bg-color), 0 0 0 .2rem var(--text-color)` (a background-coloured gap, then a text-coloured ring). Crisp and theme-aware. |
+| Generic sans (Inter) + emoji icons | **Monospace everywhere** (Roboto Mono), a single display face for the wordmark (Lexend Deca), Font Awesome line icons, lowercase UI copy ("test settings", "next test"). |
+| Hero section, marketing copy, feature grid | The landing page **is** the tool. The first thing you see is the words you can type. |
+| A random accent colour | Palettes named after **mechanical keycap sets** (GMK 8008, 9009, Olivia, Botanical, Carbon…), which gives the colour choices a real-world origin and a community story. |
+
+**Typewise takeaway:** flat token colours, one radius, ring-style focus, colour-inversion hover, no blurred shadows inside the app chrome, and palettes with a real-world source (parrot plumage: macaw, budgie, cockatoo, lorikeet) rather than a default Tailwind gradient.
 
 ---
 
@@ -61,7 +81,7 @@ The Monkeytype README and About page describe the goal as emulating "natural key
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐  padding-top 2rem
-│ [⌨ logo] monkeytype   ⌨  👑  ℹ  ⚙                        🔔  👤 lvl      │  header (flex, gap .5rem)
+│ [⌨ logo] monkeytype   ⌨  ♛  ℹ  ⚙                        [bell] [user] lvl│  header (flex, gap .5rem)
 │          monkey see                                                       │
 ├──────────────────────────────────────────────────────────────────────────┤  row-gap 2rem
 │                                                                          │
@@ -80,7 +100,7 @@ The Monkeytype README and About page describe the goal as emulating "natural key
 ├──────────────────────────────────────────────────────────────────────────┤
 │                  tab > enter  - restart test                             │  key tips (text-xs, --sub)
 │                  esc or ctrl+shift+p  - command line                     │
-│ ✉ contact  ♥ support  </> github  discord  twitter  terms  security  …  🎨 serika dark  v26.x │
+│ ✉ contact  ♥ support  </> github  discord  twitter  terms  security  …  [palette] serika dark  v26.x │
 └──────────────────────────────────────────────────────────────────────────┘  padding-bottom 2rem
 ```
 
@@ -144,7 +164,7 @@ Breakpoints (Tailwind theme overrides): `xxs 331px, xs 426px, sm 721px, md 849px
 Things worth copying exactly:
 
 - **`translate="no"`** on the wrapper, so browser auto-translate does not rewrite the target words.
-- **The hidden textarea** (`width:0; opacity:0; caret-color:transparent; position:absolute; z-index:-1; pointer-events:none; contain:strict`). Its attributes switch off autocorrect, spellcheck, Grammarly, password managers and autofill. For a *Dutch* user these attributes are essential: an OS-level autocorrect would silently fix typos before Parrotype can see them.
+- **The hidden textarea** (`width:0; opacity:0; caret-color:transparent; position:absolute; z-index:-1; pointer-events:none; contain:strict`). Its attributes switch off autocorrect, spellcheck, Grammarly, password managers and autofill. For a *Dutch* user these attributes are essential: an OS-level autocorrect would silently fix typos before Typewise can see them.
 - `#words { display:flex; flex-wrap:wrap; align-content:flex-start; user-select:none; padding-bottom:.5em }`.
 - The out-of-focus state: `#words.blurred { opacity:.25; filter: blur(4px) }`, plus a centred message **"Click here or press any key to focus"** after **1 second** out of focus.
 
@@ -183,7 +203,7 @@ Fonts are self-hosted `woff2` files, preloaded in `<head>`:
 
 with `@font-face { font-display: block }`. **[source: `html/head.html`, `styles/standalone.scss`]** Monkeytype also ships a "`<Font> Preview`" face for every font, so the command palette can render each font option *in that font*.
 
-**Parrotype:** self-host **Roboto Mono** and **Lexend Deca** (both SIL OFL on Google Fonts) via `@fontsource/roboto-mono` and `@fontsource/lexend-deca`, or copy the `woff2` files into `public/fonts/`. For phase 2, add **Vazirmatn** or **Noto Naskh Arabic** (both OFL) for Arabic. Monkeytype offers `Noto_Naskh_Arabic` as a font option. **[source: `constants/fonts.ts`]**
+**Typewise:** the font choice itself lives in `design-not-ai.md` §4.3 (recommended: Recursive Mono for typing, a separate display face for the wordmark and big numbers). Copy Monkeytype's *mechanics*: self-host `woff2` (Fontsource packages or files in `public/fonts/`), preload only the typing font, `font-display: block` for it, `font-variant-ligatures: none` in the typing area, and recompute the caret after `document.fonts.ready`. If a quick Monkeytype-like fallback is needed, Roboto Mono and Lexend Deca are both SIL OFL (`@fontsource/roboto-mono`, `@fontsource/lexend-deca`). For phase 2, add **Vazirmatn** or **Noto Naskh Arabic** (both OFL) for Arabic. Monkeytype offers `Noto_Naskh_Arabic` as a font option. **[source: `constants/fonts.ts`]**
 
 ---
 
@@ -257,7 +277,7 @@ Summary of what the user sees:
 | Space pressed on a correct word | no underline. The word keeps `--text`. |
 | Blind mode | incorrect letters are drawn in the *correct* colour, extra letters are hidden, and the error underline is transparent. |
 
-**Parrotype default for this user:** use `indicateTypos: "below"`, so the user sees both what they *should* have typed (big, red) and what they *did* type (small, below). That pairing is exactly what helps a typo-prone typist notice their own error patterns (for example `teh`/`the`, or Dutch `ij`/`y`). Keep `replace` as an option.
+**Typewise default for this user:** use `indicateTypos: "below"`, so the user sees both what they *should* have typed (big, red) and what they *did* type (small, below). That pairing is exactly what helps a typo-prone typist notice their own error patterns (for example `teh`/`the`, or Dutch `ij`/`y`). Keep `replace` as an option.
 
 ### 4.3 Highlight modes and typed effects **[source]**
 
@@ -276,7 +296,7 @@ After the test, Monkeytype rebuilds every word from the event log:
 - hovering a word shows a tooltip with **exactly what you typed** (spaces as `_`) and the word's **burst speed**;
 - an optional **burst heatmap** colours each word by its speed.
 
-**Parrotype:** this is the most valuable screen for a typo-heavy user. Extend it:
+**Typewise:** this is the most valuable screen for a typo-heavy user. Extend it:
 
 1. Colour-code the *typo type* per word: transposition, neighbour key, doubled letter, omission. The classification algorithm is in `typing-pedagogy.md`.
 2. Give each word a "practice these words" button. Monkeytype has **"practice words"** with missed/slow options.
@@ -316,7 +336,7 @@ Caret styles: `off, default (line), block, outline, underline, carrot, banana, m
 - `Caret.startAnimation()` runs only when focus mode is *left* (mouse moved more than 3px, page change, restart), or when the caret is shown. So **the caret blinks while idle before the test, and after you touch the mouse**.
 - With `smoothCaret: off`, the blink is the hard on/off keyframe instead of the smooth fade.
 
-**Parrotype recommendation:** go one step further, like text editors do. Add `.caret--idle` (blinking) after **~600 ms without input**, even in focus mode. A user who pauses to think about a Dutch spelling should see "you are here". This is a deliberate deviation from Monkeytype (my judgement).
+**Typewise recommendation:** go one step further, like text editors do. Add `.caret--idle` (blinking) after **~600 ms without input**, even in focus mode. A user who pauses to think about a Dutch spelling should see "you are here". This is a deliberate deviation from Monkeytype (my judgement).
 
 ### 5.3 How the position is computed **[source: `elements/caret.ts` → `goTo()` / `getTargetPositionAndWidth()`]**
 
@@ -339,11 +359,11 @@ const smoothCaretSpeed = { off: 0, slow: 150, medium: 100, fast: 85 }[Config.smo
 this.posAnimation = this.element.animate({ left, top, width?, duration: smoothCaretSpeed, ease: "inOut(1.25)" }); // anime.js v4
 ```
 
-- A new move **cancels** the running position animation (`posAnimation?.cancel()`) and starts a new one from wherever the caret currently is. At 100+ WPM the caret is therefore always chasing the latest target and never queues up.
+- A new move **replaces** the running position animation and starts from wherever the caret currently is. `animatePosition()` does not cancel explicitly; it relies on anime.js v4's default `composition: 'replace'`, which cancels a running tween on the same target and property when a new one starts. (`setPosition()`, the non-animated path, does call `posAnimation?.cancel()` explicitly.) At 100+ WPM the caret is therefore always chasing the latest target and never queues up. **[source: `elements/caret.ts`; anime.js composition docs]**
 - **Line jumps** are animated on a **separate channel** (`marginTop`), so they don't fight with the left/top animation. Afterwards the margin is folded back into `top` (`readyToResetMarginTop`). Tape scrolling does the same with `marginLeft`.
 - `inOut(1.25)` is anime.js's power-in-out easing with exponent 1.25: gentle, close to `ease-in-out`. A good CSS stand-in is `cubic-bezier(.45, 0, .55, 1)`, or plain `ease-in-out`.
 
-### 5.5 Parrotype caret: a fresh implementation (Web Animations API + transform)
+### 5.5 Typewise caret: a fresh implementation (Web Animations API + transform)
 
 Using `transform` instead of `left/top` keeps the animation on the compositor. The trick is to **read the caret's current on-screen transform** before cancelling the old animation, so the new one starts from where the caret actually is.
 
@@ -420,9 +440,9 @@ export class Caret {
   - With `smoothLineScroll` on (**default off**), the shift is `#words.animate({ marginTop: -lineHeight, duration: 125 })`. The removed DOM is deleted at the end and `marginTop` is reset to 0. The caret runs the same `marginTop` animation on its own channel. With it off, the removal is instant.
 - **Result:** the active line is always line 2 of 3, with one finished line above for context and one upcoming line below.
 - **`showAllLines`** (word, quote and custom modes only) turns the window off and lets the text grow.
-- **`maxLineWidth`** (in `ch`, 0 = full width) limits the measure. Parrotype should default to about **60–70ch** for readability.
+- **`maxLineWidth`** (in `ch`, 0 = full width) limits the measure. Typewise should default to about **60–70ch** for readability.
 
-**Parrotype implementation sketch:**
+**Typewise implementation sketch:**
 
 ```ts
 // After patching the active word:
@@ -450,7 +470,7 @@ if (top > lastTop) {
 - **What it is:** `tapeMode: off | letter | word`. A single line scrolls horizontally: per keypress in `letter` mode, per word in `word` mode. The caret stays fixed at `tapeMargin`% (10–90, default 50).
 - **Scroll animation:** `marginLeft`, **125 ms**, `inOut(1.25)`.
 - **Edge fade:** `mask-image: linear-gradient(90deg, transparent 1%, #000 10%, #000 90%, transparent 99%)`.
-- **Parrotype:** offer it as a "focus line" option. It works well on narrow phone screens and for long dictation sentences.
+- **Typewise:** offer it as a "focus line" option. It works well on narrow phone screens and for long dictation sentences.
 
 ---
 
@@ -478,13 +498,31 @@ if (top > lastTop) {
 - **bar:** a fixed `8px` (`h-2`) bar across the very top of the viewport.
 - **text:** a giant translucent number behind the words.
 
-**Parrotype:** default to **mini timer plus live accuracy** in `--main`. Accuracy matters more than speed for this user. Keep live WPM opt-in.
+**Typewise:** default to **mini timer plus live accuracy** in `--main`. Accuracy matters more than speed for this user. Keep live WPM opt-in.
 
 ### 7.3 Warnings
 
 - **Caps Lock** warning (on by default).
 - **Out of focus:** after 1s, blur the words and show "Click here or press any key to focus" (or "Click anywhere to focus the window" when the window itself lost focus).
 - **Loading:** a spinner appears only after a **0.5 s delay** (`animation-delay: .5s`), so fast transitions never flash it.
+
+### 7.4 On-screen keymap (optional, below the words) **[source: `components/pages/test/Keymap.tsx`, `packages/schemas/src/configs.ts`]**
+
+Monkeytype can show a virtual keyboard under the test. It is **off by default**, and it is a good fit for Typewise's finger-awareness drills.
+
+- **`keymapMode`:** `off | static | react | next`.
+  - `static`: just shows the layout.
+  - `react`: each keypress **flashes** its key: background `--main` if the key was correct, `--error` if wrong, with `--bg` legend, fading back to `--sub-alt` / `--sub` over **250 ms**.
+  - `next`: the **next key to press** is filled with `--main` (legend `--bg`). When you leave this mode, the highlighted key fades out over 250 ms.
+  - The code deliberately ignores `prefers-reduced-motion` here ("If the user activates react/next they want animations").
+- **Key geometry:** each key is a `2rem × 2rem` box (multiplied by the key's width/height units, so space and shift are wider), `rounded`, `border-2 border-bg` (the border in the background colour makes the gaps between keys), `bg-sub-alt`, legend `--sub`, `text-sm`. Rows are `h-8` flex rows. Home-row keys (F/J) get a small `h-0.5 w-2` bump in `--bg` at the bottom.
+- **Options:** `keymapStyle` (staggered, alice, matrix, split, steno…), `keymapLegendStyle` (lowercase, uppercase, blank, dynamic: follows Shift/AltGr/Caps Lock), `keymapKeys` (minimal, minimal + number row, full), `keymapSize` (a CSS `zoom` capped per breakpoint: 0.5 at `xxs` up to 2.9 at `2xl`), and the layout to show.
+
+**Typewise:** offer `next` mode in a "Learn" drill, and `react` mode as an opt-in. On the result screen, reuse the same keyboard SVG/DOM for the miss heatmap (§15.3), so there is only one keyboard component. Dutch users usually type on **US-International** (dead keys for `ë`, `é`) or plain US QWERTY; ask once and store it.
+
+### 7.5 IME and dead-key composition display **[source: `constants/default-config.ts`, `packages/schemas/src/configs.ts`]**
+
+`compositionDisplay: off | below | replace` (default `replace`) controls how an in-progress composition is shown, i.e. a dead key (`"` on US-International) waiting for its letter, or an Arabic/CJK IME. Each composing character is rendered as `<letter class="dead">` (plus `correct` if it already matches): a bottom border in the untyped colour (§4.2). With `replace` the composing character is drawn in place of the target letter (a space shows as `_`); with `off` the target letter stays and only gets the dead underline; with `below` the composition text is shown in a separate line under the words. **[source: `test/test-ui.ts` → `buildWordHTML` / composition loop]** For a Dutch user typing `ë` as `"` + `e`, this is the difference between "my key did nothing" and "the app is waiting for the second key". **Typewise must keep this** and treat a completed composition as one character (compare NFC-normalised strings, so a precomposed `ë` U+00EB equals `e` + U+0308).
 
 ---
 
@@ -494,7 +532,7 @@ if (top > lastTop) {
 
 ```
 ┌──────────────┬───────────────────────────────────────────────────────────┐
-│ wpm 👑        │  WPM chart (Chart.js, height 200px)                        │
+│ wpm [crown]  │  WPM chart (Chart.js, height 200px)                        │
 │ 87           │   ── wpm (main, 3px)   - - raw (main @60%, 2px, dash 8/8)  │
 │ acc          │   ×  errors (error colour, crossRot r=3, right axis)       │
 │ 96%          │                                                           │
@@ -503,8 +541,8 @@ if (top > lastTop) {
 │ time 30        —         92      412/9/2/3         78%           30s      │
 │ english                                                                   │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  [ › next test ] [ ⟳ repeat ] [ ⚠ practice words ] [ ≡ words history ]    │
-│  [ ▶ replay ] [ 📷 screenshot ]                                            │
+│  [ › next test ] [ ⟳ repeat ] [ ! practice words ] [ ≡ words history ]    │
+│  [ > replay ] [ [cam] screenshot ]                                         │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -518,7 +556,7 @@ if (top > lastTop) {
 - A `1.7rem` square badge next to "wpm" (`background: --main; color: --bg; border-radius: --roundness`).
 - States: new PB (crown), pending (outlined), ineligible (slashed), error (question mark), warning (exclamation).
 
-**Characters:** shown as `correct/incorrect/extra/missed`, with a tooltip spelling out the four labels.
+**Characters:** shown as `correct/incorrect/extra/missed`, with a tooltip spelling out the four labels. Watch the subtlety: the "correct" number shown is `charStats[0] = chars.correctWord`, i.e. characters belonging to **fully correct words** (plus their spaces), the same number that feeds wpm. Correct letters inside a word you got wrong are *not* in it; they only count towards raw (`allCorrect`). **[source: `test/test-logic.ts` → `completedEvent.charStats`, `test/result.ts`]** Typewise should label this honestly ("chars in correct words") or show `allCorrect` instead.
 
 **Time:** shows AFK time and "time today" as small `0.75rem` `--sub` annotations.
 
@@ -548,7 +586,7 @@ if (top > lastTop) {
 
 Restart is a 125 ms fade-out and a 125 ms fade-in. All durations are wrapped in `applyReducedMotion(ms)`, which returns `prefersReducedMotion() ? 0 : ms`.
 
-### 8.4 Account / history (for Parrotype's local "progress" page)
+### 8.4 Account / history (for Typewise's local "progress" page)
 
 - **Activity heatmap** (GitHub-style calendar) **[source: `styles/test-activity.scss`]**: square cells, `gap .25em`, `border-radius .25em`. The level colours mix `--main` into `--sub-alt`:
   ```css
@@ -561,7 +599,7 @@ Restart is a 125 ms fade-out and a 125 ms fade-in. All durations are wrapped in 
   Because it is pure `color-mix` on tokens, the heatmap matches every theme for free.
 - **Stats tiles:** tests started / completed, time typing, and for wpm, raw, acc and consistency each a *highest*, *average* and *average (last 10)*. A history chart shows every result plus averages over 10 and 100 results.
 - **PBs** are stored per `mode` + `mode2` (time 15/30/60/120, words 10/25/50/100), keyed by `language`, `punctuation`, `numbers`, `difficulty` and `lazyMode`. Each PB keeps `{wpm, raw, acc, consistency, timestamp}`. **[source: `packages/schemas/src/shared.ts`]**
-- **Parrotype:** store results in **IndexedDB** (`idb-keyval` or Dexie), plus a JSON export/import button, since there is no backend. PB key: `${mode}:${mode2}:${language}:${punct}:${numbers}`.
+- **Typewise:** store results in **IndexedDB** (`idb-keyval` or Dexie), plus a JSON export/import button, since there is no backend. PB key: `${mode}:${mode2}:${language}:${punct}:${numbers}`.
 
 ---
 
@@ -580,7 +618,7 @@ From the source (`test/test-logic.ts`, `test/events/stats.ts`, `utils/strings.ts
 | **wpm history** | per-second running wpm (the chart line) | |
 | **burst** | per-word speed (wpm for that single word) | shown in the history hover. |
 
-Fresh TypeScript implementation for Parrotype (re-derived, not copied):
+Fresh TypeScript implementation for Typewise (re-derived, not copied):
 
 ```ts
 // src/core/stats.ts
@@ -622,7 +660,7 @@ export const accuracy = (correctKeys: number, wrongKeys: number) =>
   correctKeys + wrongKeys === 0 ? 0 : (correctKeys / (correctKeys + wrongKeys)) * 100;
 ```
 
-**Parrotype additions**, aimed at typo training (see `typing-pedagogy.md`):
+**Typewise additions**, aimed at typo training (see `typing-pedagogy.md`):
 
 - **corrected vs uncorrected error rate** (Soukoreff & MacKenzie);
 - **per-key and per-bigram miss rate and latency** (keybr style, §15);
@@ -657,7 +695,7 @@ The page also registers a `keydown` listener that calls `preventDefault()` on Es
 - **Live preview:** when the active row is a theme, the palette **removes its own dim backdrop** and applies the theme as a preview. Moving off the theme rows restores the old theme. Hovering with the mouse also changes the active row.
 - **Overflow:** when results are cut off, the last row says "N more results – keep typing to narrow the search".
 
-**Parrotype:** build a small palette (~200 lines) with the same prefix-word matcher. Commands: theme, language (nl/en/ar), mode, duration, caret speed, indicate typos, focus line, sound, "practice my mistakes", "export data". It is the cheapest way to make every setting reachable from the keyboard.
+**Typewise:** build a small palette (~200 lines) with the same prefix-word matcher. Commands: theme, language (nl/en/ar), mode, duration, caret speed, indicate typos, focus line, sound, "practice my mistakes", "export data". It is the cheapest way to make every setting reachable from the keyboard.
 
 ---
 
@@ -726,20 +764,22 @@ A theme is exactly 10 colours, validated by a Zod schema. The `Theme` component 
 
 | theme | main | sub (untyped) | text (correct) | **error** |
 |---|---|---|---|---|
-| serika_dark | 6.55 | **2.17** | 8.05 | **2.70** ⚠ |
-| serika (light) | **1.46** ⚠ | 1.71 | 9.56 | 3.57 |
+| serika_dark | 6.55 | **2.17** | 8.05 | **2.70** (low) |
+| serika (light) | **1.46** (low) | 1.71 | 9.56 | 3.57 |
 | nord | 7.29 | 5.16 | 10.80 | 3.56 |
 | dracula | 5.90 | 3.03 | 13.36 | 4.53 |
-| 8008 | 3.38 | 4.23 | 9.67 | **2.46** ⚠ |
-| botanical | 2.61 | 2.54 | 2.61 | **1.98** ⚠ |
+| 8008 | 3.38 | 4.23 | 9.67 | **2.46** (low) |
+| botanical | 2.61 | 2.54 | 2.61 | **1.98** (low) |
 
 **Takeaways:**
 
-- A low-contrast `sub` is a **deliberate design choice**: untyped text is meant to recede. Parrotype can keep `sub` around **3:1**.
-- But **`error` at 2–2.7:1 is too faint for a trainer whose core job is showing errors**. Parrotype's built-in themes should have `error ≥ 4.5:1` against `bg`.
+- A low-contrast `sub` is a **deliberate design choice**: untyped text is meant to recede. Typewise can keep `sub` around **3:1**.
+- But **`error` at 2–2.7:1 is too faint for a trainer whose core job is showing errors**. Typewise's built-in themes should have `error ≥ 4.5:1` against `bg`.
 - Always pair the error colour with a **shape cue** (underline or wavy underline), for colour-blind safety.
 
-### 11.4 Proposed Parrotype themes (contrast-checked)
+### 11.4 Fallback Typewise themes (contrast-checked)
+
+> The primary Typewise palettes, derived from photographed parrot species (kea, lorikeet, scarlet macaw), are specified in `design-not-ai.md` §4.2 and take precedence. The two themes below are a contrast-checked fallback that shows how to map a palette onto Monkeytype's 10 tokens plus Typewise's extra ones. Whatever palette ships, keep the rules from §11.3: `error >= 4.5:1` against `bg`, `sub` around 3:1, and an underline next to every error colour.
 
 | token | **parrot** (dark, default) | ratio vs bg | **cockatoo** (light) | ratio vs bg |
 |---|---|---|---|---|
@@ -754,14 +794,14 @@ A theme is exactly 10 colours, validated by a Zod schema. The `Theme` component 
 | `--grammar` *(new)* | `#6cb6ff` (hyacinth blue) | 7.37 | `#2f6fb3` | 4.68 |
 | `--correction` *(new: "you fixed this")* | `= --main` dotted | | `= --main` dotted | |
 
-These values are a starting point; tune them by eye. Keep the 10 Monkeytype token names, so users can paste Monkeytype palettes in as custom themes, and add the Parrotype-only tokens with fallbacks:
+These values are a starting point; tune them by eye. Keep the 10 Monkeytype token names, so users can paste Monkeytype palettes in as custom themes, and add the Typewise-only tokens with fallbacks:
 
 ```css
 :root {
   --bg-color:#1d2420; --sub-alt-color:#182019; --sub-color:#6b7871; --text-color:#e6efe8;
   --main-color:#7bd389; --caret-color:#ffd23f; --error-color:#ff6b5b; --error-extra-color:#b5524a;
   --colorful-error-color:#ff6b5b; --colorful-error-extra-color:#b5524a;
-  /* Parrotype extensions */
+  /* Typewise extensions */
   --grammar-color: var(--pt-grammar, #6cb6ff);
   --spell-color:   var(--error-color);
   --roundness: .5rem;
@@ -774,7 +814,7 @@ body { background: var(--bg-color); color: var(--text-color); font-family: "Robo
 
 Switch themes by setting `document.documentElement.dataset.theme` (or by injecting a `<style>` the way Monkeytype does). Also update `<meta name="theme-color">`. Add a "follow system" option via `prefers-color-scheme`; Monkeytype has `autoSwitchTheme`, with `themeLight: serika` and `themeDark: serika_dark`.
 
-### 11.5 Spelling and grammar marks (Parrotype-specific; no Monkeytype equivalent)
+### 11.5 Spelling and grammar marks (Typewise-specific; no Monkeytype equivalent)
 
 For free-writing and dictation modes, borrow the OS and word-processor convention, which users already understand:
 
@@ -827,11 +867,11 @@ Monkeytype's 125 ms is ~3× faster than typings.gg's 400 ms. Snappy transitions 
 
 ---
 
-## 13. Option catalogue (what Monkeytype offers, and what Parrotype should keep)
+## 13. Option catalogue (what Monkeytype offers, and what Typewise should keep)
 
 Descriptions are quoted or paraphrased from `config/metadata.tsx`. **[source]**
 
-| Option | Monkeytype behaviour | Parrotype |
+| Option | Monkeytype behaviour | Typewise |
 |---|---|---|
 | **blind mode** | "No errors or incorrect words are highlighted. Helps you to focus on raw speed." | Keep as a challenge mode. The *result* screen still reveals the errors. |
 | **confidence mode** `off/on/max` | "on": cannot go back to previous words. "max": no backspace at all. | Keep. Pedagogically useful (forces commitment); see `typing-pedagogy.md`. |
@@ -856,6 +896,31 @@ Descriptions are quoted or paraphrased from `config/metadata.tsx`. **[source]**
 | **british english** | converts US spellings to UK. | Not needed. |
 | **funbox** | gimmick modifiers (mirror, upside down, nospace, …). | Skip. |
 
+### 13.0 Monkeytype's shipped defaults vs proposed Typewise defaults **[source: `constants/default-config.ts`]**
+
+| Setting | Monkeytype default | Typewise default (proposal) | Why |
+|---|---|---|---|
+| `mode` / `time` / `words` | `time` / `30` / `50` | `words` / 30 s / 25 | Accuracy drills work better with a fixed amount of text than a clock. |
+| `language` | `english` | `dutch` (own frequency list) | Dutch is the priority language. |
+| `theme` / light / dark | `serika_dark` / `serika` / `serika_dark`, `autoSwitchTheme: false` | own dark/light pair, follow system | |
+| `fontFamily` / `fontSize` | `Roboto_Mono` / `2` (rem) | Roboto Mono / `1.75` rem desktop, `1.5` rem mobile | Slightly smaller fits ~65ch on a laptop. |
+| `smoothCaret` / `caretStyle` | `medium` / `default` (line) | same | |
+| `smoothLineScroll` | `false` | `true` | Calmer for a nervous typist. |
+| `indicateTypos` | `off` | `below` | Show what was typed. |
+| `compositionDisplay` | `replace` | `replace` | Dead keys for Dutch accents. |
+| `highlightMode` / `typedEffect` | `letter` / `keep` | same | |
+| `timerStyle` / `liveSpeedStyle` / `liveAccStyle` | `mini` / `off` / `off` | `mini` / `off` / `mini` | Accuracy first. |
+| `quickRestart` | `off` (Tab then Enter) | same | |
+| `quickEnd` | `false` | `true` | |
+| `stopOnError` / `confidenceMode` / `difficulty` | `off` / `off` / `normal` | same (drills override) | |
+| `keymapMode` | `off` | `off` (`next` in Learn mode) | |
+| `playSoundOnClick` / `playSoundOnError` / `soundVolume` | `off` / `off` / `0.5` | same | |
+| `showKeyTips` / `capsLockWarning` / `showOutOfFocusWarning` | `true` / `true` / `true` | same | |
+| `startGraphsAtZero` | `true` | same | |
+| `typingSpeedUnit` | `wpm` (also `cpm`, `wps`, `cps`, `wph`) | `wpm`, with `cpm` option | |
+| `maxLineWidth` | `0` (full width) | `65` (ch) | Readability. |
+| `singleListCommandLine` | `on` | `on` | |
+
 ### 13.1 Sounds **[source: `constants/sounds.ts`, `controllers/sound-controller.ts`, `commandline-metadata.ts`]**
 
 - **Click sound names:**
@@ -868,7 +933,7 @@ Descriptions are quoted or paraphrased from `config/metadata.tsx`. **[source]**
   - `howler` is **lazy-imported** on first use, and the sounds are WAV files;
   - synth notes use `AudioContext` + `OscillatorNode` + `GainNode`, with gain = `volume/10` and decay `setTargetAtTime(0, t, 0.3)`;
   - default volume is 0.5; there are separate error sounds 1–4 and a time-warning sound.
-- **Parrotype:** skip Howler. Use plain Web Audio:
+- **Typewise:** skip Howler. Use plain Web Audio:
   - decode 3–5 short click samples (CC0 sources) into `AudioBuffer`s, and pick one at random per key;
   - add ±3% `playbackRate` jitter;
   - create the `AudioContext` lazily on the first user gesture, as autoplay policy requires.
@@ -898,7 +963,7 @@ What I found when I inspected them (downloaded from `raw.githubusercontent.com`)
 | `arabic` | 199 | **fully vowelised with harakat** (`أَتَمَنَّى`), some suspicious vowelisation (`أَلِأرْضٍ`), and very hard to type |
 | `arabic_10k` | 9281 | many entries have a **leading space** (`" اِكْتَشَفَ"`), a data-quality bug |
 
-**Parrotype recommendations:**
+**Typewise recommendations:**
 
 - Build **its own Dutch frequency list** from a real corpus, e.g. SUBTLEX-NL (Keuleers, Brysbaert & New 2010), plus a curated list of the user's *personal* error words. Monkeytype's Dutch lists are a weak base.
 - For Arabic, offer **unvowelised** words by default, with a toggle for harakat. Strip U+064B–U+0652 for the plain variant.
@@ -916,7 +981,7 @@ What I found when I inspected them (downloaded from `raw.githubusercontent.com`)
   - the last word always gets one.
   - Language rules: Spanish `¿¡`, the Hindi/Bengali/Nepali danda `।`, CJK `。`, Arabic `؟`.
 
-**Parrotype:** start with the same "no repeat within 2" uniform picker. Then add *weighted* picking: give a boost to words that contain the user's weak bigrams or that the user has misspelled before (the spaced-repetition box; see `typing-pedagogy.md`).
+**Typewise:** start with the same "no repeat within 2" uniform picker. Then add *weighted* picking: give a boost to words that contain the user's weak bigrams or that the user has misspelled before (the spaced-repetition box; see `typing-pedagogy.md`).
 
 ### 14.3 RTL and Arabic in Monkeytype **[source: `styles/test.scss`, `test/test-ui.ts`, `elements/caret.ts`]**
 
@@ -931,7 +996,7 @@ What I found when I inspected them (downloaded from `raw.githubusercontent.com`)
 - **Font:** the `--font` stack includes `Vazirharf` for Arabic and Persian glyphs.
 - **Words history** uses the same `rightToLeftTest` / `joiningScript` classes.
 
-### 14.4 Better approach for Parrotype: CSS Custom Highlight API
+### 14.4 Better approach for Typewise: CSS Custom Highlight API
 
 Instead of wrapping every character in an element, render each word, or the whole free-writing text, as **plain text nodes**, and colour ranges with `CSS.highlights`. This keeps Arabic shaping intact and is ideal for spelling and grammar underlines in free-writing mode. Browser support: **Chrome/Edge 105, Safari 17.2, Firefox 140 (June 2025)**. **(secondary: web.dev "New to the web platform in June 2025")**
 
@@ -1013,7 +1078,7 @@ function caretRect(textNode: Text, utf16Offset: number, container: HTMLElement) 
 - **Hover:** hovering a key shows a popup with its speed chart and stats.
 - **Gauges row:** **Speed**, **Accuracy** and **Score**, each with a signed **delta vs your average** ("The difference from the average value."), followed by the current key, streaks and daily goal.
 
-**Parrotype:** for a Dutch-first user, run the same model on keys **and on Dutch-specific bigrams/digraphs** (`ij`, `ui`, `ei`, `oe`, `ou`, `aa`, `ee`, `ch`, `sch`, `-dt`), plus Dutch letters like `ë`/`é`. Show a key row coloured slow → fast. Only "unlock" new material in a dedicated **Learn** mode; the free test mode stays unrestricted.
+**Typewise:** for a Dutch-first user, run the same model on keys **and on Dutch-specific bigrams/digraphs** (`ij`, `ui`, `ei`, `oe`, `ou`, `aa`, `ee`, `ch`, `sch`, `-dt`), plus Dutch letters like `ë`/`é`. Show a key row coloured slow → fast. Only "unlock" new material in a dedicated **Learn** mode; the free test mode stays unrestricted.
 
 ```ts
 // Confidence colour, theme-aware (sRGB lerp is fine at this scale)
@@ -1035,7 +1100,7 @@ function confidenceColor(c: number, slow = '#cc0000', fast = '#60d788'): string 
   - **f** (frequency): a **full circle**, radius `f·20 + 5`.
 - Drawing h and m together gives a split "hit vs miss" spot per key. That is an elegant way to show where errors cluster.
 
-**Parrotype:** draw a simple SVG ANSI/ISO keyboard (the user's layout, probably US-International or Dutch). Show **misses** as red spots and **slowness** as amber spots. Put it on the result screen ("where your fingers slipped today") and on the progress page.
+**Typewise:** draw a simple SVG ANSI/ISO keyboard (the user's layout, probably US-International or Dutch). Show **misses** as red spots and **slowness** as amber spots. Put it on the result screen ("where your fingers slipped today") and on the progress page.
 
 ### 15.4 keybr caret and text **[source: `keybr-textinput-ui/lib/Cursor.tsx`, `styles.ts`]**
 
@@ -1058,20 +1123,20 @@ function confidenceColor(c: number, slow = '#cc0000', fast = '#60d788'): string 
 | **typings.gg** (2019, the minimalist original) **[source]** | Text card (`#typing-area`, radius `.4rem`) with a **separate input box** below it plus a "redo" button. Max width `40rem`. | **Current word highlighted** in an accent colour. Committed words coloured correct/wrong. The **input box turns red** (`#input-field.wrong`) the moment the typed prefix diverges. | Theme names and palettes from keycap sets. Word counts `10/25/50/100/250` and times `15/30/60/120/240` as plain `/`-separated text links. WPM/ACC in the top-right. `transition: all .4s ease-in-out` on everything. WPM = *words* per minute (not chars/5). |
 | **10FastFingers** **(secondary)** | A box of words with an input field. The **current word is highlighted**. Space submits a word. | Letters colour green when correct and red/underlined when wrong as you type. | Simple 1-minute test; a "top 200/1000 words" mindset. |
 | **TypeRacer** **(secondary)** | Real quotes (books, movies, songs). Multiplayer race with **cars that only move forward on correct characters**. | Typing a wrong char **stalls the car**, and the **input field turns red** until it is fixed. You *must* fix errors to continue. "Try again" highlights last time's mistakes. | The progress metaphor (the car = your parrot flying across a branch). Graph of speed and mistakes after the race. Replaying a text with past mistakes highlighted. |
-| **TypeLit.io** **(secondary)** | Retype **classic books chapter by chapter** (80+ Project Gutenberg books in 9 languages **including Dutch**). | Real-time error highlighting. WPM and accuracy tracked **per page, per chapter and per book**. | Long-form, meaningful text instead of word salad. Progress saved per chapter. 200+ ranks. **Dutch literature practice** is a strong fit for Parrotype's grammar goals (public-domain Dutch texts from Gutenberg/DBNL). |
+| **TypeLit.io** **(secondary)** | Retype **classic books chapter by chapter** (80+ Project Gutenberg books in 9 languages **including Dutch**). | Real-time error highlighting. WPM and accuracy tracked **per page, per chapter and per book**. | Long-form, meaningful text instead of word salad. Progress saved per chapter. 200+ ranks. **Dutch literature practice** is a strong fit for Typewise's grammar goals (public-domain Dutch texts from Gutenberg/DBNL). |
 | **ttyper** (terminal, Rust) **[source: README]** | Prompt box + input box (rounded borders). | `prompt_correct` green, `prompt_incorrect` red, untyped gray. The **current word's letters are bold** (correct: green bold, incorrect: red bold, untyped: blue bold). Cursor = underlined char. | `--sudden-death` (restart on first error), `--no-backtrack`, `--no-backspace`. **Results show "worst keys"** and a WPM chart. Custom word list = one word per line. |
 | **Typing.com** **(secondary)** | Structured **lessons**. Optional **virtual keyboard and virtual hands** showing which finger to use. | Instant per-key feedback. Speed and accuracy assessed after each lesson. | Gamification: **badges, stars per lesson, points, levels**. A finger guide for beginners. |
 | **keybr** **[source]** | One text block. Caret line, block, box or underline. | hit / miss / garbage styles (§15.4). | Adaptive letter unlocking, per-key confidence colours, heatmap, daily goal, streaks, calendar. |
 
 ---
 
-## 17. Parrotype: a concrete design spec built from all of the above
+## 17. Typewise: a concrete design spec built from all of the above
 
 ### 17.1 Layout (desktop)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ 🦜 parrotype                        ⌨  📈  ⚙              nl ▾  🎨       │ header: logo 1.5rem mark + Lexend Deca 1.75–2rem
+│ [parrot] typewise                   ⌨  [chart] ⚙         nl ▾  [palette]│ header: logo 1.5rem mark + display-face wordmark 1.75–2rem
 │    polly want a keyboard?                                               │ subtitle .65rem --sub (fades in focus)
 │                                                                         │
 │   ┌───────────────┐ ┌──────────────────────────────┐ ┌────────────────┐  │ config cards (--sub-alt, .5rem radius)
@@ -1097,7 +1162,7 @@ Modes in the middle card:
 
 ### 17.2 Behaviour spec (checklist for engineers)
 
-- [ ] The hidden `<textarea>` gets focus on load and on any key. Handle `beforeinput`/`input` plus `compositionstart/update/end`. Show composition in progress with a dotted underline (`letter.dead` equivalent), so Dutch dead keys (`"` + `e` → `ë`) feel right.
+- [ ] The hidden `<textarea>` gets focus on load and on any key. Handle `beforeinput`/`input` plus `compositionstart/update/end`. Show composition in progress with a thin solid underline (`letter.dead` equivalent), so Dutch dead keys (`"` + `e` → `ë`) feel right.
 - [ ] Set `autocomplete=off autocorrect=off autocapitalize=none spellcheck=false data-gramm=false` on the textarea, and `translate="no"` on the words wrapper.
 - [ ] Per keystroke, patch **only the active word** inside one rAF, then move the caret in the same frame.
 - [ ] Letter states and colours exactly as in §4.2. Default `indicateTypos: below`. Committed wrong words get a 2px `--error` underline with the halo text-shadow.
@@ -1115,9 +1180,9 @@ Modes in the middle card:
 
 ### 17.3 Where the parrot lives (playful, but restrained)
 
-- **Logo:** a simple geometric parrot head mark in `--main`, next to the "parrotype" wordmark in Lexend Deca. In focus mode both turn `--sub`, like Monkeytype's logo.
+- **Logo:** the parrot mark (see `design-not-ai.md` §4.5–4.6 for the kea "Kees" mascot and the mark that survives 16 px) in `--main` or `--caret`, next to the lowercase "typewise" wordmark in the display face. Like Monkeytype's logo: about `1.5rem` tall, clicking it on the test page restarts, and in focus mode both turn `--sub` (250 ms colour transition).
 - **Subtitle under the logo** (Monkeytype's "monkey see" equivalent): a rotating line, e.g. "polly wants a keyboard", "squawk less, type more", "parrot see, parrot type".
-- **Result screen:** a small parrot illustration beside the big numbers, with one line of feedback based on the data: "Squawk! You swapped *ie*/*ei* 3× today", or "No typos in *hebben* this time 🎉". Never more than one sentence.
+- **Result screen:** a small parrot illustration beside the big numbers, with one line of feedback based on the data: "Squawk! You swapped *ie*/*ei* 3× today", or "No typos in *hebben* this time. Polly approves.". Never more than one sentence.
 - **Empty states and the onboarding tooltip:** the parrot "repeats" what you type. That is a natural hook for **dictation** ("the parrot says it, you type it").
 - **Optional:** a "feather" caret style and a soft "squawk" error sound, both **off** by default.
 - **Never:** animations in the typing area, confetti during a test, or a mascot covering the text.
@@ -1138,6 +1203,7 @@ Modes in the middle card:
   - `frontend/src/ts/components/core/Theme.tsx`, `frontend/src/ts/components/layout/header/{Header,Logo,Nav}.tsx`, `frontend/src/ts/components/layout/footer/{Footer,Keytips}.tsx`, `frontend/src/ts/components/pages/test/{TestConfig,OutOfFocusWarning}.tsx`, `frontend/src/ts/components/pages/test/live-stats/*`, `frontend/src/ts/components/pages/AboutPage.tsx`, `frontend/src/ts/components/pages/account/TestStats.tsx`, `frontend/src/ts/components/modals/CommandlineModal.tsx`
   - `frontend/src/ts/commandline/filter.ts`, `frontend/src/ts/commandline/commandline-metadata.ts`, `frontend/src/ts/config/metadata.tsx`, `frontend/src/ts/states/hotkeys.ts`, `frontend/src/ts/input/hotkeys/quickrestart.ts`
   - `packages/schemas/src/configs.ts`, `packages/schemas/src/shared.ts`
+  - `frontend/src/ts/components/pages/test/Keymap.tsx` (on-screen keymap), `frontend/src/ts/utils/quick-restart.ts`, `frontend/src/ts/utils/dom.ts` (anime.js wrapper)
   - `frontend/static/themes/dracula.css`, `frontend/static/themes/lavender.css`
 - Monkeytype word lists (raw): https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/dutch.json (also `dutch_1k.json`, `dutch_10k.json`, `arabic.json`, `arabic_10k.json`, `english.json`)
 - keybr.com repository (AGPL-3.0), commit `05a37bc` (2026-09-28): https://github.com/aradzie/keybr.com. Files cited:
@@ -1158,8 +1224,10 @@ Modes in the middle card:
 - keybr overview: https://cdn.jsdelivr.net/gh/aradzie/keybr.com@master/README.md, https://www.educationalappstore.com/website/keybr
 - ttyper: https://www.linuxlinks.com/ttyper-terminal-based-typing-test/, https://docs.rs/crate/ttyper/0.4.0
 - CSS Custom Highlight API support (Firefox 140, June 2025): https://web.dev/blog/web-platform-06-2025
+- anime.js v4 `composition` parameter (default `'replace'` cancels a running tween on the same property): https://animejs.com/documentation/animation/tween-parameters/composition and https://www.mintlify.com/juliangarnier/anime/advanced/composition
 
 **Other:**
 
 - SUBTLEX-NL (Keuleers, Brysbaert & New, 2010): suggested as the base for a real Dutch frequency word list (not fetched here; verify the licence before bundling).
 - WCAG contrast ratios in §11.3–11.4 were computed locally with the WCAG 2.x relative-luminance formula.
+- Companion Typewise research in this repo: `docs/research/design-not-ai.md` (visual direction, palettes, fonts, mascot), `docs/research/typing-pedagogy.md` (feedback timing, typo classification), `docs/research/tech-stack.md`.

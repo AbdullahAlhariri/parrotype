@@ -134,7 +134,11 @@ Computed from the physical grid (row stagger 0 / 0.5 / 0.25 / 0.5 units; neighbo
 
 - The **keyboard is physical, so never mirror it.** Put `dir="ltr"` on the keyboard container even when the text area is `dir="rtl"`. Q stays top-left.
 - Each key shows the Arabic base letter large, the Shift character small in a corner, and optionally the Latin keycap letter tiny. The user also types Dutch and English, and it helps to see that ض is on Q.
-- Highlight the next key. For Shift characters (أ إ آ, ، ؛ ؟, harakat) also highlight the **opposite-hand Shift**: right Shift for left-hand keys (Q W E R T Y A S X `` ` ``), left Shift for the rest. For لا highlight B, and also accept G then H.
+- Highlight the next key. For Shift characters also highlight the **opposite-hand Shift**:
+  - right Shift for left-hand keys (`` ` `` Q–T, A–G, Z–B): the harakat, لإ (T), لأ (G), لآ (B);
+  - left Shift for right-hand keys (Y–], H–', N–/): أ (H), إ (Y), آ (N), ، (K), ؛ (P), ؟ (/), tatweel (J).
+
+  For لا highlight B, and also accept G then H.
 - Home-row bumps are on **ب (F)** and **ت (J)**. The home row is `ش س ي ب | ل ا | ت ن م ك ط`.
 - Finger assignment is identical to QWERTY (`typing-pedagogy.md` §5.1), so the per-key weakness stats are shared across languages *by physical key*.
 
@@ -240,7 +244,7 @@ Two lessons for engineers:
 - **Qat' dropped** (اكثر، الى، انا): very common, often deliberate laziness or a missed Shift.
 - **Wasl written as qat'** (إستخدام، إجتماع، إسم): hypercorrection.
 
-Our rule engine handles both: a list for the frequent qat' words, plus a **morphological pattern** for Forms VII, VIII and X (§6.2, `AR_WASL_PATTERN`). On a sample of its hits in the top-100k corpus words the pattern was correct in **60/60 cases**, after exceptions were added for loanwords and plurals (الإنترنت، الأنبياء، أسترالي، إنجيل…).
+Our rule engine handles both: a list for the frequent qat' words, plus a **morphological pattern** for Forms VII, VIII and X (§6.2, `AR_WASL_PATTERN`). On a sample of its hits in the top-100k corpus words the pattern was correct in **66 of 66 sampled hits**, after exceptions were added for loanwords and plurals (الإنترنت، الأنبياء، أسترالي، إنجيل…).
 
 **B. Medial hamza seat**, the "strongest vowel" rule: compare the vowel of the hamza with the vowel before it. Kasra > damma > fatha > sukun. Kasra → ئ, damma → ؤ, fatha → أ.
 - Examples: سُئِل، بِئْر → ئ · سُؤال، مُؤْمن → ؤ · سَأَل، رَأْس → أ
@@ -624,7 +628,7 @@ Order: wrongLayout → shiftSlip → hamzaSeat → taMarbuta/alifMaqsura (with t
 | AR_MASHALLAH | `ماشاء\s?الله` | ماشاء الله → ما شاء الله | «ما شاء الله» كلمات منفصلة. / three separate words | high | very low |
 | AR_HIDDEN_ALIF | token list: هاذا هاذه هاذان هاذين هاكذا هاؤلاء ذالك ذالكم لاكن(+ه/ها/ني/ك/هم) لاكي اولائك/أولائك اللاه طاها | هاذا → هذا, لاكن → لكن | ألف تُنطق ولا تُكتب. / alif pronounced, never written | high | very low |
 | AR_WASL_NOUNS | token list: إسم(+suffix) إبن إبنة إثنان إثنين أثنين إثنتان إمرأة أمرأة إمرؤ, with clitics | إسمي → اسمي, الإبن → الابن | همزة وصل في الأسماء العشرة. / wasl nouns take bare ا | high | very low (plurals أبناء، أسماء are not listed) |
-| AR_WASL_PATTERN | core (clitics stripped) matches a Form VII/VIII/X masdar `^[إأ](ست C C ا C \| C ت C ا C \| ن C C ا C)(suffix)?$` or past `^إ(ست K K K \| K ت K K \| ن K K K)(وا\|ت\|نا\|تم)?$` (C = not ا; K = not ا/و/ي) minus exceptions | إستخدام → استخدام, الإجتماع → الاجتماع, إنتظرت → انتظرت | ماضي الخماسي والسداسي ومصدرهما بهمزة وصل. / Forms VII, VIII, X start with wasl | medium | low after exceptions (الإنترنت، أنبياء، أسترالي، أنطوان، إنجيل، إنزيم، إرتري، ألتراس، إسطنبول); 60/60 correct in corpus sample; place names like إنزكان slip through |
+| AR_WASL_PATTERN | core (clitics stripped) matches a Form VII/VIII/X masdar `^[إأ](ست C C ا C \| C ت C ا C \| ن C C ا C)(suffix)?$` or past `^إ(ست K K K \| K ت K K \| ن K K K)(وا\|ت\|نا\|تم)?$` (C = not ا; K = not ا/و/ي) minus exceptions | إستخدام → استخدام, الإجتماع → الاجتماع, إنتظرت → انتظرت | ماضي الخماسي والسداسي ومصدرهما بهمزة وصل. / Forms VII, VIII, X start with wasl | medium | low after exceptions (الإنترنت، أنبياء، أسترالي، أنطوان، إنجيل، إنزيم، إرتري، ألتراس، إسطنبول); 66/66 sampled corpus hits correct; place names like إنزكان slip through |
 | AR_HAMZA_OMITTED | token list (with و/ف only): الى اذا او انا انت انتم اين اي ايضا اكثر اول اخرى اهل امس الان اسبوع ارض اطفال ابدا اسرة افضل اخبار لان(ه/ها) ان انه انها امام اسلام انسان | الى → إلى, ان → أن/إن | همزة القطع تُكتب أ أو إ. / write the qat' hamza | medium | low; ambiguous items get 2 suggestions (ان → أن/إن, امام → أمام/إمام) |
 | AR_TAA_MARBUTA_INSIDE | `ة(?=[letters])`; suggest ت if the rest is a pronoun suffix (ي ك ه ها نا هم كم هن كما هما ان ين), else "ة + space" | سيارةك → سيارتك, المدينةالكبيرة → المدينة الكبيرة | التاء المربوطة في آخر الكلمة فقط. / ة is word-final only | high | none (always an error or a missing space) |
 | AR_ALIF_MAQSURA_INSIDE | `ى(?=[letters])`; `ىء` → ئ; suffix → ي; else "ى + space" | علىه → عليه, الطوارىء → الطوارئ | الألف المقصورة في آخر الكلمة فقط. / ى is word-final only | high | none |
@@ -658,7 +662,7 @@ Order: wrongLayout → shiftSlip → hamzaSeat → taMarbuta/alifMaqsura (with t
 
 **Correct text: 0 false positives.**
 - 78 correct sentences: 32 proverbs plus everyday sentences, including tricky items (علي as a name, لن يدعو, نادى, بنى, مبادئ, شاطئ, السيئ, يهيئ, الإنترنت, الأسترالي, الأنبياء, مدرستان).
-- 47 targeted drill sentences (§7.6).
+- 47 targeted drill sentences (§7.5).
 
 **Errors: 48 of 48 test errors flagged with the expected rule.**
 

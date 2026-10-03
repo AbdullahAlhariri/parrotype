@@ -212,6 +212,7 @@ export function classifyTypo(expected: string, typed: string, lang: Lang, layout
     spaceRule(c) ??
     languageRule(c) ??
     doublingRule(c) ??
+    cutShortRule(c) ??
     handShiftRule(c) ??
     realWordRule(c) ??
     opsRule(c)
@@ -514,6 +515,14 @@ function doublingRule(c: Ctx): TypoLabel | null {
     return label(c, 'missed-double', soft(c), detail, tag ?? 'missed-double', tag)
   }
   return label(c, 'doubling', soft(c), `double letters moved in '${c.E}'`, 'doubling')
+}
+
+/** Only the start of the word was typed (space pressed too early, or the end left out). */
+function cutShortRule(c: Ctx): TypoLabel | null {
+  const missing = graphemes(c.el).length - graphemes(c.tl).length
+  if (missing < 2 || !c.el.startsWith(c.tl)) return null
+  const detail = c.mode === 'copy' ? `stopped after '${c.T}'` : `left out the end of '${c.E}'`
+  return label(c, 'omission', soft(c), detail, 'cut-short', 'cut-short')
 }
 
 function handShiftRule(c: Ctx): TypoLabel | null {

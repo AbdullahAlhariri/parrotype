@@ -37,7 +37,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   lang: 'nl',
-  theme: 'macaw',
+  theme: 'kea-dark',
   fontSize: 1.75,
   caretStyle: 'line',
   smoothCaret: true,

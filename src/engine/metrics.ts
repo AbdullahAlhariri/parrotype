@@ -62,12 +62,21 @@ export interface CharTally {
 const toWord = (w: ResultWord | WordAttempt): ResultWord =>
   'target' in w ? w : { target: w.expected, typed: w.typed, committed: true, everWrong: w.everWrong }
 
-/** Monkeytype's countChars over the typed words (untyped words are skipped). */
+/**
+ * Monkeytype's countChars over the typed words (untyped words are skipped). A committed
+ * word followed by a (still empty) word earns its space, as in Monkeytype's input history.
+ */
 export function countChars(words: ResultWord[]): CharTally {
   const t: CharTally = { correctWordChars: 0, correctChars: 0, incorrectChars: 0, extraChars: 0, missedChars: 0, spaces: 0, correctSpaces: 0 }
-  const list = words.filter((w) => w.typed !== '')
-  list.forEach((w, k) => {
-    const last = k === list.length - 1
+  let lastTyped = -1
+  words.forEach((w, k) => {
+    if (w.typed !== '') lastTyped = k
+  })
+  if (lastTyped < 0) return t
+  const histEnd = lastTyped + 1 < words.length && words[lastTyped].committed !== false ? lastTyped + 1 : lastTyped
+  words.forEach((w, k) => {
+    if (w.typed === '' || k > lastTyped) return
+    const last = k === histEnd
     const target = Array.from(w.target)
     const typed = Array.from(w.typed)
     if (w.typed === w.target) {

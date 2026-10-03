@@ -90,6 +90,11 @@ export const TIPS: Record<string, TipText> = {
     nl: 'Je typte een ander bestaand woord: lees het woord en typ precies dat.',
     ar: 'كتبت كلمة أخرى موجودة: اقرأ الكلمة ثم اكتبها كما هي.',
   },
+  'cut-short': {
+    en: 'The word ended too soon: finish every letter before you press space.',
+    nl: 'Het woord stopte te vroeg: typ elke letter voordat je op de spatiebalk drukt.',
+    ar: 'انتهت الكلمة مبكرًا: أكمل كل الحروف قبل أن تضغط المسافة.',
+  },
   space: {
     en: 'A space slipped in or went missing: rest your thumb until the word is finished.',
     nl: 'Er glipte een spatie in of er ontbrak er een: laat je duim rusten tot het woord af is.',
