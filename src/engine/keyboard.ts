@@ -108,25 +108,24 @@ const AZERTY_BE: Legends = [
   { base: chars('<wxcvbn,;:='), shift: chars('>WXCVBN?./+') },
 ]
 
-// Windows Arabic (101). Some keys type two characters (لا on B). Paired brackets are
-// swapped as on the real layout (bidi mirroring). Letters verified against the report;
-// shifted punctuation positions are best effort.
+// Windows Arabic (101), verified against xkb `ara` and a Windows KLC (arabic-typing.md §1.1).
+// Some keys type two characters (لا on B); Shift+9/0 and the D/F, C/V brackets are mirrored.
 const ARABIC_101: Legends = [
   {
     base: ['ذ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
-    shift: ['ّ', '!', '@', '#', '$', '%', '^', '&', '*', ')', '(', '_', '+'],
+    shift: ['\u0651', '!', '@', '#', '$', '%', '^', '&', '*', ')', '(', '_', '+'],
   },
   {
     base: ['ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح', 'ج', 'د', '\\'],
-    shift: ['َ', 'ً', 'ُ', 'ٌ', 'لإ', 'إ', '‘', '÷', '×', '؛', '>', '<', '|'],
+    shift: ['\u064E', '\u064B', '\u064F', '\u064C', 'لإ', 'إ', '\u2018', '÷', '×', '؛', '<', '>', '|'],
   },
   {
     base: ['ش', 'س', 'ي', 'ب', 'ل', 'ا', 'ت', 'ن', 'م', 'ك', 'ط'],
-    shift: ['ِ', 'ٍ', ']', '[', 'لأ', 'أ', 'ـ', '،', '/', ':', '"'],
+    shift: ['\u0650', '\u064D', ']', '[', 'لأ', 'أ', '\u0640', '،', '/', ':', '"'],
   },
   {
     base: ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'ى', 'ة', 'و', 'ز', 'ظ'],
-    shift: ['~', 'ْ', '}', '{', 'لآ', 'آ', '’', ',', '.', '؟'],
+    shift: ['~', '\u0652', '}', '{', 'لآ', 'آ', '\u2019', ',', '.', '؟'],
   },
 ]
 
@@ -217,7 +216,7 @@ function codeMap(layout: LayoutId): Map<string, KeyDef> {
 /** The key definition for a KeyboardEvent.code. */
 export const keyByCode = (code: string, layout: LayoutId = 'qwerty-us'): KeyDef | undefined => codeMap(layout).get(code)
 
-const stripLatinMarks = (c: string) => c.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC')
+const stripLatinMarks = (c: string) => c.normalize('NFD').replace(/[\u0300-\u036F]/g, '').normalize('NFC')
 
 /**
  * Where a character is typed. Characters made with a dead key (é on US-International)
@@ -264,6 +263,12 @@ export function isMirror(a: string, b: string, layout: LayoutId = 'qwerty-us'): 
 export function sameFinger(a: string, b: string, layout: LayoutId = 'qwerty-us'): boolean {
   const pq = physical(a, b, layout)
   return !!pq && pq[0].code !== pq[1].code && pq[0].finger === pq[1].finger
+}
+
+/** Two different characters on the same physical key, i.e. only Shift differs (أ and ا, ; and :). */
+export function sameKey(a: string, b: string, layout: LayoutId = 'qwerty-us'): boolean {
+  const pq = physical(a, b, layout)
+  return !!pq && a !== b && pq[0].code === pq[1].code
 }
 
 export function sameHand(a: string, b: string, layout: LayoutId = 'qwerty-us'): boolean {

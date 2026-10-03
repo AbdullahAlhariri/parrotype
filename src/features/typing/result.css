@@ -1,0 +1,352 @@
+/*
+ * Result screen: asymmetric on purpose. Left third: the big wpm and accuracy. Right two thirds:
+ * the chart with Kees perched on its top edge, the details panel, the words to practise.
+ */
+
+.tr {
+  padding-block: var(--s-6) var(--s-8);
+  outline: none;
+}
+.tr-title {
+  font-size: var(--fs-lg);
+  margin-bottom: var(--s-6);
+}
+
+.tr-grid {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(0, 2.15fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+
+/* ------------------------------------------------------------------ */
+/* left: the numbers                                                   */
+/* ------------------------------------------------------------------ */
+
+.tr-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding-top: var(--s-5);
+}
+.tr-stat {
+  display: flex;
+  flex-direction: column;
+}
+.tr-label {
+  color: var(--sub);
+  font-size: var(--fs-md);
+  line-height: 1.15;
+}
+.tr-wpm {
+  display: inline-block;
+  font-size: clamp(4.25rem, 2.6rem + 4.4vw, 6.75rem);
+  line-height: 0.95;
+  color: var(--main);
+}
+.tr-acc {
+  font-size: var(--fs-2xl);
+  font-weight: 650;
+  line-height: 1.1;
+  color: var(--main);
+}
+.tr-pb {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  color: var(--text);
+  font-weight: 560;
+}
+.tr-pb-icon {
+  flex: none;
+  margin-top: 0.15em;
+  color: var(--kees-flash);
+}
+.tr-feedback {
+  color: var(--sub);
+  max-width: 30ch;
+}
+.tr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+}
+.tr-hint {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.tr-extra {
+  margin-top: var(--s-5);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  max-width: 34ch;
+}
+
+/* ------------------------------------------------------------------ */
+/* right: chart                                                        */
+/* ------------------------------------------------------------------ */
+
+.tr-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+}
+.tr-chart {
+  position: relative;
+  padding-top: var(--s-7);
+}
+/* Kees sits on the chart's top grid line, breaking the grid on purpose */
+.tr-perch {
+  position: absolute;
+  z-index: 2;
+  right: 7%;
+  top: calc(var(--s-7) + 16px - 60px);
+  line-height: 0;
+}
+.tr--animate .tr-perch {
+  animation: tr-land var(--dur-slow) var(--spring-soft) 600ms both;
+}
+@keyframes tr-land {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+}
+
+.tr-chart-box {
+  position: relative;
+}
+.tr-svg {
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.tr-gridlines line {
+  stroke: var(--border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.tr-axis text {
+  fill: var(--sub);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.tr-line-wpm {
+  fill: none;
+  stroke: var(--main);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.tr-line-raw {
+  fill: none;
+  stroke: var(--main);
+  stroke-opacity: 0.6;
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  stroke-linecap: butt;
+}
+.tr-errors path {
+  fill: none;
+  stroke: var(--error);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.tr-dot {
+  fill: var(--main);
+}
+.tr-hover line {
+  stroke: var(--sub);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.tr-hover circle {
+  fill: var(--bg);
+  stroke: var(--main);
+  stroke-width: 2;
+}
+.tr-reveal {
+  transform-box: fill-box;
+  transform-origin: 0 0;
+  animation: tr-draw 600ms var(--ease-out) both;
+}
+@keyframes tr-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.tr-chart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-2);
+  padding-inline: 36px 30px;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.tr-readout {
+  min-height: 1.5em;
+}
+.tr-legend {
+  list-style: none;
+  display: flex;
+  gap: var(--s-5);
+}
+.tr-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.tr-legend svg {
+  overflow: visible;
+}
+.tr-chart-empty {
+  padding: var(--s-7) 0;
+  color: var(--sub);
+}
+
+/* ------------------------------------------------------------------ */
+/* details                                                             */
+/* ------------------------------------------------------------------ */
+
+.tr-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-5) var(--s-6);
+  margin: 0;
+  padding: var(--s-5) var(--s-6);
+  background: var(--surface);
+}
+.tr-details dt {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.tr-details dd {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-lg);
+  font-weight: 560;
+  line-height: 1.25;
+}
+.tr-details dd.tr-dd-text {
+  font-size: var(--fs-base);
+  line-height: 1.5;
+}
+.tr-details dd.tr-dd-sub {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  font-weight: 420;
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------------------ */
+/* words to practise                                                   */
+/* ------------------------------------------------------------------ */
+
+.tr-h {
+  font-size: var(--fs-md);
+  margin-bottom: var(--s-6);
+}
+.tr-words {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6) var(--s-8);
+  padding-inline: var(--s-3);
+}
+.tr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+}
+/* rough-notation draws its svg next to the word with stroke="currentColor" */
+.tr-word-wrap {
+  position: relative;
+  display: inline-block;
+  color: var(--error);
+}
+.tr-word {
+  color: var(--text);
+  font-size: var(--fs-lg);
+  line-height: 1.3;
+}
+.tr-typed s {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  text-decoration-color: var(--sub);
+}
+.tr-kind {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.tr-tips {
+  list-style: none;
+  display: grid;
+  gap: var(--s-3);
+  max-width: 62ch;
+  margin-top: var(--s-6);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.tr-tip-name {
+  color: var(--text);
+  font-weight: 600;
+}
+.tr-practise-btn {
+  margin-top: var(--s-6);
+}
+.tr-empty {
+  color: var(--sub);
+}
+.tr-fixed {
+  margin-top: var(--s-3);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.tr-fixed .mono-text {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------------ */
+/* narrow screens: one column, wpm and accuracy side by side            */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 760px) {
+  .tr-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-7);
+  }
+  .tr-main {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    align-items: end;
+    column-gap: var(--s-7);
+    row-gap: var(--s-4);
+    padding-top: 0;
+  }
+  .tr-main > :not(.tr-stat) {
+    grid-column: 1 / -1;
+  }
+  .tr-feedback {
+    max-width: none;
+  }
+  .tr-perch {
+    right: 4%;
+  }
+  .tr-chart-foot {
+    padding-inline: 0;
+  }
+  .tr-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--s-5);
+  }
+}

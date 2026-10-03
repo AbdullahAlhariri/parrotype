@@ -85,8 +85,8 @@ export interface Weakness {
   samples: number
   /** mean ms per correct press (0 = unknown) */
   avgMs: number
-  /** statistically confident weakness (passed the Wilson gate or is clearly slow) */
-  weak: boolean
+  /** statistically confident weakness (passed the Wilson gate or is clearly slow); always set by weaknesses() */
+  weak?: boolean
 }
 
 export interface WeaknessOptions {

@@ -2,14 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Parrotype: practise typing, spelling and grammar in Dutch, English and Arabic." />
-    <meta name="theme-color" content="#1f2320" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Parrotype: practise typing, spelling and grammar in Dutch, English and Arabic. Everything stays in your browser." />
+    <meta name="theme-color" content="#272318" />
+    <meta name="color-scheme" content="dark light" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" href="/fonts/rec-mono-linear.woff2" as="font" type="font/woff2" crossorigin />
     <title>parrotype</title>
+    <script>
+      // Paint the saved theme's background before the app loads, so there is no flash.
+      ;(function () {
+        var bg = { 'kea-dark': '#272318', 'kea-light': '#E6E9D8', 'lorikeet-dark': '#1A1B2E', 'lorikeet-light': '#EDF2DB', 'macaw-dark': '#262A31', 'macaw-light': '#E6ECF5' }
+        var id = 'kea-dark'
+        try {
+          var saved = JSON.parse(localStorage.getItem('parrotype.settings') || '{}')
+          if (saved && saved.state && saved.state.theme) id = saved.state.theme
+        } catch (e) {}
+        if (id === 'auto') id = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'kea-light' : 'kea-dark'
+        if (!bg[id]) id = 'kea-dark'
+        var root = document.documentElement
+        root.style.setProperty('--bg', bg[id])
+        root.style.colorScheme = id.slice(-5) === 'light' ? 'light' : 'dark'
+        root.dataset.scheme = id.slice(-5) === 'light' ? 'light' : 'dark'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>Parrotype needs JavaScript to run. Your typing never leaves this browser.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

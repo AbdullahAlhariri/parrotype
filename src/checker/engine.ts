@@ -18,7 +18,7 @@ export function runRules(text: string, lang: Lang, rules: Rule[], opts: RunOptio
   if (!text.trim()) return []
   const ctx = buildContext(text, lang, opts)
   const disabled = new Set(opts.disabled ?? [])
-  const foreign = foreignRanges(ctx)
+  const skip = [...foreignRanges(ctx), ...mentionRanges(ctx)]
   const issues: Issue[] = []
   for (const rule of rules) {
     if (rule.lang !== lang || disabled.has(rule.id)) continue
@@ -32,7 +32,7 @@ export function runRules(text: string, lang: Lang, rules: Rule[], opts: RunOptio
     }
     for (const h of hits) {
       if (!isValidHit(h, text)) continue
-      if (foreign.some(([s, e]) => h.offset >= s && h.offset < e)) continue
+      if (skip.some(([s, e]) => h.offset >= s && h.offset + h.length <= e)) continue
       issues.push(toIssue(rule, h, text, lang))
     }
   }
@@ -72,8 +72,33 @@ function toIssue(rule: Rule, h: RuleHit, text: string, lang: Lang): Issue {
   }
 }
 
+/**
+ * A capital-letter issue on exactly the same word as another issue ("wordt" at the start of a
+ * sentence that should be "Word") is folded into the other one, so the d/t lesson is not lost.
+ */
+function foldCapitalization(issues: Issue[]): Issue[] {
+  const caps = issues.filter((i) => i.category === 'capitalization')
+  if (!caps.length) return issues
+  const drop = new Set<Issue>()
+  const out = issues.map((is) => {
+    if (is.category === 'capitalization') return is
+    const cap = caps.find((c) => c.offset === is.offset && c.length === is.length && !drop.has(c))
+    if (!cap) return is
+    drop.add(cap)
+    const cased = (r: string) => (cap.replacements[0] === capitalize(cap.text) ? capitalize(r) : r)
+    return {
+      ...is,
+      replacements: is.replacements.map(cased),
+      message: `${is.message} (and a capital letter)`,
+      messageLocal: is.messageLocal ? `${is.messageLocal} (en een hoofdletter)` : is.messageLocal,
+    }
+  })
+  return out.filter((i) => !drop.has(i))
+}
+
 /** Keep one issue per span: higher confidence wins, then the longer span, then the earlier one. */
-export function resolveOverlaps(issues: Issue[]): Issue[] {
+export function resolveOverlaps(input: Issue[]): Issue[] {
+  const issues = foldCapitalization(input)
   const ranked = [...issues].sort(
     (a, b) => RANK[b.confidence] - RANK[a.confidence] || b.length - a.length || a.offset - b.offset,
   )
@@ -114,6 +139,37 @@ function foreignRanges(ctx: RuleContext): Array<[number, number]> {
       foreign = o >= 3 && o > m * 2
     }
     if (foreign) out.push([s.start, s.end])
+  }
+  return out
+}
+
+/* ------------------------------------------------------------------ */
+/* Mentions: 'hij vind' written on purpose, `code`                     */
+/* ------------------------------------------------------------------ */
+
+const OPEN_QUOTE = new Set(["'", '‘', '’', '`'])
+const MAX_MENTION_WORDS = 4
+
+/** short single-quoted or backticked spans: the writer is talking about the words, not using them */
+function mentionRanges(ctx: RuleContext): Array<[number, number]> {
+  const out: Array<[number, number]> = []
+  const t = ctx.tokens
+  for (let i = 0; i < t.length; i++) {
+    if (t[i].isWord || !OPEN_QUOTE.has(t[i].text)) continue
+    const before = ctx.text[t[i].start - 1]
+    if (before !== undefined && !/[\s(\[:]/.test(before)) continue
+    if (!t[i + 1] || t[i + 1].start !== t[i].end) continue
+    const closer = t[i].text === '`' ? ['`'] : ["'", '’']
+    let words = 0
+    for (let j = i + 1; j < t.length && j <= i + MAX_MENTION_WORDS * 2 + 1; j++) {
+      if (t[j].isWord) words++
+      if (words > MAX_MENTION_WORDS) break
+      if (!t[j].isWord && closer.includes(t[j].text) && t[j].start === t[j - 1].end && j > i + 1) {
+        out.push([t[i].start, t[j].end])
+        i = j
+        break
+      }
+    }
   }
   return out
 }

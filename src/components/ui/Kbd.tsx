@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
 
-export function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="kbd">{children}</kbd>
+export function Kbd({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <kbd className={`kbd ${className}`.trim()}>{children}</kbd>
 }

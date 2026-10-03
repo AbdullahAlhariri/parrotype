@@ -68,8 +68,27 @@ export const LANGUAGE_WORDS = set(`nederlands nederlandse nederlander nederlande
   oostenrijkse zwitsers zwitserse egyptisch egyptische syrisch syrische irakees irakese somalisch somalische
   vlaams vlaamse hollands hollandse fries friese afrikaans afrikaanse hindi urdu berbers berberse tamazight
   oekraïens oekraïense pools poolse`)
+/** countries, continents and cities that are never ordinary lowercase words */
+export const PLACE_NAMES = set(`nederland belgië duitsland frankrijk engeland spanje italië portugal marokko turkije
+  syrië irak iran egypte tunesië algerije libanon jordanië saoedi-arabië afghanistan somalië eritrea ethiopië
+  suriname indonesië amerika canada mexico brazilië argentinië rusland oekraïne japan china india pakistan
+  griekenland zweden noorwegen denemarken finland oostenrijk zwitserland ierland schotland europa afrika azië
+  australië amsterdam rotterdam utrecht eindhoven groningen tilburg almere breda nijmegen haarlem arnhem zwolle
+  maastricht antwerpen gent brugge parijs londen berlijn madrid rome istanbul casablanca rabat tanger caïro
+  damascus bagdad`)
+
 /** language words that are also ordinary lowercase words */
-export const LANGUAGE_AMBIGUOUS = set('engels fries pools hindi urdu')
+export const LANGUAGE_AMBIGUOUS = set('engels fries pools hindi urdu schots')
 
 /** words that never start a capitalised mid-sentence error: brand-ish or name particles */
 export const NAME_PARTICLES = set("de van der den het ter ten 't")
+
+/** closed-class words: if one follows a noun, the noun is not the first half of a split compound */
+export const FUNCTION_WORDS = set(`de het een en of maar want dus dat die dit deze wat wie waar hoe als dan om te
+  in op aan met van voor naar bij uit over onder door tegen zonder tussen achter naast tijdens na sinds tot
+  is was zijn waren ben bent heb hebt heeft hebben had hadden wordt word worden werd werden kan kun kunt kunnen kon
+  wil wilt willen moet moeten mag mogen zal zult zullen zou zouden gaat ga gaan ging komt kom komen kwam staat
+  ligt zit doet maakt ik jij je hij zij ze wij we jullie u men er me mij hem haar ons hun hen mijn jouw uw onze
+  niet geen ook al nog wel heel erg zo nu hier daar toen zeer echt even weer meer veel weinig alleen pas net
+  altijd nooit vaak soms graag misschien eigenlijk natuurlijk gewoon toch maar zelf samen ook weg mee terug af
+  op uit door om`)

@@ -167,12 +167,17 @@ export const isAllCaps = (t: Token) => {
   return letters.length > 1 && letters === letters.toUpperCase() && letters !== letters.toLowerCase()
 }
 export const isLowercase = (t: Token) => t.text === t.text.toLowerCase()
-/** sentence written in Title Case or a heading: most words capitalised */
-export function looksLikeTitle(ctx: RuleContext, i: number): boolean {
+/**
+ * Sentence written in Title Case or a heading: most words after the first are capitalised.
+ * `ignore` leaves out the words a rule is checking (so two errors don't make a title).
+ */
+export function looksLikeTitle(ctx: RuleContext, i: number, ignore: (lower: string) => boolean = () => false): boolean {
   const s = wordInfo(ctx, i)?.sent
-  const words = ctx.words.filter((_, k) => wordInfo(ctx, k)?.sent === s && /\p{L}/u.test(ctx.words[k].text))
-  if (words.length < 3) return false
-  return words.filter(isCapitalized).length * 2 > words.length
+  const words = ctx.words.filter(
+    (w, k) => wordInfo(ctx, k)?.sent === s && !wordInfo(ctx, k)?.sentStart && /\p{L}/u.test(w.text) && !ignore(w.lower),
+  )
+  if (words.length < 2) return false
+  return words.filter(isCapitalized).length >= words.length * 0.6
 }
 
 /** replacement in the casing of token t */

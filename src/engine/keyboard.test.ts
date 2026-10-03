@@ -70,7 +70,7 @@ describe('keyOf', () => {
     expect(keyOf('?')).toMatchObject({ code: 'Slash', shift: true })
     expect(keyOf('ë')?.code).toBe('KeyE')
     expect(keyOf('É')?.code).toBe('KeyE')
-    expect(keyOf('ë')?.code).toBe('KeyE') // decomposed ë
+    expect(keyOf('e\u0308')?.code).toBe('KeyE') // decomposed ë
     expect(keyOf('😀')).toBeUndefined()
   })
 })

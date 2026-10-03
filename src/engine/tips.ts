@@ -1,3 +1,5 @@
+import type { TypoKind } from '@/types'
+
 // Friendly one-sentence tips per typo label. Keys are tags or kinds; a `key.lang` entry
 // (e.g. 'case.nl') overrides the generic one. `nl`/`ar` are the local-language versions.
 // {prev} is replaced with the previous word of the sentence.
@@ -75,6 +77,11 @@ export const TIPS: Record<string, TipText> = {
     nl: 'Deze letters klinken hier hetzelfde: zie het geschreven woord voor je voordat je typt.',
     ar: 'هذان الحرفان متقاربان في النطق: تخيّل الكلمة مكتوبة قبل كتابتها.',
   },
+  vowel: {
+    en: 'Unstressed vowels sound alike (separate, definitely): memorise the spelling or think of a related word.',
+    nl: 'Onbeklemtoonde klinkers klinken hetzelfde (categorie, definitief): onthoud de spelling of denk aan een verwant woord.',
+    ar: 'الحركات غير المشددة تتشابه في النطق: احفظ الإملاء أو فكّر في كلمة قريبة.',
+  },
   garbled: {
     en: 'Several letters went astray: read the word once calmly, then type it.',
     nl: 'Meerdere letters gingen mis: lees het woord eerst rustig en typ het dan.',
@@ -89,6 +96,16 @@ export const TIPS: Record<string, TipText> = {
     en: 'You typed a different real word: read the word, then type exactly that.',
     nl: 'Je typte een ander bestaand woord: lees het woord en typ precies dat.',
     ar: 'كتبت كلمة أخرى موجودة: اقرأ الكلمة ثم اكتبها كما هي.',
+  },
+  shift: {
+    en: 'Same key, wrong Shift: hold Shift with the other hand and let go before the next key.',
+    nl: 'Zelfde toets, verkeerde Shift: houd Shift vast met je andere hand en laat los voor de volgende toets.',
+    ar: 'المفتاح نفسه مع خطأ في Shift: اضغط Shift باليد الأخرى وأفلته قبل المفتاح التالي.',
+  },
+  'wrong-layout': {
+    en: 'Your keyboard is set to another language: switch layouts (Win+Space or Ctrl+Space).',
+    nl: 'Je toetsenbord staat op een andere taal: wissel van indeling (Win+spatie of Ctrl+spatie).',
+    ar: 'لوحة المفاتيح على لغة أخرى: بدّل اللغة (Win+Space أو Ctrl+Space).',
   },
   'cut-short': {
     en: 'The word ended too soon: finish every letter before you press space.',
@@ -259,8 +276,103 @@ export const TIPS: Record<string, TipText> = {
     en: 'Taa marbuta (ة) ends many feminine words; it sounds like t when the next word is joined to it.',
     ar: 'التاء المربوطة (ة) تُلفظ تاءً عند وصل الكلمة بما بعدها وهاءً عند الوقف (مدرسة).',
   },
+  'hidden-alif': {
+    en: 'Some words keep a pronounced alif out of writing: هذا، ذلك، لكن، الله.',
+    ar: 'بعض الكلمات تُنطق فيها الألف ولا تُكتب: هذا، ذلك، لكن، الله.',
+  },
+  'waw-alif': {
+    en: "Verbs with the plural waw end in وا (كتبوا، اذهبوا); plural nouns don't take the alif (مهندسو المدينة).",
+    ar: 'واو الجماعة في الفعل تتبعها ألف فارقة (كتبوا، اذهبوا)، ولا تُكتب الألف بعد واو جمع المذكر في الأسماء (مهندسو المدينة).',
+  },
   'alif-maqsura': {
     en: 'Alif maqsura (ى) has no dots and ends words like على and إلى; ي has two dots below.',
     ar: 'الألف المقصورة (ى) بلا نقاط وتأتي في آخر كلمات مثل على وإلى، أما الياء (ي) فتحتها نقطتان.',
   },
+}
+
+/** Every finer label classifyTypo can attach (TypoLabel.tag). */
+export const TYPO_TAGS = [
+  // motor
+  'neighbour', 'mirror', 'same-finger', 'hand-shift', 'repeat', 'roll', 'cross-hand', 'same-hand', 'wrong-double', 'cut-short', 'dead-key',
+  'shift', 'wrong-layout',
+  // general spelling
+  'phonetic', 'vowel', 'real-word', 'capital', 'split-join', 'hyphen', 'accent', 'trema', 'apostrophe', 'double-consonant',
+  // Dutch
+  'dt', 'kofschip', 'ei-ij', 'ij-y', 'au-ou', 'g-ch', 'lijk', 'tussen-n', 'open-syllable',
+  'de-het', 'die-dat', 'jou-jouw', 'me-mijn', 'hun-hen', 'als-dan', 'lexical',
+  // English
+  'its-its', 'homophone', 'ie-ei',
+  // Arabic
+  'hamza', 'tashkeel', 'taa-marbuta', 'alif-maqsura', 'hidden-alif', 'waw-alif',
+] as const
+
+export type TypoTag = (typeof TYPO_TAGS)[number]
+
+/** Short display names for typo kinds and tags (for stats and result screens). */
+export const NAMES: Record<TypoTag | TypoKind, TipText> = {
+  /* kinds */
+  adjacent: { en: 'Neighbour key', nl: 'Buurtoets', ar: 'مفتاح مجاور' },
+  transposition: { en: 'Swapped letters', nl: 'Letters omgedraaid', ar: 'تبديل حرفين' },
+  omission: { en: 'Missed letter', nl: 'Letter vergeten', ar: 'حرف ناقص' },
+  insertion: { en: 'Extra letter', nl: 'Extra letter', ar: 'حرف زائد' },
+  doubling: { en: 'Doubled letter', nl: 'Letter verdubbeld', ar: 'حرف مكرّر' },
+  'missed-double': { en: 'Missed double letter', nl: 'Dubbele letter vergeten', ar: 'حرف مضاعف ناقص' },
+  substitution: { en: 'Wrong letter', nl: 'Verkeerde letter', ar: 'حرف خاطئ' },
+  case: { en: 'Capital letter', nl: 'Hoofdletter' },
+  diacritic: { en: 'Accent or mark', nl: 'Accent of trema', ar: 'علامة' },
+  space: { en: 'Space', nl: 'Spatie', ar: 'مسافة' },
+  spelling: { en: 'Spelling', nl: 'Spelling', ar: 'إملاء' },
+  skipped: { en: 'Skipped word', nl: 'Woord overgeslagen', ar: 'كلمة متروكة' },
+  /* motor tags */
+  neighbour: { en: 'Neighbour key', nl: 'Buurtoets', ar: 'مفتاح مجاور' },
+  mirror: { en: 'Mirror key (other hand)', nl: 'Spiegeltoets (andere hand)', ar: 'المفتاح المقابل' },
+  'same-finger': { en: 'Same finger, wrong row', nl: 'Zelfde vinger, verkeerde rij', ar: 'الإصبع نفسه، صف آخر' },
+  'hand-shift': { en: 'Hands shifted', nl: 'Handen verschoven', ar: 'انزياح اليد' },
+  repeat: { en: 'Key bounce', nl: 'Dubbel aangeslagen', ar: 'ضغطة مكرّرة' },
+  roll: { en: 'Extra neighbour key', nl: 'Extra buurtoets', ar: 'مفتاح مجاور زائد' },
+  'cross-hand': { en: 'Swapped letters (two hands)', nl: 'Omgedraaid (twee handen)', ar: 'تبديل حرفين' },
+  'same-hand': { en: 'Swapped letters (one hand)', nl: 'Omgedraaid (één hand)', ar: 'تبديل حرفين' },
+  'wrong-double': { en: 'Wrong letter doubled', nl: 'Verkeerde letter dubbel', ar: 'تكرار الحرف الخطأ' },
+  shift: { en: 'Shift slip', nl: 'Shift-fout', ar: 'خطأ في Shift' },
+  'wrong-layout': { en: 'Wrong keyboard layout', nl: 'Verkeerde toetsenbordindeling', ar: 'لغة لوحة المفاتيح' },
+  'cut-short': { en: 'Word cut short', nl: 'Woord te vroeg af', ar: 'كلمة ناقصة' },
+  'dead-key': { en: 'Dead key', nl: 'Dode toets' },
+  phonetic: { en: 'Sound-alike letters', nl: 'Klankgelijke letters', ar: 'حروف متشابهة النطق' },
+  vowel: { en: 'Unstressed vowel', nl: 'Onbeklemtoonde klinker' },
+  'real-word': { en: 'Other real word', nl: 'Ander bestaand woord', ar: 'كلمة أخرى' },
+  capital: { en: 'Capital letter', nl: 'Hoofdletter' },
+  'split-join': { en: 'One word or two', nl: 'Aan elkaar of los', ar: 'كلمة أم كلمتان' },
+  hyphen: { en: 'Hyphen', nl: 'Streepje' },
+  accent: { en: 'Accent', nl: 'Accent' },
+  trema: { en: 'Trema', nl: 'Trema' },
+  /* Dutch */
+  dt: { en: 'd/t ending', nl: 'd/t-regel' },
+  kofschip: { en: "Past tense ('t kofschip)", nl: "Verleden tijd ('t kofschip)" },
+  'ei-ij': { en: 'ei / ij', nl: 'ei / ij' },
+  'ij-y': { en: 'ij / y', nl: 'ij / y' },
+  'au-ou': { en: 'au / ou', nl: 'au / ou' },
+  'g-ch': { en: 'g / ch', nl: 'g / ch' },
+  lijk: { en: '-lijk', nl: '-lijk' },
+  apostrophe: { en: 'Apostrophe', nl: 'Apostrof' },
+  'tussen-n': { en: 'Linking -en-', nl: 'Tussen-n' },
+  'open-syllable': { en: 'Open syllable', nl: 'Open lettergreep' },
+  'double-consonant': { en: 'Double consonant', nl: 'Dubbele medeklinker' },
+  'de-het': { en: 'de / het', nl: 'de / het' },
+  'die-dat': { en: 'die / dat', nl: 'die / dat' },
+  'jou-jouw': { en: 'jou / jouw', nl: 'jou / jouw' },
+  'me-mijn': { en: 'me / mijn', nl: 'me / mijn' },
+  'hun-hen': { en: 'hun / zij', nl: 'hun / zij' },
+  'als-dan': { en: 'als / dan', nl: 'als / dan' },
+  lexical: { en: 'Word mix-up', nl: 'Woordverwarring' },
+  /* English */
+  'its-its': { en: "its / it's" },
+  homophone: { en: 'Sound-alike word' },
+  'ie-ei': { en: 'ie / ei' },
+  /* Arabic */
+  hamza: { en: 'Hamza', ar: 'الهمزة' },
+  tashkeel: { en: 'Tashkeel', ar: 'التشكيل' },
+  'taa-marbuta': { en: 'Taa marbuta', ar: 'التاء المربوطة' },
+  'alif-maqsura': { en: 'Alif maqsura', ar: 'الألف المقصورة' },
+  'hidden-alif': { en: 'Hidden alif', ar: 'الألف المحذوفة' },
+  'waw-alif': { en: "Waw al-jama'a + alif", ar: 'الألف الفارقة' },
 }

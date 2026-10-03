@@ -197,13 +197,14 @@ export function generateDrill(lang: Lang, weaknesses: Weakness[], count: number,
   const nTarget = Math.round(count * (nReview ? 0.6 : 0.7))
   const nFiller = Math.max(0, count - nTarget - nReview)
 
-  const candidates = lexicon.map((x, rank) => ({ x, w: scoreWord(x, t, rank) })).filter((c) => c.w > 0)
+  const reviewing = new Set(review.slice(0, nReview))
+  const candidates = lexicon.map((x, rank) => ({ x, w: reviewing.has(x) ? 0 : scoreWord(x, t, rank) })).filter((c) => c.w > 0)
   let targets = sample(candidates, nTarget, rand)
   // few matching words: allow each one a second time rather than drift off target
   if (targets.length < nTarget) targets = targets.concat(sample(candidates, nTarget - targets.length, rand))
 
   const picked = new Set(targets)
-  const fillerPool = lexicon.slice(0, 300).filter((w) => !picked.has(w))
+  const fillerPool = lexicon.slice(0, 300).filter((w) => !picked.has(w) && !reviewing.has(w))
   const fillers = shuffle(fillerPool, rand).slice(0, nFiller + (nTarget - targets.length))
   return interleave([targets, fillers, review.slice(0, nReview)]).slice(0, count)
 }

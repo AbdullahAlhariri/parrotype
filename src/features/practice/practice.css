@@ -1,0 +1,613 @@
+/* Weak spots hub, its sub-pages (nest review, focus drill, word repair) and the daily challenge.
+   Sections are separated by hairlines and space, never boxed. Only controls are rounded. */
+
+/* ------------------------------------------------------------------ */
+/* hub layout: a narrow "today" column, then the three tools           */
+/* ------------------------------------------------------------------ */
+
+.practice-grid {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1fr) minmax(0, 2fr);
+  gap: var(--s-9);
+  align-items: start;
+}
+.practice-today {
+  position: sticky;
+  top: var(--s-6);
+  display: grid;
+  gap: var(--s-8);
+}
+.practice-section + .practice-section {
+  margin-top: var(--s-7);
+  padding-top: var(--s-7);
+  border-top: var(--hairline) solid var(--border);
+}
+.practice-section-head p {
+  max-width: 38rem;
+}
+.practice-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  margin-top: var(--s-5);
+}
+.practice-actions:empty {
+  display: none;
+}
+
+/* plan checklist */
+.plan-list {
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+}
+.plan-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) 0;
+  border-bottom: var(--hairline) solid var(--border);
+}
+.plan-check {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+.plan-check input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.plan-check input:disabled {
+  cursor: default;
+}
+.plan-box {
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid var(--sub);
+  border-radius: var(--radius-sm);
+  color: var(--bg);
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+.plan-box path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  transition: stroke-dashoffset var(--dur-base) var(--ease-out);
+}
+.plan-check input:checked + .plan-box {
+  background: var(--main);
+  border-color: var(--main);
+}
+.plan-check input:checked + .plan-box path {
+  stroke-dashoffset: 0;
+}
+.plan-check input:focus-visible + .plan-box {
+  outline: 2px solid var(--main);
+  outline-offset: 2px;
+}
+.plan-link {
+  color: var(--text);
+  font-weight: 560;
+  text-decoration: none;
+}
+.plan-item.is-done .plan-link {
+  color: var(--sub);
+}
+@media (hover: hover) and (pointer: fine) {
+  .plan-link:hover {
+    color: var(--main);
+  }
+}
+.plan-min {
+  font-size: var(--fs-sm);
+}
+.plan-foot {
+  margin-top: var(--s-4);
+}
+
+/* daily teaser */
+.practice-daily {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: start;
+}
+.practice-daily .section-title {
+  margin-bottom: 0;
+}
+.practice-daily-nums {
+  font-weight: 560;
+  margin-bottom: var(--s-2);
+}
+
+/* nest boxes: five slots on one baseline */
+.nest-boxes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+  margin-top: var(--s-5);
+  border-bottom: var(--hairline) solid var(--border);
+}
+.nest-box {
+  display: grid;
+  grid-template-rows: auto auto auto 1.25rem;
+  gap: var(--s-1);
+  padding: 0 var(--s-4) var(--s-3);
+  border-left: var(--hairline) solid var(--border);
+}
+.nest-box:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.nest-box-count {
+  font-size: var(--fs-xl);
+  font-weight: 650;
+  line-height: 1.1;
+}
+.nest-box.is-empty .nest-box-count {
+  color: var(--sub);
+}
+.nest-box-label {
+  font-size: var(--fs-sm);
+  font-weight: 560;
+}
+.nest-box-when {
+  font-size: var(--fs-xs);
+}
+.nest-box-due {
+  color: var(--main);
+  font-size: var(--fs-xs);
+  font-weight: 650;
+}
+
+/* weak keys */
+.weak-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-7);
+  list-style: none;
+  margin-top: var(--s-5);
+}
+.weak-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+.weak-chip .kbd {
+  min-width: 2.1em;
+  font-family: var(--font-typing);
+  font-size: var(--fs-md);
+  font-weight: 450;
+  font-variant-ligatures: none;
+}
+.weak-chip-rate {
+  font-size: var(--fs-md);
+  font-weight: 650;
+  color: var(--main);
+}
+.weak-chips.is-inline {
+  margin: 0;
+  gap: var(--s-3) var(--s-6);
+}
+.weak-chips.is-inline .kbd {
+  font-size: var(--fs-base);
+}
+.weak-chips.is-inline .weak-chip-rate {
+  font-size: var(--fs-sm);
+  color: var(--sub);
+}
+
+/* most-missed words */
+.repair-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-6);
+  list-style: none;
+  margin-top: var(--s-5);
+}
+.repair-words li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+.repair-word {
+  font-size: var(--fs-md);
+}
+.repair-count {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* sub-pages                                                           */
+/* ------------------------------------------------------------------ */
+
+.practice-subhead {
+  display: grid;
+  gap: var(--s-3);
+  margin-bottom: var(--s-7);
+  transition: opacity var(--dur-fast) ease;
+}
+.practice-back {
+  justify-self: start;
+  padding: 0;
+  font-size: var(--fs-sm);
+}
+
+/* Dutch typing text: no ĳ ligature (Recursive maps i+j to one glyph under lang=nl via locl) */
+.practice .mono-text:not(:lang(ar)),
+.nest-review .mono-text:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+.practice-subhead .page-lede {
+  margin-top: 0;
+}
+.drill-lede {
+  display: grid;
+  gap: var(--s-3);
+}
+
+body[data-typing]:not([data-focus-mode='off']) .is-typing > .practice-subhead,
+body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head {
+  opacity: 0;
+}
+body[data-typing]:not([data-focus-mode='off']) .is-typing > .practice-subhead:focus-within,
+body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:focus-within {
+  opacity: 1;
+}
+
+.practice .drill-gate {
+  color: var(--text);
+  font-size: var(--fs-base);
+}
+
+/* word repair */
+.repair-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  list-style: none;
+  color: var(--sub);
+}
+.repair-summary {
+  display: grid;
+  gap: var(--s-5);
+}
+.practice .repair-summary-line {
+  color: var(--text);
+  font-size: var(--fs-base);
+}
+.repair-tally {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--s-3) var(--s-6);
+  list-style: none;
+}
+.repair-tally li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-bottom: var(--s-2);
+  border-bottom: var(--hairline) solid var(--border);
+}
+.repair-tally .mono-text {
+  font-size: var(--fs-md);
+}
+.repair-tally li.is-shaky .mono-text {
+  color: var(--main);
+}
+.repair-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.repair-pips i {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--sub);
+  border-radius: 50%;
+}
+.repair-pips i.is-on {
+  background: var(--text);
+  border-color: var(--text);
+}
+.repair-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* ------------------------------------------------------------------ */
+/* nest review: look, cover, recall, compare                           */
+/* ------------------------------------------------------------------ */
+
+.nest-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+.nest-retest {
+  color: var(--main);
+}
+.nest-progress {
+  height: 2px;
+  background: var(--border);
+}
+.nest-progress span {
+  display: block;
+  height: 100%;
+  background: var(--main);
+  transform: scaleX(var(--done, 0));
+  transform-origin: left center;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.nest-stage {
+  min-height: 20rem;
+}
+.nest-card {
+  display: grid;
+  gap: var(--s-4);
+  max-width: var(--measure);
+  animation: nest-in var(--dur-base) var(--ease-out);
+}
+@keyframes nest-in {
+  from {
+    opacity: 0;
+  }
+}
+.nest-cue {
+  margin: 0;
+}
+.nest-target {
+  color: var(--text);
+  font-size: var(--typing-size);
+  line-height: var(--typing-line);
+  overflow-wrap: anywhere;
+}
+.nest-target.is-word {
+  font-size: calc(var(--typing-size) * 1.35);
+  line-height: 1.3;
+}
+.nest-target.is-word[dir='rtl'] {
+  justify-self: start;
+}
+.nest-timer {
+  display: block;
+  height: 2px;
+  background: var(--caret);
+  transform-origin: left center;
+  animation: nest-timer linear forwards;
+}
+.nest-target[dir='rtl'] + .nest-timer {
+  transform-origin: right center;
+}
+@keyframes nest-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.nest-hint-keys {
+  margin: 0;
+}
+.nest-kees {
+  margin-bottom: calc(-1 * var(--s-3));
+}
+
+.nest-input {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--typing-size);
+  line-height: 1.35;
+  caret-color: var(--caret);
+  transition: border-color var(--dur-fast) ease;
+}
+.nest-input.is-word {
+  max-width: 28rem;
+}
+.nest-input:focus-visible {
+  outline: 2px solid var(--caret);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.nest-input.is-miss {
+  border-color: var(--error);
+}
+.nest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+.nest-actions .kbd {
+  font-size: 0.72em;
+}
+.nest-verdict {
+  font-size: var(--fs-md);
+  font-weight: 650;
+}
+.nest-ok {
+  margin-left: var(--s-3);
+  color: var(--ok);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.nest-hint {
+  max-width: 38rem;
+  padding-left: var(--s-4);
+  border-left: 2px solid var(--border);
+}
+.nest-yours {
+  margin-top: calc(-1 * var(--s-2));
+}
+.nest-yours .mono-text {
+  font-size: var(--fs-md);
+}
+.nest-retype-label {
+  margin-top: var(--s-3);
+}
+.nest-miss {
+  color: var(--error);
+}
+
+/* diff marks: colour and shape, as in the typing area */
+.mark-tricky {
+  color: var(--main);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.mark-wrong {
+  color: var(--error);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.mark-extra {
+  color: var(--error-extra);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+.mark-missing {
+  display: inline-block;
+  width: 0.5ch;
+  height: 0.9em;
+  margin: 0 0.08ch;
+  border-bottom: 2px solid var(--error);
+  vertical-align: -0.1em;
+}
+
+/* Kees repeats the right word, nothing more (bubble styles come from kees.css) */
+.nest-kees-repeat {
+  min-height: 3.5rem;
+}
+
+/* end of a review */
+.nest-done {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+  max-width: 46rem;
+}
+.nest-done-body {
+  display: grid;
+  gap: var(--s-4);
+}
+.nest-done-title {
+  font-size: var(--fs-lg);
+}
+.nest-done-list {
+  list-style: none;
+  border-top: var(--hairline) solid var(--border);
+  margin-top: var(--s-2);
+}
+.nest-done-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-3) 0;
+  border-bottom: var(--hairline) solid var(--border);
+}
+.nest-done-list .mono-text {
+  font-size: var(--fs-md);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nest-done-list li.is-missed .mono-text {
+  color: var(--main);
+}
+.nest-done-list .muted {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* daily                                                               */
+/* ------------------------------------------------------------------ */
+
+.daily-head {
+  align-items: flex-end;
+  transition: opacity var(--dur-fast) ease;
+}
+.daily-date {
+  margin-bottom: var(--s-2);
+  font-weight: 560;
+}
+.daily-stats {
+  display: flex;
+  gap: var(--s-7);
+  flex: none;
+}
+.daily-stats .stat-value {
+  font-size: var(--fs-lg);
+}
+.daily .daily-note {
+  color: var(--text);
+  font-size: var(--fs-base);
+}
+
+/* ------------------------------------------------------------------ */
+/* small screens                                                       */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .practice-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-8);
+  }
+  .practice-today {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .nest-box {
+    padding: 0 var(--s-2) var(--s-3);
+  }
+  .nest-box-count {
+    font-size: var(--fs-lg);
+  }
+  .nest-box-when {
+    font-size: 0.7rem;
+  }
+  .daily-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .daily-stats {
+    gap: var(--s-6);
+  }
+  .nest-done {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .weak-chips {
+    gap: var(--s-4) var(--s-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nest-card {
+    animation: none;
+  }
+}

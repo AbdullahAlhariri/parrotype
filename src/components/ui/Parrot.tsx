@@ -1,3 +1,6 @@
+import { Kees } from '@/components/kees/Kees'
+import type { KeesMood } from '@/components/kees/machine'
+
 export type ParrotMood = 'idle' | 'happy' | 'sad' | 'think' | 'talk' | 'sleep' | 'cheer' | 'listen'
 
 interface Props {
@@ -8,21 +11,19 @@ interface Props {
   label?: string
 }
 
-/** The Parrotype mascot. Placeholder art: the design owner replaces this with the real SVG + animations. */
+/** Older moods mapped to Kees's. 'sad' is not a thing: Kees adjusts his monocle instead. */
+export const PARROT_TO_KEES: Record<ParrotMood, KeesMood> = {
+  idle: 'idle',
+  happy: 'curious',
+  sad: 'oops',
+  think: 'reading',
+  talk: 'talk',
+  sleep: 'sleepy',
+  cheer: 'celebrate',
+  listen: 'listen',
+}
+
+/** Backward-compatible wrapper. New code should use <Kees /> directly. */
 export function Parrot({ mood = 'idle', size = 64, className = '', label }: Props) {
-  return (
-    <svg
-      className={`parrot parrot-${mood} ${className}`}
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-    >
-      <circle cx="32" cy="34" r="22" fill="var(--main)" />
-      <circle cx="38" cy="28" r="4" fill="var(--bg)" />
-      <path d="M48 30 q10 4 2 12 q-4 -6 -8 -6z" fill="var(--text)" />
-    </svg>
-  )
+  return <Kees mood={PARROT_TO_KEES[mood] ?? 'idle'} size={size} className={`parrot parrot-${mood} ${className}`.trim()} label={label} />
 }

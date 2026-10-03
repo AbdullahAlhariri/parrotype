@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { classifyTypo, editOps, osaDistance, type ClassifyOptions, type TypoLabel } from './typo'
+import { classifyTypo, editOps, osaDistance, tipFor, typoName, type ClassifyOptions, type TypoLabel } from './typo'
+import { TIPS, TYPO_TAGS } from './tips'
+import type { LayoutId } from './keyboard'
 import type { Lang } from '@/types'
 
-const cls = (expected: string, typed: string, lang: Lang = 'nl', o?: ClassifyOptions): TypoLabel => {
+const cls = (expected: string, typed: string, lang: Lang = 'nl', o?: LayoutId | ClassifyOptions): TypoLabel => {
   const l = classifyTypo(expected, typed, lang, o)
   if (!l) throw new Error(`no label for ${expected} / ${typed}`)
   return l
@@ -35,7 +37,7 @@ describe('osaDistance and editOps', () => {
 describe('classifyTypo basics', () => {
   it('returns null for identical words (curly apostrophes count as straight)', () => {
     expect(classifyTypo('kat', 'kat', 'nl')).toBeNull()
-    expect(classifyTypo("it's", 'it’s', 'en')).toBeNull()
+    expect(classifyTypo("it's", 'it\u2019s', 'en')).toBeNull()
   })
 
   it('labels a skipped word', () => {
@@ -112,6 +114,14 @@ describe('motor slips', () => {
   })
 })
 
+describe('wrong keyboard layout', () => {
+  it('notices Arabic typed in a Dutch test and Latin typed in an Arabic test', () => {
+    expect(cls('kat', 'لشف', 'nl')).toMatchObject({ kind: 'substitution', tag: 'wrong-layout', nature: 'unknown' })
+    expect(cls('كتب', 'ffd', 'ar').tag).toBe('wrong-layout')
+    expect(cls('كتب', 'ffd', 'ar').tip.local).toMatch(/لوحة المفاتيح/)
+  })
+})
+
 describe('capitals and diacritics', () => {
   it('case only', () => {
     expect(cls('Amsterdam', 'amsterdam')).toMatchObject({ kind: 'case', tag: 'capital', nature: 'motor', detail: "missed the capital in 'Amsterdam'" })
@@ -173,18 +183,41 @@ describe('Dutch spelling rules', () => {
     expect(cls("auto's", 'autos').tip.local).toMatch(/auto's/)
   })
 
-  it('tussen-n, but not for an ordinary missed double', () => {
+  it('tussen-n, but not for plain n-omissions or a missed double', () => {
     expect(cls('pannenkoek', 'pannekoek')).toMatchObject({ tag: 'tussen-n', kind: 'spelling' })
     expect(cls('zonnebloem', 'zonnenbloem').tag).toBe('tussen-n')
-    expect(cls('kennen', 'kenen')).toMatchObject({ kind: 'missed-double', tag: 'double-consonant' })
+    expect(cls('boekenkast', 'boekekast').tag).toBe('tussen-n')
+    expect(cls('kennen', 'kenen').kind).toBe('missed-double')
+    // not compounds with a linking -en-
+    expect(cls('verdwenen', 'verdween').tag).not.toBe('tussen-n')
+    expect(cls('nadenken', 'nadeken').tag).not.toBe('tussen-n')
+    expect(cls('samenwerken', 'samewerken').tag).not.toBe('tussen-n')
+    expect(cls('eigenlijk', 'eigelijk').tag).not.toBe('tussen-n')
   })
 
-  it('double letters and the open-syllable rule', () => {
-    expect(cls('jullie', 'julie')).toMatchObject({ kind: 'missed-double', tag: 'double-consonant', detail: "single 'l' where 'll' belongs" })
-    expect(cls('kopen', 'koopen')).toMatchObject({ kind: 'doubling', tag: 'open-syllable' })
-    expect(cls('maar', 'mar')).toMatchObject({ kind: 'missed-double', tag: 'open-syllable' })
-    expect(cls('jullie', 'julie', 'nl', { mode: 'dictation' }).nature).toBe('cognitive')
-    expect(cls('jullie', 'julie').nature).toBe('unknown')
+  it('double letters and the open-syllable rule (rule tags only from memory)', () => {
+    const d = { mode: 'dictation' } as const
+    expect(cls('jullie', 'julie', 'nl', d)).toMatchObject({ kind: 'missed-double', tag: 'double-consonant', nature: 'cognitive', detail: "single 'l' where 'll' belongs" })
+    expect(cls('kopen', 'koopen', 'nl', d)).toMatchObject({ kind: 'doubling', tag: 'open-syllable' })
+    expect(cls('maar', 'mar', 'nl', d)).toMatchObject({ kind: 'missed-double', tag: 'open-syllable' })
+    expect(cls('kopen', 'koopen', 'nl', d).tip.local).toMatch(/lettergreep/)
+    // in a copy test the same slips stay neutral
+    expect(cls('jullie', 'julie')).toMatchObject({ kind: 'missed-double', nature: 'unknown' })
+    expect(cls('jullie', 'julie').tag).toBeUndefined()
+    expect(cls('kopen', 'koopen').tag).toBeUndefined()
+  })
+
+  it('-lijk written as it sounds', () => {
+    expect(cls('natuurlijk', 'natuurluk')).toMatchObject({ tag: 'lijk', nature: 'cognitive' })
+    expect(cls('eigenlijk', 'eigenlek').tag).toBe('lijk')
+    expect(cls('moeilijk', 'moeilik', 'nl', { mode: 'dictation' }).tag).toBe('lijk')
+    expect(cls('moeilijk', 'moeilik').tag).not.toBe('lijk') // could be one dropped key
+  })
+
+  it("kofschip ignores an extra doubled d/t (a bounce)", () => {
+    expect(cls('zitten', 'zittten').tag).not.toBe('kofschip')
+    expect(cls('houden', 'houdden').tag).not.toBe('kofschip')
+    expect(cls('maakte', 'maaktte').tag).not.toBe('kofschip')
   })
 
   it('word confusions (de/het, als/dan, jou/jouw...)', () => {
@@ -210,6 +243,27 @@ describe('Dutch spelling rules', () => {
   })
 })
 
+describe('dictation mode leans cognitive', () => {
+  const d = { mode: 'dictation' } as const
+  it('sound-alike letters beat the neighbour key', () => {
+    expect(cls('sowieso', 'zowieso', 'nl', d)).toMatchObject({ tag: 'phonetic', nature: 'cognitive' })
+    expect(cls('sowieso', 'zowieso', 'nl')).toMatchObject({ kind: 'adjacent', nature: 'motor' })
+    expect(cls('vakantie', 'vacantie', 'nl', d).tag).toBe('phonetic')
+  })
+
+  it('unstressed vowels', () => {
+    expect(cls('separate', 'seperate', 'en', d)).toMatchObject({ kind: 'substitution', tag: 'vowel', nature: 'cognitive' })
+    expect(cls('definitief', 'defenitief', 'nl', d).tag).toBe('vowel')
+    expect(cls('definitief', 'defenitief', 'nl').tag).toBe('mirror') // e/i are mirror keys in a copy test
+  })
+
+  it('a moved double letter', () => {
+    expect(cls('tomorrow', 'tommorow', 'en', d)).toMatchObject({ kind: 'doubling', tag: 'wrong-double', nature: 'cognitive' })
+    expect(cls('interessant', 'interresant', 'nl', d).nature).toBe('cognitive')
+    expect(cls('book', 'bokk', 'en').nature).toBe('motor')
+  })
+})
+
 describe('English rules', () => {
   it("its / it's", () => {
     expect(cls("it's", 'its', 'en')).toMatchObject({ kind: 'spelling', tag: 'its-its', nature: 'cognitive' })
@@ -225,14 +279,17 @@ describe('English rules', () => {
     expect(cls("you're", 'your', 'en').tag).toBe('homophone')
     // a double tap in a copy test is not necessarily a mix-up
     expect(cls('to', 'too', 'en').nature).toBe('unknown')
+    expect(cls('two', 'to', 'en').nature).toBe('unknown')
+    expect(cls('then', 'than', 'en').nature).toBe('cognitive')
     expect(cls('to', 'too', 'en', { mode: 'dictation' }).nature).toBe('cognitive')
   })
 
   it('ie/ei, apostrophes and double consonants', () => {
     expect(cls('receive', 'recieve', 'en').tag).toBe('ie-ei')
     expect(cls("don't", 'dont', 'en').tag).toBe('apostrophe')
-    expect(cls('until', 'untill', 'en')).toMatchObject({ kind: 'doubling', tag: 'double-consonant' })
-    expect(cls('occurred', 'occured', 'en')).toMatchObject({ kind: 'missed-double', tag: 'double-consonant' })
+    expect(cls('until', 'untill', 'en', { mode: 'dictation' })).toMatchObject({ kind: 'doubling', tag: 'double-consonant' })
+    expect(cls('occurred', 'occured', 'en', { mode: 'dictation' })).toMatchObject({ kind: 'missed-double', tag: 'double-consonant' })
+    expect(cls('until', 'untill', 'en')).toMatchObject({ kind: 'doubling', nature: 'unknown' })
   })
 
   it('flags another real word only with a dictionary', () => {
@@ -244,20 +301,69 @@ describe('English rules', () => {
 
 describe('Arabic rules', () => {
   it('hamza on alif is a diacritic difference with a hamza tag', () => {
-    expect(cls('أنا', 'انا', 'ar')).toMatchObject({ kind: 'diacritic', tag: 'hamza', nature: 'cognitive' })
-    expect(cls('إلى', 'الى', 'ar').tag).toBe('hamza')
+    // أ is Shift + ا: a copy test can't tell a missed Shift from a missing hamza
+    expect(cls('أنا', 'انا', 'ar')).toMatchObject({ kind: 'diacritic', tag: 'hamza', nature: 'unknown' })
+    expect(cls('أنا', 'انا', 'ar', { mode: 'dictation' }).nature).toBe('cognitive')
+    // إ lives on another key (Shift + غ), so ا for إ is a choice
+    expect(cls('إلى', 'الى', 'ar')).toMatchObject({ tag: 'hamza', nature: 'cognitive' })
     expect(cls('أنا', 'انا', 'ar').tip.local).toMatch(/الهمزة/)
   })
 
   it('hamza seats and a dropped hamza', () => {
-    expect(cls('سأل', 'سئل', 'ar')).toMatchObject({ kind: 'spelling', tag: 'hamza' })
+    expect(cls('سأل', 'سئل', 'ar')).toMatchObject({ kind: 'spelling', tag: 'hamza', nature: 'cognitive' })
     expect(cls('شيء', 'شي', 'ar').tag).toBe('hamza')
+    expect(cls('شيء', 'شئ', 'ar').tag).toBe('hamza')
+    expect(cls('مسؤول', 'مسئول', 'ar').tag).toBe('hamza')
+    // ء and ئ are neighbour keys
+    expect(cls('الماء', 'المائ', 'ar')).toMatchObject({ tag: 'hamza', nature: 'unknown' })
+    expect(cls('الماء', 'المائ', 'ar', { mode: 'dictation' }).nature).toBe('cognitive')
   })
 
-  it('taa marbuta and alif maqsura', () => {
+  it('does not call a dropped, doubled or swapped hamza letter a spelling error', () => {
+    expect(cls('أنا', 'نا', 'ar').tag).not.toBe('hamza')
+    expect(cls('أنا', 'أأنا', 'ar').tag).not.toBe('hamza')
+    expect(cls('أين', 'يأن', 'ar').kind).toBe('transposition')
+    expect(cls('شيئ', 'شئي', 'ar').kind).toBe('transposition')
+    expect(cls('الماء', 'الماءء', 'ar').tag).not.toBe('hamza')
+    expect(cls('هؤلاء', 'هؤلااء', 'ar').tag).not.toBe('hidden-alif')
+    expect(cls('الماء', 'الما', 'ar')).toMatchObject({ tag: 'hamza', nature: 'unknown' })
+    expect(cls('الماء', 'الما', 'ar', { mode: 'dictation' }).nature).toBe('cognitive')
+  })
+
+  it('taa marbuta and alif maqsura (neighbour-key pairs stay neutral in a copy test)', () => {
     expect(cls('مدرسة', 'مدرسه', 'ar')).toMatchObject({ kind: 'spelling', tag: 'taa-marbuta', nature: 'cognitive' })
-    expect(cls('مدرسة', 'مدرست', 'ar').tag).toBe('taa-marbuta')
-    expect(cls('على', 'علي', 'ar')).toMatchObject({ tag: 'alif-maqsura' })
+    expect(cls('مدرسة', 'مدرست', 'ar')).toMatchObject({ tag: 'taa-marbuta', nature: 'unknown' })
+    expect(cls('مدرسة', 'مدرست', 'ar', { mode: 'dictation' }).nature).toBe('cognitive')
+    expect(cls('على', 'علي', 'ar')).toMatchObject({ tag: 'alif-maqsura', nature: 'cognitive' })
+    expect(cls('على', 'علا', 'ar')).toMatchObject({ tag: 'alif-maqsura', nature: 'unknown' })
+  })
+
+  it('Shift slips on the same key', () => {
+    expect(cls('إلى', 'غلى', 'ar')).toMatchObject({ kind: 'substitution', tag: 'shift', nature: 'motor', detail: "'غ' instead of 'إ' (same key, missed Shift)" })
+    expect(cls('آخر', 'ىخر', 'ar').tag).toBe('shift')
+    expect(cls('تمر', 'ـمر', 'ar').detail).toContain('extra Shift')
+    expect(cls('hoi!', 'hoi1', 'nl').tag).toBe('shift')
+  })
+
+  it("waw al-jama'a and the hidden alif of هؤلاء", () => {
+    expect(cls('كتبوا', 'كتبو', 'ar', { mode: 'dictation' })).toMatchObject({ kind: 'spelling', tag: 'waw-alif', nature: 'cognitive' })
+    expect(cls('كتبوا', 'كتبو', 'ar').nature).toBe('unknown')
+    expect(cls('مهندسو', 'مهندسوا', 'ar').tag).toBe('waw-alif')
+    expect(cls('هؤلاء', 'هاؤلاء', 'ar').tag).toBe('hidden-alif')
+  })
+
+  it('points out dot twins that are neighbour keys', () => {
+    expect(cls('سلام', 'شلام', 'ar')).toMatchObject({ kind: 'adjacent', detail: "hit 'ش' instead of 'س' (neighbour key, the letters only differ by dots)" })
+  })
+
+  it('accepts the Linux lam-alef ligature and Persian look-alikes as the same text', () => {
+    expect(classifyTypo('لا', '\uFEFB', 'ar')).toBeNull()
+    expect(classifyTypo('في', 'ف\u06CC', 'ar')).toBeNull()
+  })
+
+  it('the hidden alif of هذا / لكن', () => {
+    expect(cls('هذا', 'هاذا', 'ar')).toMatchObject({ kind: 'spelling', tag: 'hidden-alif', nature: 'cognitive' })
+    expect(cls('لكن', 'لاكن', 'ar').tag).toBe('hidden-alif')
   })
 
   it('tashkeel-only differences', () => {
@@ -268,5 +374,25 @@ describe('Arabic rules', () => {
     expect(cls('كتب', 'كتل', 'ar')).toMatchObject({ kind: 'adjacent', nature: 'motor' })
     expect(cls('ضرب', 'صرب', 'ar').kind).toBe('adjacent')
     expect(cls('كتاب', 'كاتب', 'ar').kind).toBe('transposition')
+  })
+})
+
+describe('names and tips', () => {
+  it('has a display name and a tip for every tag', () => {
+    for (const tag of TYPO_TAGS) {
+      expect(typoName(tag, 'en').en).not.toBe(tag)
+      const hasTip = Object.keys(TIPS).some((k) => k === tag || k.startsWith(tag + '.') || k.startsWith(tag + '-'))
+      if (!['neighbour', 'cross-hand', 'same-hand', 'wrong-double', 'capital', 'split-join'].includes(tag)) expect(hasTip, tag).toBe(true)
+    }
+  })
+
+  it('localises names and tips', () => {
+    expect(typoName('dt', 'nl')).toEqual({ en: 'd/t ending', local: 'd/t-regel' })
+    expect(typoName('hamza', 'ar').local).toBe('الهمزة')
+    expect(typoName('its-its', 'en')).toEqual({ en: "its / it's" })
+    expect(typoName('unknown-thing', 'en')).toEqual({ en: 'unknown-thing' })
+    expect(tipFor('kofschip', 'nl').local).toMatch(/kofschip/)
+    expect(tipFor('case', 'en').en).toMatch(/capitalises/) // language-specific tip wins
+    expect(tipFor('adjacent', 'ar').local).toMatch(/المفتاح المجاور/)
   })
 })

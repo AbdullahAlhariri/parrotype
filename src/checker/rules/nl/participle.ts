@@ -103,19 +103,21 @@ const presentMessage = (wrong: string, right: string, subj: string) => ({
 
 const presentFor = (w: string) => CONF_PART_TO_PRES.get(w) ?? DSTEM_PART_TO_PRES.get(w)
 
-/** a word in the punctuation-delimited stretch around i that could carry the participle */
-function auxNearby(ctx: RuleContext, from: number): boolean {
-  const s = wordInfo(ctx, from)?.sent
-  // walk left and right until punctuation or sentence edge
-  let a = from
-  while (a > 0 && wordInfo(ctx, a - 1)?.sent === s && prev(ctx, a) === a - 1) a--
-  let b = from
-  while (b + 1 < ctx.words.length && next(ctx, b) === b + 1) b++
-  for (let k = a; k <= b; k++) {
-    const w = lw(ctx, k)
-    if (isAux(ctx, k) || PARTICIPLE_COMPANIONS.has(w)) return true
+/**
+ * An auxiliary (or verb that can carry a participle) in the clause of word i, right before it
+ * ("Wat heeft dit betekend?") or right after word v ("het verteld wordt").
+ */
+function auxInClause(ctx: RuleContext, i: number, v: number): boolean {
+  const c = clauseOf(ctx, i)
+  if (!c) return true
+  const p = prev(ctx, i)
+  if (p >= 0 && isAux(ctx, p)) return true
+  for (let k = c.from; k <= c.to; k++) {
+    if (k === v) continue
+    if (isAux(ctx, k) || PARTICIPLE_COMPANIONS.has(lw(ctx, k))) return true
   }
-  return false
+  const n = next(ctx, v)
+  return n >= 0 && (isAux(ctx, n) || PARTICIPLE_COMPANIONS.has(lw(ctx, n)))
 }
 
 export const pronounParticiple: Rule = {
@@ -140,7 +142,7 @@ export const pronounParticiple: Rule = {
       if (v < 0) return
       const right = presentFor(lw(ctx, v))
       if (!right) return
-      if (auxNearby(ctx, s)) return
+      if (auxInClause(ctx, s, v)) return
       if (nounFollows(ctx, v)) return // "Het verteld verhaal"
       out.push(hitWord(ctx, v, [right], presentMessage(lw(ctx, v), right, subj)))
     })
@@ -192,7 +194,7 @@ export const ditBetekent: Rule = {
       const n = next(ctx, i)
       const endsHere = n < 0 && /^\s*[.,!?;:]/.test(gapAfter(ctx, i))
       if (!endsHere && (n < 0 || !BETEKEND_NEXT.has(lw(ctx, n)))) return
-      if (auxNearby(ctx, i)) return
+      if (auxInClause(ctx, s, i)) return
       out.push(hitWord(ctx, i, ['betekent'], presentMessage('betekend', 'betekent', lw(ctx, s))))
     })
     return out

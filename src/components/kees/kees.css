@@ -1,0 +1,575 @@
+/*
+ * Kees animations. Only transform and opacity move. Springs live here and nowhere in the UI chrome.
+ * [data-still] = reduced motion or "quiet" liveliness: poses switch without travel, blinks stay.
+ */
+
+.kees-wrap {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--kees-size);
+  height: var(--kees-size);
+  line-height: 0;
+  vertical-align: bottom;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+button.kees-wrap {
+  padding: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+body[data-typing]:not([data-focus-mode='off']) .kees-wrap:not(.kees-keep) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kees {
+  --lid: 0.2;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.kees-mark {
+  display: block;
+  overflow: visible;
+}
+
+/* pivots, in viewBox units */
+.kees-all,
+.kees-head,
+.kees-wing,
+.kees-flash,
+.kees-lid,
+.kees-pupil,
+.kees-beak-lo,
+.kees-monocle,
+.kees-crest-1,
+.kees-crest-2,
+.kees-crest-3 {
+  transform-box: view-box;
+}
+.kees-all {
+  transform-origin: 50px 96px;
+}
+.kees-head {
+  transform-origin: 54px 54px;
+  transition: transform var(--dur-slow) var(--spring-soft);
+}
+.kees-wing,
+.kees-flash {
+  transform-origin: 53px 50px;
+}
+.kees-lining {
+  opacity: 0;
+}
+.kees-lid {
+  transform-origin: 55px 25.6px;
+  transform: scaleY(var(--lid));
+  transition: transform 180ms var(--ease-out);
+}
+.kees-pupil {
+  transform-origin: 55.7px 31.6px;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.kees-beak-lo {
+  transform-origin: 66px 41px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.kees-monocle {
+  transform-origin: 55px 18px;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.kees-chain {
+  transition: opacity var(--dur-fast) ease;
+}
+.kees-stub {
+  opacity: 0;
+}
+.kees-crest-1 {
+  transform-origin: 45px 26px;
+}
+.kees-crest-2 {
+  transform-origin: 49px 21px;
+}
+.kees-crest-3 {
+  transform-origin: 54px 19px;
+}
+.kees-crest > path {
+  transition: transform var(--dur-slow) var(--spring-soft);
+}
+
+/* ------------------------------------------------------------------ */
+/* blink (all levels, also reduced motion: it is not travel)           */
+/* ------------------------------------------------------------------ */
+
+.kees[data-blink] .kees-lid {
+  animation: kees-blink 160ms var(--ease-out);
+}
+@keyframes kees-blink {
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* moods                                                               */
+/* ------------------------------------------------------------------ */
+
+.kees[data-mood='curious'],
+.kees[data-mood='listen'],
+.kees[data-mood='celebrate'],
+.kees[data-mood='oops-big'] {
+  --lid: 0;
+}
+.kees[data-mood='repeat'],
+.kees[data-mood='talk'] {
+  --lid: 0.08;
+}
+.kees[data-mood='oops'] {
+  --lid: 0.44;
+}
+.kees[data-mood='reading'] {
+  --lid: 0.3;
+}
+.kees[data-mood='sleepy'] {
+  --lid: 0.64;
+}
+
+/* curious: the real parrot head tilt */
+.kees[data-mood='curious'] .kees-head,
+.kees[data-fidget='tilt'] .kees-head {
+  transform: rotate(-11deg);
+}
+.kees[data-fidget='tilt'] {
+  --lid: 0;
+}
+
+/* listen: head turned to the sound, crest up */
+.kees[data-mood='listen'] .kees-head {
+  transform: rotate(8deg);
+}
+.kees[data-mood='listen'] .kees-pupil {
+  transform: translate(0.7px, -0.5px);
+}
+.kees[data-mood='listen'] .kees-crest-2,
+.kees[data-mood='listen'] .kees-crest-3 {
+  transform: rotate(10deg);
+}
+
+/* reading: glasses on, eyes down, scanning the line twice every few seconds */
+.kees[data-mood='reading'] .kees-pupil {
+  transform: translate(0.3px, 1.5px);
+  animation: kees-scan 4.2s linear 600ms infinite;
+}
+@keyframes kees-scan {
+  0%,
+  100% {
+    transform: translate(0.3px, 1.5px);
+  }
+  8% {
+    transform: translate(-1px, 1.5px);
+  }
+  18% {
+    transform: translate(1.2px, 1.6px);
+  }
+  26% {
+    transform: translate(-1px, 1.5px);
+  }
+  36% {
+    transform: translate(1.2px, 1.6px);
+  }
+  44% {
+    transform: translate(0.3px, 1.5px);
+  }
+}
+
+/* sleepy: heavy lids, head down a little, beak grinding (parrot purring), three times */
+.kees[data-mood='sleepy'] .kees-head {
+  transform: rotate(5deg) translateY(1px);
+}
+.kees[data-mood='sleepy'] .kees-beak-lo {
+  animation: kees-grind 2s ease-in-out 400ms 3;
+}
+@keyframes kees-grind {
+  0%,
+  44%,
+  100% {
+    transform: rotate(0);
+  }
+  8%,
+  24% {
+    transform: rotate(1.6deg);
+  }
+  16%,
+  32% {
+    transform: rotate(-1.2deg);
+  }
+}
+
+/* oops: squint and push the monocle back up */
+.kees[data-mood='oops'] .kees-monocle {
+  transform: translateY(-1.6px);
+  animation: kees-nudge 420ms var(--ease-out);
+}
+@keyframes kees-nudge {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: translateY(-3px) rotate(-7deg);
+  }
+  100% {
+    transform: translateY(-1.6px);
+  }
+}
+
+/* oops-big: the monocle pops off and dangles on its chain. Comedy, not shame. */
+.kees[data-mood='oops-big'] .kees-monocle {
+  transform: translate(1px, 42px) rotate(-12deg);
+  animation: kees-pop 1100ms var(--ease-out);
+}
+.kees[data-mood='oops-big'] .kees-chain {
+  opacity: 0;
+}
+.kees[data-mood='oops-big'] .kees-stub {
+  opacity: 1;
+}
+.kees[data-mood='oops-big'] .kees-pupil {
+  transform: scale(0.72);
+}
+.kees[data-mood='oops-big'] .kees-beak-lo {
+  transform: rotate(10deg);
+}
+@keyframes kees-pop {
+  0% {
+    transform: none;
+  }
+  14% {
+    transform: translate(0, -4px) rotate(-14deg);
+  }
+  46% {
+    transform: translate(1px, 44px) rotate(12deg);
+  }
+  62% {
+    transform: translate(1px, 41px) rotate(-18deg);
+  }
+  78% {
+    transform: translate(1px, 42.6px) rotate(-6deg);
+  }
+  90% {
+    transform: translate(1px, 41.8px) rotate(-14deg);
+  }
+  100% {
+    transform: translate(1px, 42px) rotate(-12deg);
+  }
+}
+
+/* repeat / talk: one beak open per word */
+.kees[data-chomp] .kees-beak-lo {
+  animation: kees-chomp 220ms var(--ease-out);
+}
+@keyframes kees-chomp {
+  45% {
+    transform: rotate(19deg);
+  }
+}
+
+/* celebrate (personal best only): hop, wing lift showing the orange underwing, crest fans,
+   squawk, eye pinning. One sequence, then he stays bright-eyed. */
+.kees[data-mood='celebrate'] .kees-all {
+  animation: kees-hop 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-wing {
+  animation: kees-wing-lift 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-flash {
+  animation: kees-fan 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-lining {
+  animation: kees-lining 2s linear;
+}
+.kees[data-mood='celebrate'] .kees-crest-1 {
+  animation: kees-crest-back 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-crest-3 {
+  animation: kees-crest-front 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-beak-lo {
+  animation: kees-squawk 2s var(--ease-out);
+}
+.kees[data-mood='celebrate'] .kees-pupil {
+  animation: kees-pin 2s linear;
+}
+@keyframes kees-hop {
+  0%,
+  26%,
+  40%,
+  100% {
+    transform: none;
+  }
+  12% {
+    transform: translateY(-8px);
+  }
+  33% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes kees-wing-lift {
+  0% {
+    transform: none;
+  }
+  17% {
+    transform: rotate(86deg);
+  }
+  26% {
+    transform: rotate(76deg);
+  }
+  34%,
+  72% {
+    transform: rotate(80deg);
+  }
+  90% {
+    transform: rotate(-4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes kees-fan {
+  0% {
+    transform: none;
+  }
+  19% {
+    transform: rotate(48deg);
+  }
+  30%,
+  72% {
+    transform: rotate(44deg);
+  }
+  92%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes kees-lining {
+  0% {
+    opacity: 0;
+  }
+  6%,
+  80% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes kees-crest-back {
+  0%,
+  100% {
+    transform: none;
+  }
+  14%,
+  76% {
+    transform: rotate(-16deg);
+  }
+}
+@keyframes kees-crest-front {
+  0%,
+  100% {
+    transform: none;
+  }
+  14%,
+  76% {
+    transform: rotate(14deg);
+  }
+}
+@keyframes kees-squawk {
+  0%,
+  10%,
+  40%,
+  100% {
+    transform: none;
+  }
+  16%,
+  32% {
+    transform: rotate(18deg);
+  }
+}
+@keyframes kees-pin {
+  0%,
+  20%,
+  34%,
+  48%,
+  100% {
+    transform: scale(1);
+  }
+  27%,
+  41% {
+    transform: scale(0.62);
+  }
+}
+
+/* idle fidgets (lively only) */
+.kees[data-fidget='ruffle'] .kees-crest > path {
+  animation: kees-ruffle 650ms var(--ease-out);
+}
+@keyframes kees-ruffle {
+  30% {
+    transform: rotate(-12deg);
+  }
+  60% {
+    transform: rotate(6deg);
+  }
+}
+.kees[data-fidget='bob'] .kees-head {
+  animation: kees-bob 760ms var(--ease-in-out);
+}
+@keyframes kees-bob {
+  25%,
+  75% {
+    transform: translateY(2.2px);
+  }
+  50% {
+    transform: translateY(-0.5px);
+  }
+}
+.kees[data-fidget='glance'] .kees-pupil {
+  transform: translateX(-1.3px);
+}
+
+/* ------------------------------------------------------------------ */
+/* still: reduced motion or quiet. Poses snap; nothing travels.        */
+/* ------------------------------------------------------------------ */
+
+.kees[data-still] .kees-head,
+.kees[data-still] .kees-monocle,
+.kees[data-still] .kees-pupil,
+.kees[data-still] .kees-beak-lo,
+.kees[data-still] .kees-crest > path {
+  transition: none;
+}
+.kees[data-still] .kees-all,
+.kees[data-still] .kees-wing,
+.kees[data-still] .kees-flash,
+.kees[data-still] .kees-lining,
+.kees[data-still] .kees-crest > path,
+.kees[data-still] .kees-beak-lo,
+.kees[data-still] .kees-pupil,
+.kees[data-still] .kees-monocle {
+  animation: none !important;
+}
+/* personal best without motion: the underwing is simply shown */
+.kees[data-still][data-mood='celebrate'] .kees-wing {
+  transform: rotate(80deg);
+}
+.kees[data-still][data-mood='celebrate'] .kees-flash {
+  transform: rotate(44deg);
+}
+.kees[data-still][data-mood='celebrate'] .kees-lining {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* speech bubble (Shantell Sans)                                       */
+/* ------------------------------------------------------------------ */
+
+.kees-bubble {
+  --tail: 7px;
+  position: absolute;
+  z-index: 2;
+  width: max-content;
+  max-width: min(18rem, 70vw);
+  padding: 0.4em 0.8em 0.45em;
+  border: 1.5px solid var(--border);
+  border-radius: 1em 1em 1em 0.35em;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-bubble);
+  font-size: var(--bubble-size, 16px);
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: start;
+  white-space: normal;
+  transform-origin: 0 100%;
+  animation: kees-bubble-in var(--dur-slow) var(--spring-soft);
+}
+.kees-bubble::before {
+  content: '';
+  position: absolute;
+  width: calc(var(--tail) * 1.4);
+  height: calc(var(--tail) * 1.4);
+  background: var(--surface);
+  border-left: 1.5px solid var(--border);
+  border-bottom: 1.5px solid var(--border);
+}
+.kees-bubble[data-place='right'] {
+  left: calc(var(--kees-size) * 0.9);
+  bottom: calc(var(--kees-size) * 0.62);
+}
+.kees-bubble[data-place='right']::before {
+  left: calc(var(--tail) * -0.75);
+  bottom: 0.4em;
+  transform: rotate(45deg) skew(8deg, 8deg);
+}
+.kees-bubble[data-place='left'] {
+  right: calc(var(--kees-size) * 0.92);
+  bottom: calc(var(--kees-size) * 0.62);
+  border-radius: 1em 1em 0.35em 1em;
+  transform-origin: 100% 100%;
+}
+.kees-bubble[data-place='left']::before {
+  right: calc(var(--tail) * -0.75);
+  bottom: 0.4em;
+  transform: rotate(-135deg) skew(8deg, 8deg);
+}
+.kees-bubble[data-place='top'] {
+  left: calc(var(--kees-size) * 0.45);
+  bottom: calc(var(--kees-size) * 0.98);
+}
+.kees-bubble[data-place='top']::before {
+  left: 0.9em;
+  bottom: calc(var(--tail) * -0.75);
+  transform: rotate(-45deg) skew(8deg, 8deg);
+}
+.kees-word {
+  opacity: 0;
+  transition: opacity 90ms ease-out;
+}
+.kees-word[data-on] {
+  opacity: 1;
+}
+@keyframes kees-bubble-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kees-bubble {
+    animation-name: fade-in;
+    animation-timing-function: var(--ease-out);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* feather burst (personal best)                                       */
+/* ------------------------------------------------------------------ */
+
+.feather-burst {
+  position: fixed;
+  z-index: var(--z-burst);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.feather-burst svg {
+  position: absolute;
+  max-width: none;
+  left: -6px;
+  top: -14px;
+  width: 12px;
+  height: 28px;
+  will-change: transform, opacity;
+}

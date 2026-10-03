@@ -1,0 +1,295 @@
+/*
+ * Typing surface. The text is the hero: three lines, letters in --sub until typed, --text when
+ * right, --error + underline when wrong, --error-extra + strikethrough for extras. Nothing here
+ * animates per keystroke except the caret glide.
+ */
+
+.ts-root {
+  --ts-font: min(var(--ts-size, 1.75rem), max(1.2rem, 5.4vw));
+  --ts-line: var(--typing-line, 1.6);
+  --ts-lh: calc(var(--ts-line) * 1em);
+  position: relative;
+  width: 100%;
+}
+.ts-root.is-rtl {
+  --ts-line: 2.15;
+}
+
+/* ------------------------------------------------------------------ */
+/* live line: seconds left / words done, live accuracy                 */
+/* ------------------------------------------------------------------ */
+
+.ts-live {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  height: 1.5em;
+  margin-bottom: var(--s-2);
+  font-family: var(--font-typing, var(--font-mono));
+  font-size: calc(var(--ts-font) * 0.8);
+  color: var(--main);
+}
+.is-rtl .ts-live {
+  direction: rtl;
+}
+.ts-live-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75em;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.ts-live-stats.is-on {
+  opacity: 1;
+}
+.ts-live-acc {
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+.ts-caps {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius-sm);
+  background: var(--main);
+  color: var(--bg);
+}
+
+/* ------------------------------------------------------------------ */
+/* the words                                                           */
+/* ------------------------------------------------------------------ */
+
+.ts-stage {
+  position: relative;
+  font-size: var(--ts-font);
+  cursor: text;
+}
+body[data-typing] .ts-stage {
+  cursor: none;
+}
+
+.ts-viewport {
+  position: relative;
+  height: calc(var(--ts-lh) * 3);
+  /* room for the caret at the start of a line without shifting the text */
+  padding-inline: 6px;
+  margin-inline: -6px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.ts-track {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  column-gap: 1ch;
+}
+.is-rtl .ts-track {
+  column-gap: 0.34em;
+}
+
+.ts-w {
+  position: relative;
+  z-index: 1;
+  height: var(--ts-lh);
+  line-height: var(--ts-lh);
+  white-space: pre;
+}
+
+.ts-l {
+  color: var(--sub);
+}
+.ts-l.is-correct {
+  color: var(--text);
+}
+.ts-l.is-incorrect {
+  color: var(--error);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.18em;
+  text-decoration-skip-ink: none;
+}
+.ts-l.is-extra {
+  color: var(--error-extra);
+  text-decoration-line: line-through;
+  text-decoration-thickness: 0.07em;
+}
+.ts-l.is-composing {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: var(--sub);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.2em;
+}
+
+/* a committed word with mistakes gets one underline across the whole word */
+.ts-w--error::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.1em;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--error);
+}
+.ts-w--error .ts-l.is-incorrect {
+  text-decoration-line: none;
+}
+
+/* Arabic runs: colour and background only, so letters keep joining (no padding/borders) */
+.ts-r {
+  color: var(--sub);
+}
+.ts-r.is-correct {
+  color: var(--text);
+}
+.ts-r.is-incorrect {
+  color: var(--error);
+  background-color: color-mix(in srgb, var(--error) 16%, transparent);
+}
+.ts-r.is-extra {
+  color: var(--error-extra);
+  background-color: color-mix(in srgb, var(--error-extra) 18%, transparent);
+  text-decoration-line: line-through;
+}
+.is-rtl .ts-w--error::after {
+  bottom: 0.22em;
+}
+.is-rtl .ts-w--composing {
+  text-decoration: underline var(--sub);
+  text-underline-offset: 0.3em;
+}
+
+/* ------------------------------------------------------------------ */
+/* caret                                                               */
+/* ------------------------------------------------------------------ */
+
+.ts-caret {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 0.1em;
+  height: 1.2em;
+  border-radius: 999px;
+  background: var(--caret);
+  pointer-events: none;
+  visibility: hidden;
+  will-change: transform;
+}
+.ts-caret.is-idle {
+  animation: ts-blink 1s ease-in-out infinite;
+}
+.ts-caret-block .ts-caret {
+  z-index: 0;
+  width: var(--caret-w, 0.6em);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--caret) 42%, transparent);
+}
+.ts-caret-underline .ts-caret {
+  width: var(--caret-w, 0.6em);
+  height: 0.1em;
+  border-radius: 1px;
+}
+@keyframes ts-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* out of focus                                                        */
+/* ------------------------------------------------------------------ */
+
+.ts-blur-msg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.ts-root.is-blurred .ts-viewport {
+  opacity: 0.25;
+  filter: blur(4px);
+  transition-delay: 500ms;
+}
+.ts-root.is-blurred .ts-blur-msg {
+  opacity: 1;
+  transition-delay: 500ms;
+}
+
+/* hidden input: focused, invisible, never moves the layout */
+.ts-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 1px;
+  height: 1em;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  opacity: 0;
+  color: transparent;
+  background: transparent;
+  caret-color: transparent;
+  pointer-events: none;
+  font-size: 16px;
+}
+
+/* ------------------------------------------------------------------ */
+/* below the words                                                     */
+/* ------------------------------------------------------------------ */
+
+.ts-under {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--s-6);
+}
+.ts-restart {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  color: var(--sub);
+  transition:
+    color var(--dur-fast) ease,
+    opacity var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ts-restart:hover {
+    color: var(--text);
+  }
+}
+.ts-restart:focus-visible {
+  color: var(--main);
+}
+body[data-typing]:not([data-focus-mode='off']) .ts-restart:not(:focus-visible) {
+  opacity: 0;
+}
+
+.ts-keyboard {
+  margin-top: var(--s-6);
+}

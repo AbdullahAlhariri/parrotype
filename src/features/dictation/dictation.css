@@ -1,0 +1,666 @@
+/* Parrot says (dictation). Tokens only; see docs/DESIGN.md. */
+
+.dict {
+  /* the answer is the hero: the user's typing size, a little smaller on phones */
+  --dict-size: clamp(1.2rem, 0.85rem + 2.2vw, var(--typing-font-size, 1.75rem));
+  max-width: 52rem;
+  margin-inline: auto;
+  padding-block: var(--s-6) var(--s-9);
+}
+
+/* ------------------------------------------------------------------ */
+/* setup: one config bar plus focus chips, fades while typing          */
+/* ------------------------------------------------------------------ */
+
+.dict-setup {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-4);
+  margin-bottom: var(--s-8);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+body[data-typing]:not([data-focus-mode='off']) .dict-setup:not(:focus-within) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dict-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s-2) var(--s-6);
+  padding: var(--s-1) var(--s-4);
+  background: var(--surface);
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+}
+.dict-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.dict-group-label {
+  color: var(--sub);
+  padding-inline-start: var(--s-1);
+}
+
+.dict-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-1) var(--s-2);
+  max-width: 46rem;
+  font-size: var(--fs-sm);
+}
+.dict-chip {
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--radius-sm);
+  color: var(--sub);
+  font-weight: 540;
+  line-height: 1.5;
+  transition: color var(--dur-fast) ease;
+}
+.dict-chip[aria-pressed='true'] {
+  color: var(--main);
+}
+.dict-chip:lang(ar) {
+  font-family: var(--font-arabic);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dict-chip:hover:not([aria-pressed='true']) {
+    color: var(--text);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* stage: Kees, playback controls, progress                            */
+/* ------------------------------------------------------------------ */
+
+.dict-notice {
+  display: grid;
+  gap: var(--s-2);
+  margin-bottom: var(--s-6);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+}
+.dict-notice strong {
+  font-weight: 620;
+}
+
+.dict-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'kees controls progress';
+  align-items: end;
+  column-gap: var(--s-5);
+  row-gap: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+.dict-kees {
+  grid-area: kees;
+  line-height: 0;
+}
+.dict-kees:empty {
+  display: none;
+}
+.dict-controls {
+  grid-area: controls;
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+  padding-bottom: var(--s-1);
+}
+.dict-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+/* still there while typing (ctrl space works too), just quieter */
+body[data-typing]:not([data-focus-mode='off']) .dict-buttons:not(:focus-within) {
+  opacity: 0.35;
+}
+.dict-buttons .btn-sm {
+  min-height: 2.25rem;
+}
+.dict-voice {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  padding-inline-start: var(--s-1);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+body[data-typing]:not([data-focus-mode='off']) .dict-voice {
+  opacity: 0;
+}
+.dict-progress {
+  grid-area: progress;
+  align-self: start;
+  color: var(--main);
+  font-size: var(--fs-md);
+  font-weight: 560;
+}
+.dict-progress-of {
+  color: var(--sub);
+}
+
+.dict-intro {
+  margin-bottom: var(--s-4);
+  color: var(--sub);
+  font-size: var(--fs-md);
+}
+
+/* ------------------------------------------------------------------ */
+/* the answer field                                                    */
+/* ------------------------------------------------------------------ */
+
+.dict-input {
+  display: block;
+  width: 100%;
+  min-height: calc(var(--dict-size) * 1.5 + var(--s-3) + var(--s-4));
+  margin: 0;
+  padding: var(--s-3) 0 var(--s-4);
+  overflow: hidden;
+  resize: none;
+  border: 0;
+  border-bottom: 2px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--caret);
+  font-size: var(--dict-size);
+  line-height: 1.5;
+  transition: border-color var(--dur-fast) ease;
+}
+.dict-input::placeholder {
+  color: var(--sub);
+  opacity: 1;
+}
+.dict-input[dir='rtl']::placeholder {
+  font-family: var(--font-ui);
+  font-size: 0.8em;
+}
+.dict-input:focus-visible {
+  outline: none;
+  border-radius: 0;
+  border-bottom-color: var(--main);
+}
+.dict-input[dir='rtl'] {
+  line-height: 1.9;
+}
+
+.dict-under {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+}
+.dict-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  min-height: 1.75rem;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.dict-restart {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: none;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) ease;
+}
+body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible) {
+  opacity: 0;
+}
+.dict-key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  white-space: nowrap;
+}
+
+/* memory mode */
+.dict-flash {
+  margin-bottom: var(--s-4);
+}
+.dict-flash-text {
+  color: var(--text);
+  font-size: var(--dict-size);
+  line-height: 1.5;
+}
+.dict-flash-timer {
+  display: block;
+  width: 40%;
+  height: 3px;
+  margin-top: var(--s-2);
+  border-radius: 3px;
+  background: var(--sub);
+  transform-origin: left center;
+  animation-name: dict-drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+.dict-flash-text[dir='rtl'] + .dict-flash-timer {
+  transform-origin: right center;
+}
+@keyframes dict-drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* feedback                                                            */
+/* ------------------------------------------------------------------ */
+
+.dict-feedback {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+  padding: var(--s-5) var(--s-6);
+  background: var(--surface);
+}
+.dict-status {
+  font-weight: 520;
+}
+
+.dict-attempt,
+.dict-answer {
+  overflow-wrap: anywhere;
+}
+.dict-attempt {
+  color: var(--text);
+  font-size: calc(var(--dict-size) * 0.82);
+  line-height: 1.75;
+}
+.dict-attempt.is-quiet {
+  color: var(--sub);
+  font-size: calc(var(--dict-size) * 0.66);
+}
+.dict-answer {
+  color: var(--text);
+  font-size: var(--dict-size);
+  line-height: 1.5;
+}
+.dict-attempt[dir='rtl'],
+.dict-answer[dir='rtl'] {
+  line-height: 2;
+}
+
+/* level 1: whole words only */
+.w-wrong {
+  text-decoration: underline wavy var(--error);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.28em;
+  text-decoration-skip-ink: none;
+}
+.w-missing {
+  display: inline-block;
+  width: 1.4em;
+  height: 1em;
+  margin-inline: 0.1em;
+  vertical-align: -0.12em;
+  border-bottom: 2px dashed var(--error);
+}
+
+/* level 2 and up: letters */
+.g-wrong {
+  color: var(--error);
+  text-decoration: underline 2px;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
+}
+.g-extra {
+  color: var(--error-extra);
+  text-decoration: line-through 2px;
+}
+.g-gap {
+  display: inline-block;
+  width: 0.62em;
+  height: 1em;
+  margin-inline: 0.04em;
+  vertical-align: -0.14em;
+  border-bottom: 2px solid var(--sub);
+}
+.is-missing .g-gap {
+  border-bottom-style: dashed;
+}
+.is-quiet .g-wrong,
+.is-quiet .g-extra {
+  color: inherit;
+}
+
+/* the reveal: corrected letters in --main */
+.g-fixed {
+  color: var(--main);
+  text-decoration: underline 2px;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
+}
+
+.dict-was {
+  display: grid;
+  gap: var(--s-1);
+}
+.dict-was-label {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+
+.dict-ladder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-6);
+  font-size: var(--fs-sm);
+}
+
+/* the rule */
+.dict-rules {
+  display: grid;
+  gap: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: var(--hairline) solid var(--border);
+}
+.dict-rules-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+}
+.dict-rules-head h3 {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  font-weight: 620;
+}
+.dict-explain-in {
+  font-size: var(--fs-xs);
+}
+.dict-rule-rows {
+  display: grid;
+  grid-template-columns: minmax(6rem, max-content) minmax(0, 1fr);
+  column-gap: var(--s-6);
+  row-gap: var(--s-5);
+  list-style: none;
+}
+/* rows share the columns, so every rule starts at the same x */
+.dict-rule {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  grid-template-areas:
+    'word name'
+    'word body';
+  row-gap: var(--s-1);
+}
+.dict-rule-word {
+  grid-area: word;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+.dict-rule-name {
+  grid-area: name;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  font-weight: 620;
+  line-height: 1.6;
+}
+.dict-rule-body {
+  grid-area: body;
+  display: grid;
+  gap: var(--s-2);
+  max-width: 62ch;
+}
+.dict-rule-check {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.dict-note {
+  max-width: 66ch;
+  font-size: var(--fs-sm);
+}
+.dict-note-label {
+  margin-inline-end: var(--s-2);
+  color: var(--sub);
+  font-weight: 620;
+}
+.dict-rule-body[dir='rtl'],
+.dict-note[dir='rtl'] {
+  font-family: var(--font-arabic);
+  line-height: 1.9;
+}
+
+.dict-empty {
+  color: var(--sub);
+  text-align: center;
+  padding-block: var(--s-8);
+}
+
+/* ------------------------------------------------------------------ */
+/* summary: asymmetric, the big number left, words right               */
+/* ------------------------------------------------------------------ */
+
+.dict-sum {
+  outline: none;
+}
+.dict-sum-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+.dict-sum-label {
+  display: block;
+  color: var(--sub);
+  font-size: var(--fs-md);
+}
+.dict-sum-big {
+  display: block;
+  color: var(--main);
+  font-size: var(--fs-hero);
+  line-height: 1;
+}
+.dict-sum-sub {
+  margin-top: var(--s-3);
+  color: var(--sub);
+}
+.dict-sum-line {
+  margin-top: var(--s-6);
+  max-width: 30ch;
+}
+.dict-sum-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+.dict-sum-hint {
+  margin-top: var(--s-3);
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+
+.dict-sum-side {
+  position: relative;
+  margin-top: var(--s-7);
+  padding: var(--s-7) var(--s-6) var(--s-6);
+  background: var(--surface);
+}
+.dict-sum-perch {
+  position: absolute;
+  top: 0;
+  right: var(--s-6);
+  line-height: 0;
+  transform: translateY(-64%);
+}
+.dict-sum.is-animated .dict-sum-perch {
+  animation: dict-land var(--dur-slow) var(--spring-soft) 600ms both;
+}
+@keyframes dict-land {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-64% - 16px));
+  }
+}
+
+.dict-sum-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-7);
+  margin-bottom: var(--s-6);
+  padding-right: 5rem;
+}
+.dict-sum-details dt {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.dict-sum-details dd {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 560;
+}
+.dict-sum-dd-sub {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  font-weight: 420;
+}
+.dict-sum-dd-text {
+  font-size: var(--fs-sm) !important;
+  font-weight: 480 !important;
+}
+
+.dict-sum-words h3 {
+  margin-bottom: var(--s-4);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  font-weight: 620;
+}
+.dict-sum-words ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--s-5) var(--s-6);
+  list-style: none;
+}
+.dict-sum-words li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+}
+.dict-sum-word {
+  font-size: var(--fs-lg);
+}
+.dict-sum-typed {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  text-decoration-color: var(--error-extra);
+}
+.dict-sum-tag {
+  flex-basis: 100%;
+  color: var(--sub);
+  font-size: var(--fs-xs);
+}
+.dict-sum-nest {
+  margin-top: var(--s-6);
+}
+.dict-sum-empty {
+  color: var(--sub);
+}
+
+/* ------------------------------------------------------------------ */
+/* narrow screens                                                      */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .dict {
+    padding-top: var(--s-4);
+  }
+  .dict-setup {
+    margin-bottom: var(--s-7);
+  }
+  .dict-bar {
+    gap: 0 var(--s-4);
+    padding-inline: var(--s-3);
+  }
+  .dict-sum-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+  }
+  .dict-sum-line {
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  /* one scrolling row of chips instead of four wrapped rows */
+  .dict-setup {
+    justify-items: stretch;
+  }
+  .dict-chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    max-width: none;
+    margin-inline: calc(-1 * var(--s-5));
+    padding-inline: var(--s-5);
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, transparent, #000 var(--s-5), #000 calc(100% - var(--s-5)), transparent);
+  }
+  .dict-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .dict-chip {
+    flex: none;
+    white-space: nowrap;
+  }
+  .dict-stage {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'kees progress'
+      'controls controls';
+  }
+  .dict-progress {
+    align-self: end;
+    justify-self: end;
+  }
+  .dict-feedback {
+    padding: var(--s-4);
+    margin-inline: calc(-1 * var(--s-4));
+  }
+  .dict-rule-rows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dict-rule {
+    grid-template-areas:
+      'word'
+      'name'
+      'body';
+  }
+  .dict-sum-side {
+    padding-inline: var(--s-4);
+  }
+  .dict-sum-details {
+    gap: var(--s-4) var(--s-6);
+  }
+}
+
+/* the hint ladder steps read as links: they are the way forward when stuck */
+.dict-ladder .link-btn {
+  padding: 0;
+  color: var(--main);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--main) 55%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dict-ladder .link-btn:hover {
+    color: var(--main);
+    text-decoration-color: currentColor;
+  }
+}

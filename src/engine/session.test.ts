@@ -276,7 +276,7 @@ describe('composed input, Arabic and lazy mode', () => {
   it('accepts composed and decomposed accented letters', () => {
     const s = make(['ideeën'])
     type(s, 'idee')
-    s.input('ë', 1000) // e + combining diaeresis from an IME
+    s.input('e\u0308', 1000) // e + combining diaeresis from an IME
     s.input('n', 1100)
     expect(s.finished).toBe(true)
     expect(s.getSnapshot().words[0].correct).toBe(true)
@@ -308,6 +308,23 @@ describe('composed input, Arabic and lazy mode', () => {
     expect(a.getSnapshot().words[0].target).toBe('أنا')
     type(a, 'انا')
     expect(a.finished).toBe(true)
+  })
+
+  it('normalises Linux ligatures, invisible marks and Eastern digits', () => {
+    const s = new TypingSession(['لا', '3', 'كتب'], { lang: 'ar' })
+    s.input('\uFEFB', 0) // xkb types لا as one presentation-form code point
+    expect(s.getSnapshot().words[0]).toMatchObject({ typed: 'لا', correct: true })
+    s.input(' ', 100)
+    s.input('\u0663', 200) // ٣
+    expect(s.getSnapshot().words[1].correct).toBe(true)
+    s.input(' ', 300)
+    s.input('ك\u200D', 400) // stray zero-width joiner
+    expect(s.getSnapshot().words[2].typed).toBe('ك')
+  })
+
+  it('strips tashkeel and tatweel from targets unless asked to keep tashkeel', () => {
+    expect(new TypingSession(['كَتَبَ', 'جمـيل'], { lang: 'ar' }).getSnapshot().words.map((w) => w.target)).toEqual(['كتب', 'جميل'])
+    expect(new TypingSession(['كَتَبَ'], { lang: 'ar', tashkeel: true }).getSnapshot().words[0].letters).toHaveLength(6)
   })
 
   it('is strict about accents without lazy mode', () => {

@@ -1,6 +1,7 @@
 import type { Lang } from '@/types'
-import { classifyTypo, osaDistance, type TypoLabel } from './typo'
-import { graphemes, stripAccents, stripTashkeel } from './text'
+import { osaUnits } from './osa'
+import { classifyTypo, type TypoLabel } from './typo'
+import { graphemes, normalizeInput, stripAccents, stripTashkeel } from './text'
 
 // Word-level alignment of free typed text against an expected sentence (dictation,
 // proofreading), plus per-letter diffs for rendering.
@@ -49,21 +50,23 @@ export interface CharOp {
   b?: string
 }
 
-// 's / 't / 'n (Dutch), words with inner apostrophes or hyphens, or single punctuation marks
-const TOKEN_RE = /'[stn](?![\p{L}\p{M}\p{N}])|[\p{L}\p{M}\p{N}]+(?:['\-][\p{L}\p{M}\p{N}]+)*|[^\s\p{L}\p{M}\p{N}]/gu
+// 's / 't / 'n (Dutch), words with inner apostrophes or hyphens (invisible joiners allowed
+// inside), or single punctuation marks
+const TOKEN_RE =
+  /'[stn](?![\p{L}\p{M}\p{N}])|[\p{L}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*(?:['\-][\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N}\p{Cf}]*)*|[^\s\p{L}\p{M}\p{N}\p{Cf}]/gu
 
-const normQuotes = (s: string) => s.replace(/[‘’ʼ]/g, "'").replace(/[“”]/g, '"')
+const normQuotes = (s: string) => s.replace(/[\u2018\u2019\u02BC]/g, "'").replace(/[\u201C\u201D]/g, '"')
 
 function normalise(text: string, o: AlignOptions): string {
-  let s = text.normalize('NFC')
+  let s = normalizeInput(text)
   if (o.ignoreDiacritics) s = stripAccents(stripTashkeel(s))
   if (o.ignoreCase) s = s.toLowerCase()
   return s
 }
 
-/** Tokens used by alignWords (indices in WordOp refer to this list). */
+/** Tokens used by alignWords (indices in WordOp refer to this list). Offsets are into `text`. */
 export function tokenize(text: string, opts: AlignOptions = {}): AlignToken[] {
-  const src = normQuotes(text.normalize('NFC'))
+  const src = normQuotes(text) // one-for-one replacements keep the offsets valid
   const out: AlignToken[] = []
   for (const m of src.matchAll(TOKEN_RE)) {
     const punct = !/[\p{L}\p{N}]/u.test(m[0])
@@ -76,24 +79,50 @@ export function tokenize(text: string, opts: AlignOptions = {}): AlignToken[] {
 
 const NEVER = 1e9
 
-const similarity = (a: string, b: string) => osaDistance(a, b) / Math.max(graphemes(a).length, graphemes(b).length, 1)
+/** Token comparison with grapheme arrays computed once and word-pair distances cached. */
+function costs(E: AlignToken[], T: AlignToken[]) {
+  const units = new Map<string, string[]>()
+  const unitsOf = (s: string) => {
+    let u = units.get(s)
+    if (!u) units.set(s, (u = graphemes(s)))
+    return u
+  }
+  const cache = new Map<string, number>()
+  /** normalised edit distance, 0 (same) .. 1 (nothing alike) */
+  const distance = (a: string, b: string) => {
+    const key = a + '\u0000' + b
+    let d = cache.get(key)
+    if (d === undefined) {
+      const A = unitsOf(a)
+      const B = unitsOf(b)
+      d = osaUnits(A, B) / Math.max(A.length, B.length, 1)
+      cache.set(key, d)
+    }
+    return d
+  }
+  for (const t of [...E, ...T]) unitsOf(t.norm)
 
-function subCost(a: AlignToken, b: AlignToken): number {
-  if (a.punct !== b.punct) return NEVER
-  if (a.norm === b.norm) return 0
-  if (a.punct) return 1
-  // similar words align as a substitution (wordt -> word), unrelated ones still beat del + ins
-  return 0.4 + 1.4 * similarity(a.norm, b.norm)
-}
+  /** similar words align as a substitution (wordt -> word), unrelated ones still beat del + ins */
+  const sub = (a: AlignToken, b: AlignToken): number => {
+    if (a.punct !== b.punct) return NEVER
+    if (a.norm === b.norm) return 0
+    if (a.punct) return 1
+    return 0.4 + 1.4 * distance(a.norm, b.norm)
+  }
 
-/** one token written as two (zieken huis) or two as one (teveel) */
-function splitCost(whole: AlignToken, a: AlignToken, b: AlignToken): number {
-  if (whole.punct || a.punct || b.punct) return NEVER
-  const joined = a.norm + b.norm
-  const target = whole.norm
-  if (joined === target || joined === target.replace(/-/g, '')) return 0.3
-  const d = similarity(joined, target)
-  return d <= 0.2 ? 0.3 + 1.4 * d : NEVER
+  /** one token written as two (zieken huis) or two as one (teveel) */
+  const split = (whole: AlignToken, a: AlignToken, b: AlignToken): number => {
+    if (whole.punct || a.punct || b.punct) return NEVER
+    const target = whole.norm.replace(/-/g, '')
+    const joinedLen = unitsOf(a.norm).length + unitsOf(b.norm).length
+    const len = unitsOf(target).length
+    if (Math.abs(joinedLen - len) > Math.max(1, len * 0.2)) return NEVER // cannot be within 20%
+    const joined = a.norm + b.norm
+    if (joined === target || joined === whole.norm) return 0.3
+    const d = distance(joined, target)
+    return d <= 0.2 ? 0.3 + 1.4 * d : NEVER
+  }
+  return { sub, split }
 }
 
 type Step = 'diag' | 'split' | 'merge' | 'del' | 'ins'
@@ -105,10 +134,12 @@ type Step = 'diag' | 'split' | 'merge' | 'del' | 'ins'
 export function alignWords(expected: string, typed: string, opts: AlignOptions = {}): WordOp[] {
   const E = tokenize(expected, opts)
   const T = tokenize(typed, opts)
+  const { sub: subCost, split: splitCost } = costs(E, T)
   const n = E.length
   const m = T.length
-  const d = Array.from({ length: n + 1 }, () => new Float64Array(m + 1))
+  const d = Array.from({ length: n + 1 }, () => new Float64Array(m + 1).fill(Infinity))
   const back: Step[][] = Array.from({ length: n + 1 }, () => new Array<Step>(m + 1))
+  d[0][0] = 0
   for (let i = 1; i <= n; i++) {
     d[i][0] = i
     back[i][0] = 'del'
@@ -117,8 +148,13 @@ export function alignWords(expected: string, typed: string, opts: AlignOptions =
     d[0][j] = j
     back[0][j] = 'ins'
   }
+  // long texts: only cells near the diagonal (typed text rarely drifts 40+ words away)
+  const band = Math.abs(n - m) + 40
   for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
+    const centre = Math.round((i * m) / Math.max(n, 1))
+    const lo = Math.max(1, centre - band)
+    const hi = Math.min(m, centre + band)
+    for (let j = lo; j <= hi; j++) {
       let best = d[i - 1][j - 1] + subCost(E[i - 1], T[j - 1])
       let step: Step = 'diag'
       if (j > 1) {

@@ -14,7 +14,7 @@ import {
   set,
 } from '../../lexicon/nl'
 import { LINKS } from './links'
-import { INVERSION_SUBJ, PERSONAL_SUBJ, nounFollows, subjectVerbPairs } from './shared'
+import { INVERSION_SUBJ, PERSONAL_SUBJ, inVerbFinalClause, laterFiniteInClause, nounFollows, subjectVerbPairs } from './shared'
 
 // d/t in the present tense and verb agreement (docs/research/dutch-errors.md §3.1, rules DT-01..11, AGR-01..03).
 
@@ -29,7 +29,9 @@ const IK_TO_INF: ReadonlyMap<string, string> = new Map([
   ['snij', 'snijden'],
   ['glij', 'glijden'],
 ])
-/** ik-forms that are also common nouns/adjectives/adverbs: "omdat hij werk heeft", "hij pas" */
+/** ik-forms that are adjectives/adverbs (or a past form): never a safe verb */
+const IK_NOT_VERB = set('pas open trouw wijs mis duur was stil')
+/** ik-forms that are also common nouns: only safe in a main clause ("omdat hij werk heeft") */
 const IK_HOMOGRAPHS = set(`werk fiets plan hoop dans kus rust pas leer mis deel stel bel zorg bouw trouw open stuur pak
   teken reis geloof gebruik klop stop groei kijk lijk begin vlieg verlies trek graaf loop roep slaap val lach bak
   vraag koop zoek bezoek verkoop zweer wijs prijs was spring hang vang dwing stink zwel klim zet duur tel typ leen
@@ -47,6 +49,8 @@ const lopenTrick = {
 /* ------------------------------------------------------------------ */
 
 const IK_NOT_SUBJECT_PREV = set("het mijn m'n zijn jouw je ons haar woord en of dan")
+/** hij-forms that are also nouns: rijst (rice), vaart (speed), staat (state), kust (coast) */
+const T3_NOUNS = set('rijst vaart staat kust')
 
 const ikMessage = (ik: string, t3: string) =>
   DSTEM.has(ik) || ik === 'houd' || ik === 'rijd'
@@ -82,6 +86,7 @@ export const ikStem: Rule = {
       if (!ik) return
       const p = prev(ctx, i)
       if (p >= 0 && IK_NOT_SUBJECT_PREV.has(lw(ctx, p))) return
+      if (T3_NOUNS.has(t3) || (inVerbFinalClause(ctx, i) && laterFiniteInClause(ctx, v))) return // "omdat ik rijst eet"
       out.push(hitWord(ctx, v, withClipped(ik), ikMessage(ik, t3)))
     })
     return out
@@ -102,7 +107,7 @@ export const invertedIk: Rule = {
       if (v < 0) return
       const t3 = lw(ctx, v)
       const ik = T3_TO_IK.get(t3)
-      if (!ik) return
+      if (!ik || T3_NOUNS.has(t3)) return
       const p = prev(ctx, v)
       if (p >= 0 && PERSONAL_SUBJ.has(lw(ctx, p))) return
       const msg = ikMessage(ik, t3)
@@ -185,11 +190,11 @@ export const stemT: Rule = {
   confidence: 'high',
   check(ctx) {
     const out: RuleHit[] = []
-    for (const { s, v } of subjectVerbPairs(ctx, AGR_SUBJ)) {
+    for (const { s, v, verbFinal } of subjectVerbPairs(ctx, AGR_SUBJ)) {
       const subj = lw(ctx, s)
       const ik = lw(ctx, v)
       const t3 = IK_TO_T3.get(ik)
-      if (!t3 || IK_HOMOGRAPHS.has(ik)) continue
+      if (!t3 || IK_NOT_VERB.has(ik) || (verbFinal && IK_HOMOGRAPHS.has(ik))) continue
       if (subj === 'jij' && (ik === 'ben' || ik === 'heb')) continue // DT-09
       const plural = subj === 'zij'
       const inf = IK_TO_INF.get(ik)
@@ -442,7 +447,7 @@ export const uT: Rule = {
     for (const { v, verbFinal } of subjectVerbPairs(ctx, set('u'))) {
       const ik = lw(ctx, v)
       if (DSTEM_HOMOGRAPHS.has(ik) || nounFollows(ctx, v)) continue
-      const forms = uForm(ik) ?? (!verbFinal && !IK_HOMOGRAPHS.has(ik) && IK_TO_T3.has(ik) ? [IK_TO_T3.get(ik) as string] : undefined)
+      const forms = uForm(ik) ?? (!verbFinal && !IK_HOMOGRAPHS.has(ik) && !IK_NOT_VERB.has(ik) && IK_TO_T3.has(ik) ? [IK_TO_T3.get(ik) as string] : undefined)
       if (!forms) continue
       out.push(hitWord(ctx, v, forms, uMessage(forms[0], false)))
     }
@@ -484,7 +489,7 @@ export const pastDt: Rule = {
 }
 
 const HOUT_SUBJ = set('hij zij ze men jij u')
-const RIJT_NEXT = set('naar met in op door elke elk vaak altijd te de een auto fiets hard snel langzaam')
+const RIJT_NEXT = set('naar met door elke elk vaak altijd te auto fiets hard snel langzaam')
 
 export const hijHoudt: Rule = {
   id: 'nl.dt.hij-houdt',

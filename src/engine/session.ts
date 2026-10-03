@@ -1,7 +1,7 @@
 import type { Lang } from '@/types'
 import type { EngineKeyEvent, KeyOp } from './replay'
 import { wpm, type ResultInput } from './metrics'
-import { stripMarks, stripTashkeel } from './text'
+import { TATWEEL, foldDigits, normalizeTypingText, stripMarks, stripTashkeel } from './text'
 
 // The typing state machine a UI renders. Framework-agnostic: feed it keys with a
 // timestamp, read an immutable snapshot (useSyncExternalStore-friendly).
@@ -52,8 +52,10 @@ export interface SessionOptions {
   timeLimitMs?: number
   /** backspace at the start of a word goes back into the previous word if it was wrong (default true) */
   allowBackspaceIntoPrevWord?: boolean
-  /** accents and Arabic hamza/tashkeel don't have to be typed (ë accepts e, أ accepts ا) */
+  /** accents and Arabic hamza don't have to be typed (ë accepts e, أ accepts ا) */
   lazy?: boolean
+  /** keep Arabic short-vowel marks (tashkeel) in the targets, so they must be typed (default: stripped) */
+  tashkeel?: boolean
   /** the run also ends once the last word has as many letters as its target, even if wrong */
   quickEnd?: boolean
   /** extra letters allowed past a word's end (default 10) */
@@ -71,8 +73,18 @@ interface WordState {
   wrongAt: boolean[]
 }
 
-const isNamedKey = (key: string) => key.length > 1 && /^[A-Z][A-Za-z0-9]*$/.test(key)
-const isSpace = (ch: string) => ch === ' ' || ch === ' '
+// KeyboardEvent.key names that type nothing. An explicit list, not a "Capitalised word"
+// pattern: a mobile keyboard can deliver a whole word such as "Het" in one composition.
+const NAMED_KEYS = new Set([
+  'Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'OS', 'Super', 'Hyper', 'Fn', 'FnLock', 'CapsLock', 'NumLock',
+  'ScrollLock', 'Symbol', 'SymbolLock', 'Dead', 'Compose', 'Process', 'Unidentified', 'Enter', 'Tab', 'Escape',
+  'Esc', 'Delete', 'Del', 'Insert', 'Home', 'End', 'PageUp', 'PageDown', 'Clear', 'ContextMenu', 'Pause',
+  'PrintScreen', 'Cancel', 'Undo', 'Redo', 'Copy', 'Cut', 'Paste', 'Spacebar',
+])
+const NAMED_RE = /^(?:F\d{1,2}|Arrow(?:Up|Down|Left|Right)|(?:Audio|Media|Browser|Launch|Brightness|Zoom|Mic|Channel)[A-Z]\w*|Soft\d)$/
+const isNamedKey = (key: string) => key.length > 1 && (NAMED_KEYS.has(key) || NAMED_RE.test(key))
+const isSpace = (ch: string) => ch === ' '
+const isControl = (ch: string) => /^[\u0000-\u001F\u007F-\u009F]$/.test(ch)
 
 export class TypingSession {
   readonly lang: Lang
@@ -80,6 +92,7 @@ export class TypingSession {
   readonly timeLimitMs: number | undefined
   readonly lazy: boolean
   readonly quickEnd: boolean
+  readonly tashkeel: boolean
   private readonly allowBack: boolean
   private readonly maxExtra: number
 
@@ -107,6 +120,7 @@ export class TypingSession {
     this.timeLimitMs = opts.timeLimitMs && opts.timeLimitMs > 0 ? opts.timeLimitMs : undefined
     this.lazy = !!opts.lazy
     this.quickEnd = !!opts.quickEnd
+    this.tashkeel = !!opts.tashkeel
     this.allowBack = opts.allowBackspaceIntoPrevWord ?? true
     this.maxExtra = opts.maxExtraLetters ?? 10
     this.push(words)
@@ -167,25 +181,30 @@ export class TypingSession {
 
   /**
    * Feed one key: a printable character (or composed text such as 'ë' or 'لا'), ' ' or
-   * 'Backspace'. KeyboardEvent.key names like 'Shift' or 'Dead' are ignored.
-   * Returns the recorded event, or null if the key did nothing.
+   * 'Backspace'. KeyboardEvent.key names like 'Shift' or 'Dead' are ignored. Input is
+   * normalised (NFC, Arabic presentation forms, invisible marks, curly quotes) before
+   * comparing. Returns the recorded event, or null if the key did nothing.
    */
   input(key: string, now: number): EngineKeyEvent | null {
-    if (this.finished || !this.words.length) return null
-    if (this.timeUp(now)) {
-      this.changed()
-      return null
-    }
-    let ev: EngineKeyEvent | null = null
-    if (key === 'Backspace') ev = this.backspace(now)
-    else if (!isNamedKey(key)) {
-      for (const ch of Array.from(key.normalize('NFC'))) {
+    if (key === 'Backspace') return this.edit(now, () => this.backspace(now))
+    if (isNamedKey(key)) return null
+    return this.insertText(key, now)
+  }
+
+  /**
+   * Feed typed text (beforeinput / compositionend data) without key-name filtering: every
+   * character is typed, spaces commit words. Returns the last recorded event, or null.
+   */
+  insertText(text: string, now: number): EngineKeyEvent | null {
+    return this.edit(now, () => {
+      let ev: EngineKeyEvent | null = null
+      for (const ch of Array.from(normalizeTypingText(text))) {
         if (this.finished) break
+        if (isControl(ch)) continue
         ev = (isSpace(ch) ? this.space(now) : this.char(ch, now)) ?? ev
       }
-    }
-    if (ev) this.changed()
-    return ev
+      return ev
+    })
   }
 
   /** Ctrl/Alt+Backspace: clear the current word, or go back into the previous wrong word and clear it. */
@@ -274,10 +293,25 @@ export class TypingSession {
 
   /* ---------------- internals ---------------- */
 
+  /** Runs one input step unless the run is over; notifies listeners when it did something. */
+  private edit(now: number, step: () => EngineKeyEvent | null): EngineKeyEvent | null {
+    if (this.finished || !this.words.length) return null
+    if (this.timeUp(now)) {
+      this.changed()
+      return null
+    }
+    const ev = step()
+    if (ev) this.changed()
+    return ev
+  }
+
   private push(words: string[]): boolean {
-    const clean = words.flatMap((w) => w.normalize('NFC').split(/\s+/)).filter(Boolean)
+    // typographic quotes, dashes and ellipses become the keys a keyboard actually has
+    const clean = words.flatMap((w) => normalizeTypingText(w).split(/\s+/)).filter(Boolean)
     for (const word of clean) {
-      const text = this.lazy ? stripTashkeel(word) : word
+      // tatweel is decoration and tashkeel is optional in everyday Arabic: neither is typed
+      const plain = word.replaceAll(TATWEEL, '')
+      const text = this.tashkeel ? plain : stripTashkeel(plain)
       if (!text) continue
       const w: WordState = { target: Array.from(text), text, typed: [], errors: 0, committed: false, everWrong: false, wrongAt: [] }
       this.words.push(w)
@@ -305,7 +339,10 @@ export class TypingSession {
   }
 
   private matches(expected: string, typed: string) {
-    return expected === typed || (this.lazy && stripMarks(expected) === stripMarks(typed))
+    if (expected === typed) return true
+    const e = foldDigits(expected)
+    const t = foldDigits(typed)
+    return e === t || (this.lazy && stripMarks(e) === stripMarks(t))
   }
 
   private expectedAt(w: WordState, i: number) {

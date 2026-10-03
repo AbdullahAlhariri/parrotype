@@ -214,8 +214,8 @@ export const NL_SUBORDINATORS: ReadonlySet<string> = new Set(
   indien mits opdat aangezien ofschoon`.split(/\s+/),
 )
 export const NL_RELATIVES: ReadonlySet<string> = new Set(
-  `die wat wie welke waar waarom hoe waarin waarop waarmee waarvan waarover waarbij waaraan waarna waarvoor waaruit
-  waarheen wiens wier`.split(/\s+/),
+  `die wat wie welke waar waarom hoe hoeveel hoelang waarin waarop waarmee waarvan waarover waarbij waaraan waarna
+  waarvoor waaruit waarheen wiens wier`.split(/\s+/),
 )
 const NL_PREPOSITIONS: ReadonlySet<string> = new Set(
   `in op aan met van voor naar bij uit over onder door tegen zonder tussen achter naast tijdens om na sinds rond
@@ -224,7 +224,10 @@ const NL_PREPOSITIONS: ReadonlySet<string> = new Set(
 const NL_AUX_START: ReadonlySet<string> = new Set(
   `is ben bent was waren zijn heb hebt heeft had hadden hebben word wordt werd werden worden`.split(/\s+/),
 )
-const AMBIGUOUS_OPENERS: ReadonlySet<string> = new Set(['dat', 'die', 'wat', 'wie', 'welke', 'waar', 'hoe'])
+/** after a preposition these are determiners/pronouns ("met die man"), not clause openers */
+const DETERMINER_OPENERS: ReadonlySet<string> = new Set(['dat', 'die', 'welke'])
+/** right after a clause-initial auxiliary they are the subject ("Is dat gebeurd?") */
+const PRONOUN_OPENERS: ReadonlySet<string> = new Set(['dat', 'die', 'wat', 'wie', 'welke'])
 const SUBJECTISH: ReadonlySet<string> = new Set(
   `ik jij je hij zij ze wij we jullie u het men er de een die dat dit deze mijn zijn haar ons onze hun`.split(/\s+/),
 )
@@ -301,10 +304,8 @@ function opensClause(ctx: RuleContext, i: number, clauseFrom: number): boolean {
   }
   if (w === 'toen') return SUBJECTISH.has(words[i + 1]?.lower ?? '')
   if (!isOpener(w)) return false
-  if (AMBIGUOUS_OPENERS.has(w)) {
-    if (NL_PREPOSITIONS.has(prev)) return false
-    if (i - 1 === clauseFrom && NL_AUX_START.has(prev)) return false
-  }
+  if (DETERMINER_OPENERS.has(w) && NL_PREPOSITIONS.has(prev)) return false
+  if (PRONOUN_OPENERS.has(w) && i - 1 === clauseFrom && NL_AUX_START.has(prev)) return false
   return true
 }
 

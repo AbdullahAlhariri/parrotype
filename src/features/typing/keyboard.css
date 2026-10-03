@@ -1,0 +1,87 @@
+/* On-screen keyboard: flat keys on --surface, the next key in --main. Physical, never mirrored. */
+
+.osk {
+  container-type: inline-size;
+  width: 100%;
+  max-width: 38rem;
+  margin-inline: auto;
+  user-select: none;
+}
+
+.osk-board {
+  --u: calc(100cqw / var(--osk-units));
+  --gap: max(2px, calc(var(--u) * 0.1));
+  position: relative;
+  height: calc(var(--u) * 5);
+}
+
+.osk-key {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--row) * var(--u));
+  width: calc(var(--w) * var(--u) - var(--gap));
+  height: calc(var(--u) - var(--gap));
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--error) calc(var(--heat, 0) * 55%), var(--surface));
+  color: var(--sub);
+  font-family: var(--font-ui);
+  font-size: calc(var(--u) * 0.36);
+  line-height: 1;
+  /* no transition: the next-key highlight changes on every keystroke and must be instant */
+}
+
+.osk-base {
+  font-weight: 560;
+}
+.osk-base:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: 1.2em;
+  transform: translateY(-0.08em);
+}
+.osk-shift {
+  position: absolute;
+  top: 12%;
+  left: 12%;
+  font-size: 0.62em;
+  opacity: 0.75;
+}
+.osk-shift:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: 0.72em;
+}
+.osk-latin {
+  position: absolute;
+  right: 10%;
+  bottom: 10%;
+  font-size: 0.5em;
+  opacity: 0.6;
+}
+.osk-word {
+  font-size: 0.62em;
+  letter-spacing: 0.01em;
+}
+
+/* home-row bumps on F and J (ب and ت) */
+.osk-key.is-home::after {
+  content: '';
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  width: 22%;
+  height: 2px;
+  margin-left: -11%;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.osk-key.is-next {
+  background: var(--main);
+  color: var(--bg);
+}
+
+.osk--heat .osk-key {
+  color: var(--text);
+}
