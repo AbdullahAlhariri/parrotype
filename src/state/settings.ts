@@ -24,8 +24,13 @@ export interface Settings {
   explainIn: 'en' | 'local'
   /** speech rate for dictation, 0.5 - 1.5 */
   speechRate: number
-  /** preferred voice name per language ('' = auto pick) */
+  /**
+   * Dictation voice per language: 'mix' (rotate the recorded Gemini voices, default),
+   * 'gemini:<personaId>' for one recorded voice, or 'browser:<voice name>' for the browser's own speech.
+   */
   voices: Partial<Record<Lang, string>>
+  /** the mascot (Kees / Monty / Fustuq) says short recorded lines at rare moments */
+  mascotVoice: boolean
   /** opt-in: send free-writing text to LanguageTool for deeper checks */
   languageTool: boolean
   languageToolUrl: string
@@ -48,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   explainIn: 'en',
   speechRate: 0.9,
   voices: {},
+  mascotVoice: true,
   languageTool: false,
   languageToolUrl: 'https://api.languagetool.org/v2/check',
   englishVariant: 'en-US',
