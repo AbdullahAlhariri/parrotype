@@ -1,6 +1,6 @@
 import type { WritingPrompt } from './types'
 
-// Arabic writing prompts (phase 2: basic support). Modern Standard Arabic, written without
+// Arabic writing prompts. Modern Standard Arabic, written without
 // tashkeel, as people type it. Focus tags point at the usual typing traps: hamza seats,
 // taa marbuta vs haa, alif maqsura vs yaa, hamzat al-wasl.
 

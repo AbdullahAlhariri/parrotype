@@ -77,7 +77,7 @@ export default function AboutPage() {
         <div>
           <h1 className="page-title">About Parrotype</h1>
           <p className="about-lede">
-            A typing trainer for one person who makes a lot of typos, mostly in Dutch, also in English, and soon in Arabic. It is named after what it asks you to do:
+            A typing trainer for one person who makes a lot of typos, in Dutch, English and Arabic. It is named after what it asks you to do:
             copy text letter by letter, like a parrot.
           </p>
         </div>

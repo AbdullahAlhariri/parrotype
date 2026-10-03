@@ -1,7 +1,7 @@
 import { definePack } from './build'
 import type { DrillPack } from './types'
 
-// Arabic spelling (basic support): hamza at the start of a word, taa marbuta, alif maqsura.
+// Arabic spelling: hamza at the start of a word, taa marbuta, alif maqsura.
 // Unvoweled MSA, like everyday typing. Harakat are ignored when answers are checked.
 
 const hamza = definePack({
