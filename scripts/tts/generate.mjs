@@ -1,10 +1,11 @@
-// Pre-renders dictation audio with Gemini TTS, then checks every clip by transcribing it back.
+// Pre-renders dictation audio with Gemini 3.8 Flash TTS and checks every clip by
+// transcribing it back (the clip must say exactly the sentence, nothing more).
 //
 //   GEMINI_API_KEY=... node scripts/tts/generate.mjs --sample [--out dir]
-//   GEMINI_API_KEY=... node scripts/tts/generate.mjs --jobs jobs.json --out public/audio [--concurrency 4]
+//   GEMINI_API_KEY=... node scripts/tts/generate.mjs --jobs jobs.json [--concurrency 4] [--skip-existing]
 //
 // The key is read from the environment only. Never commit it.
-// Needs ffmpeg with libmp3lame on PATH.
+// Needs ffmpeg (with libmp3lame) and ffprobe on PATH.
 
 import { execFile } from 'node:child_process'
 import { mkdir, readFile, writeFile, rm } from 'node:fs/promises'
@@ -12,46 +13,89 @@ import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { promisify } from 'node:util'
-import { PERSONAS, buildPrompt } from './personas.mjs'
+import { DESIGNED, PERSONAS, REACTIONS } from './personas.mjs'
 
 const run = promisify(execFile)
-const API = 'https://generativelanguage.googleapis.com/v1beta/models'
+const API = 'https://generativelanguage.googleapis.com/v1beta'
 const TTS_MODEL = process.env.TTS_MODEL ?? 'gemini-3.8-flash-tts'
 const QA_MODEL = process.env.QA_MODEL ?? 'gemini-3.8-flash'
 const KEY = process.env.GEMINI_API_KEY
+const VOICES_FILE = new URL('./voices.json', import.meta.url)
+const BITRATE = process.env.TTS_BITRATE ?? '40k'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-async function gemini(model, body, attempt = 0) {
-  const res = await fetch(`${API}/${model}:generateContent`, {
+async function api(path, body, attempt = 0) {
+  const res = await fetch(`${API}/${path}`, {
     method: 'POST',
     headers: { 'x-goog-api-key': KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   if ((res.status === 429 || res.status >= 500) && attempt < 6) {
     await sleep(2000 * 2 ** attempt + Math.random() * 1000)
-    return gemini(model, body, attempt + 1)
+    return api(path, body, attempt + 1)
   }
   const json = await res.json()
-  if (!res.ok || json.error) throw new Error(`${model} ${res.status}: ${json.error?.message ?? 'unknown error'}`)
+  if (!res.ok || json.error) throw new Error(`${path} ${res.status}: ${json.error?.message ?? 'unknown error'}`)
   return json
 }
 
-/** Returns WAV (or raw PCM wrapped as WAV) bytes. */
-export async function synthesize(prompt, voice) {
-  const json = await gemini(TTS_MODEL, {
-    contents: [{ parts: [{ text: prompt }] }],
+/* ---------------- designed voices ---------------- */
+
+async function loadVoiceIds() {
+  return existsSync(VOICES_FILE) ? JSON.parse(await readFile(VOICES_FILE, 'utf8')) : {}
+}
+
+/** Creates any designed voice that has no stored id yet. Saves preview clips to previewDir. */
+export async function ensureDesignedVoices(previewDir) {
+  const ids = await loadVoiceIds()
+  for (const [name, def] of Object.entries(DESIGNED)) {
+    if (ids[name]) continue
+    const created = await api('voices', {
+      store: true,
+      voice: {
+        type: 'prompted',
+        display_name: `parrotype-${name}`,
+        language_code: def.languageCode,
+        prompted: { input: def.description },
+      },
+    })
+    ids[name] = created.id
+    await writeFile(VOICES_FILE, JSON.stringify(ids, null, 2) + '\n')
+    console.log(`designed ${name}: ${created.id}`)
+    const sample = created.sample_audio ?? created.sampleAudio
+    if (sample?.data && previewDir) {
+      await encodeMp3(Buffer.from(sample.data, 'base64'), join(previewDir, `${name}-preview.mp3`))
+    }
+  }
+  return ids
+}
+
+function resolveVoice(voice, ids) {
+  if (!voice.startsWith('@')) return voice
+  const id = ids[voice.slice(1)]
+  if (!id) throw new Error(`designed voice ${voice} has not been created`)
+  return id
+}
+
+/* ---------------- synthesis ---------------- */
+
+/** Returns WAV bytes for one line of text. */
+export async function synthesize({ text, voice, style, languageCode }) {
+  const part = { text }
+  if (style) part.speechMetadata = { style }
+  const json = await api(`models/${TTS_MODEL}:generateContent`, {
+    contents: [{ role: 'user', parts: [part] }],
     generationConfig: {
       responseModalities: ['AUDIO'],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+      speechConfig: { voiceConfig: { voice }, ...(languageCode ? { languageCode } : {}) },
     },
   })
-  const part = json.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
-  if (!part) throw new Error(`no audio returned (finish: ${json.candidates?.[0]?.finishReason})`)
-  const bytes = Buffer.from(part.inlineData.data, 'base64')
-  const mime = part.inlineData.mimeType
-  if (mime.includes('wav') || bytes.subarray(0, 4).toString() === 'RIFF') return bytes
-  const rate = Number(/rate=(\d+)/.exec(mime)?.[1] ?? 24000)
+  const audio = json.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
+  if (!audio) throw new Error(`no audio returned (finish: ${json.candidates?.[0]?.finishReason})`)
+  const bytes = Buffer.from(audio.inlineData.data, 'base64')
+  if (bytes.subarray(0, 4).toString() === 'RIFF') return bytes
+  const rate = Number(/rate=(\d+)/.exec(audio.inlineData.mimeType)?.[1] ?? 24000)
   return pcmToWav(bytes, rate)
 }
 
@@ -72,7 +116,7 @@ function pcmToWav(pcm, rate) {
   return Buffer.concat([h, pcm])
 }
 
-/** Trims silence at both ends, evens out loudness, encodes a small mono MP3. */
+/** Trims silence at both ends, evens out loudness, encodes a small mono MP3. Returns seconds. */
 export async function encodeMp3(wav, outFile) {
   const tmp = join(tmpdir(), `pt-${process.pid}-${Math.random().toString(36).slice(2)}.wav`)
   await writeFile(tmp, wav)
@@ -81,20 +125,23 @@ export async function encodeMp3(wav, outFile) {
   await run('ffmpeg', [
     '-hide_banner', '-loglevel', 'error', '-y', '-i', tmp,
     '-af', `${trim},areverse,${trim},areverse,loudnorm=I=-17:TP=-1.5:LRA=11`,
-    '-ar', '24000', '-ac', '1', '-codec:a', 'libmp3lame', '-b:a', '48k', outFile,
+    '-ar', '24000', '-ac', '1', '-codec:a', 'libmp3lame', '-b:a', BITRATE, outFile,
   ])
   await rm(tmp, { force: true })
   const { stdout } = await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', outFile])
   return Number(stdout.trim())
 }
 
+/* ---------------- verification ---------------- */
+
 export async function transcribe(mp3, lang) {
   const numbers = lang === 'ar' ? 'Write numbers as words.' : 'Write numbers out in words, exactly as spoken.'
-  const json = await gemini(QA_MODEL, {
+  const json = await api(`models/${QA_MODEL}:generateContent`, {
     contents: [{
+      role: 'user',
       parts: [
         { inlineData: { mimeType: 'audio/mp3', data: mp3.toString('base64') } },
-        { text: `Transcribe this audio verbatim in its original language. ${numbers} Include every sound that is spoken as a word (for example a squawk like "rraak"). Output only the transcript.` },
+        { text: `Transcribe this audio verbatim in its original language. ${numbers} Output only the transcript.` },
       ],
     }],
     generationConfig: { temperature: 0 },
@@ -102,18 +149,19 @@ export async function transcribe(mp3, lang) {
   return (json.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim()
 }
 
-/** Loose comparison: case, punctuation and (for Arabic) spelling variants of hamza/alif/yaa/taa marbuta are ignored. */
+/** Loose comparison: case and punctuation are ignored; for Arabic also hamza/alif/yaa/taa marbuta spelling variants. */
 export function normalize(text, lang) {
   let t = text.normalize('NFC').toLowerCase()
   if (lang === 'ar') {
     t = t
-      .replace(/[ً-ٰٟـ]/g, '') // tashkeel + tatweel
+      .replace(/[ً-ٰٟـ]/g, '')
       .replace(/[أإآٱ]/g, 'ا')
       .replace(/ى/g, 'ي')
       .replace(/ة/g, 'ه')
       .replace(/[ؤئ]/g, 'ء')
   }
   return t
+    .replace(/<[^>]+>/g, ' ')
     .replace(/[’‘`´]/g, "'")
     .replace(/[^\p{L}\p{N}'\s-]/gu, ' ')
     .replace(/-/g, ' ')
@@ -121,9 +169,13 @@ export function normalize(text, lang) {
     .filter(Boolean)
 }
 
+// Names a transcriber may legitimately spell differently ("Kees" sounds like "Keith" or "case" to English ears).
+const NAME_VARIANTS = { kees: ['keith', 'keys', 'case', 'kase', 'kiss', 'cees', 'kays', 'كيس'] }
+const canonical = (w) => Object.keys(NAME_VARIANTS).find((n) => n === w || NAME_VARIANTS[n].includes(w)) ?? w
+
 export function wordErrors(expected, actual, lang) {
-  const a = normalize(expected, lang)
-  const b = normalize(actual, lang)
+  const a = normalize(expected, lang).map(canonical)
+  const b = normalize(actual, lang).map(canonical)
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
   for (let j = 1; j <= b.length; j++) d[0][j] = j
   for (let i = 1; i <= a.length; i++)
@@ -132,19 +184,19 @@ export function wordErrors(expected, actual, lang) {
   return d[a.length][b.length]
 }
 
+/* ---------------- jobs ---------------- */
+
 /** One clip: synthesize, encode, verify; retries when the transcript does not match. */
-export async function renderJob(job, { qa = true, maxTries = 3 } = {}) {
-  const persona = PERSONAS.find((p) => p.id === job.persona)
-  if (!persona) throw new Error(`unknown persona ${job.persona}`)
-  const voice = job.voice ?? persona.voices?.[job.lang] ?? persona.voice
+export async function renderJob(job, ids, { maxTries = 3 } = {}) {
+  const persona = PERSONAS[job.lang].find((p) => p.id === job.persona)
+  if (!persona) throw new Error(`unknown persona ${job.lang}/${job.persona}`)
+  const voice = resolveVoice(persona.voice, ids)
   let last
   for (let attempt = 1; attempt <= maxTries; attempt++) {
-    const prompt = job.prompt ?? buildPrompt(persona, job.lang, job.text, { pace: job.pace })
-    const wav = await synthesize(prompt, voice)
+    const wav = await synthesize({ text: job.text, voice, style: job.style ?? persona.style, languageCode: persona.languageCode })
     const duration = await encodeMp3(wav, job.out)
-    if (!qa || job.skipQa) return { ...job, voice, duration, attempt, ok: true }
     const heard = await transcribe(await readFile(job.out), job.lang)
-    const errors = wordErrors(job.text, heard, job.lang)
+    const errors = job.skipQa ? 0 : wordErrors(job.text, heard, job.lang)
     last = { ...job, voice, duration, attempt, heard, errors, ok: errors === 0 }
     if (last.ok) return last
   }
@@ -159,12 +211,13 @@ async function pool(items, size, fn) {
       while (next < items.length) {
         const i = next++
         try {
-          out[i] = await fn(items[i], i)
+          out[i] = await fn(items[i])
         } catch (e) {
           out[i] = { ...items[i], ok: false, error: String(e.message ?? e) }
         }
         const r = out[i]
-        console.log(`${r.ok ? 'ok  ' : 'FAIL'} ${r.lang} ${r.persona} ${r.id} ${r.duration ? r.duration.toFixed(1) + 's' : ''}${r.ok ? '' : ` heard="${r.heard ?? ''}" ${r.error ?? ''}`}`)
+        const tag = r.ok ? (r.attempt > 1 ? `ok(${r.attempt})` : 'ok   ') : 'FAIL '
+        console.log(`${tag} ${r.lang} ${r.persona.padEnd(11)} ${r.id} ${r.duration ? r.duration.toFixed(1) + 's' : ''} | ${r.heard ?? r.error ?? ''}`)
       }
     }),
   )
@@ -177,30 +230,15 @@ const SAMPLE_TEXT = {
   ar: 'أحب أن أتعلم كلمة جديدة كل يوم.',
 }
 
-const SAMPLE_REACTIONS = {
-  nl: ['Rrraak! Goed zo, dat is een nieuw record.', 'Rrraak! Nog één keer. Je kunt het.'],
-  en: ["Rrraak! Well done, that's a new record.", "Rrraak! One more time. You've got this."],
-  ar: ['رااك! أحسنت، هذا رقم قياسي جديد.', 'رااك! مرة أخرى. أنت تستطيع.'],
-}
-
 function sampleJobs(out) {
   const jobs = []
   for (const lang of ['nl', 'en', 'ar']) {
-    for (const p of PERSONAS) {
-      jobs.push({ id: 'sample', lang, persona: p.id, text: SAMPLE_TEXT[lang], out: join(out, `${lang}-${p.id}.mp3`) })
-    }
-    SAMPLE_REACTIONS[lang].forEach((text, i) => {
-      const kees = PERSONAS[0]
-      jobs.push({
-        id: `reaction-${i + 1}`,
-        lang,
-        persona: 'kees',
-        text,
-        skipQa: true,
-        out: join(out, `${lang}-kees-reaction-${i + 1}.mp3`),
-        prompt: `${kees.style} Start with a short, funny parrot squawk ("Rrraak!"), then say the rest happily and clearly.\n\n${text}`,
-      })
+    PERSONAS[lang].forEach((p, i) => {
+      jobs.push({ id: 'sample', lang, persona: p.id, text: SAMPLE_TEXT[lang], out: join(out, lang, `${i + 1}-${p.id}.mp3`) })
     })
+    for (const r of REACTIONS[lang]) {
+      jobs.push({ id: `reaction-${r.id}`, lang, persona: 'kees', text: r.text, style: r.style, skipQa: true, out: join(out, lang, `kees-reaction-${r.id}.mp3`) })
+    }
   }
   return jobs
 }
@@ -214,6 +252,7 @@ async function main() {
   }
   const out = opt('--out', 'tts-out')
   const concurrency = Number(opt('--concurrency', 4))
+  const ids = await ensureDesignedVoices(join(out, 'previews'))
   let jobs
   if (args.includes('--sample')) jobs = sampleJobs(out)
   else {
@@ -222,8 +261,8 @@ async function main() {
     jobs = JSON.parse(await readFile(file, 'utf8'))
     if (args.includes('--skip-existing')) jobs = jobs.filter((j) => !existsSync(j.out))
   }
-  console.log(`${jobs.length} clips with ${TTS_MODEL}, QA by ${QA_MODEL}`)
-  const results = await pool(jobs, concurrency, (j) => renderJob(j))
+  console.log(`${jobs.length} clips with ${TTS_MODEL}, checked by ${QA_MODEL}`)
+  const results = await pool(jobs, concurrency, (j) => renderJob(j, ids))
   const report = opt('--report', join(out, 'report.json'))
   await mkdir(dirname(report), { recursive: true })
   await writeFile(report, JSON.stringify(results, null, 2))
