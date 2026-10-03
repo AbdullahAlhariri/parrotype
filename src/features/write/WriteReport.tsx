@@ -3,6 +3,8 @@ import type { Issue, Lang } from '@/types'
 import { LANG_TAGS, isRtl } from '@/types'
 import { Button, Kees, Stat, toast, useReducedMotion } from '@/components/ui'
 import { Link } from '@/lib/router'
+import { mascotName } from '@/lib/mascot'
+import { playReaction } from '@/lib/audio'
 import { useNest } from '@/state/nest'
 import { kindLabel, type WritingPrompt } from '@/content/prompts'
 import { CATEGORY_LABEL, nestItemsFrom, type RuleLine, type WriteSummary } from './lib/report'
@@ -26,7 +28,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 /** After "Finish": what went wrong, which rules fired, which words to practise, and the nest. */
 export function WriteReport({ lang, text, issues, summary, words, activeMs, prompt, found, explainIn, onKeepWriting, onNew }: Props) {
-  const nestItems = useMemo(() => nestItemsFrom(text, issues, lang), [text, issues, lang])
+  const nestItems = useMemo(() => nestItemsFrom(text, issues, lang, explainIn), [text, issues, lang, explainIn])
   const [added, setAdded] = useState(false)
   const rtl = isRtl(lang)
   const clean = summary.mistakes === 0
@@ -35,6 +37,15 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
   const reduced = useReducedMotion()
 
   useEffect(() => headRef.current?.focus(), [])
+
+  // A recorded line for the rare moments: a clean text of some length, or reaching the prompt's length.
+  const target = prompt?.words
+  const reaction = clean && words >= 30 ? 'perfect' : target && words >= target ? 'done' : null
+  useEffect(() => {
+    if (!reaction) return
+    const t = window.setTimeout(() => playReaction(lang, reaction), reduced ? 150 : 500)
+    return () => window.clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- once per report
 
   // A hand-drawn circle around the word to practise first. Explains, never decorates.
   useEffect(() => {
@@ -62,9 +73,10 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
     toast(`${plural(nestItems.length, 'item')} added to your mistake nest.`, 'good')
   }
 
-  const target = prompt?.words
   const lengthNote = target ? (words >= target ? `${words} of about ${target} words. Done.` : `${words} of about ${target} words.`) : `${plural(words, 'word')}.`
   const repeat = summary.repeat
+  // single words are said three times ("wordt. wordt. wordt."); a phrase once, so the bubble stays one line
+  const bubble = repeat ? (/\s/.test(repeat) ? [`${repeat}.`] : [`${repeat}.`, `${repeat}.`, `${repeat}.`]) : undefined
 
   return (
     <section className="wr" aria-labelledby="wr-title">
@@ -73,7 +85,7 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
           <Kees
             size={112}
             mood={repeat ? 'repeat' : clean ? 'curious' : 'idle'}
-            bubble={repeat ? [`${repeat}.`, `${repeat}.`, `${repeat}.`] : undefined}
+            bubble={bubble}
             bubbleLang={LANG_TAGS[lang]}
             bubblePlacement="top"
             stayWhileTyping
@@ -88,7 +100,7 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
 
       <div className="wr-main">
         <h2 id="wr-title" className="wr-title" tabIndex={-1} ref={headRef}>
-          {!clean ? headline(summary) : cleanHeadline(summary.hints)}
+          {!clean ? headline(summary) : cleanHeadline(summary.hints, mascotName(lang))}
         </h2>
         <p className="wr-lede">
           {lengthNote}
@@ -187,8 +199,8 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
   )
 }
 
-function cleanHeadline(hints: number) {
-  if (!hints) return 'Nothing to correct. Kees read it twice and found nothing.'
+function cleanHeadline(hints: number, mascot: string) {
+  if (!hints) return `Nothing to correct. ${mascot} read it twice and found nothing.`
   return hints === 1 ? 'No mistakes. One style hint, take it or leave it.' : `No mistakes. ${hints} style hints, take them or leave them.`
 }
 
@@ -199,6 +211,8 @@ function headline(s: WriteSummary) {
   return `${plural(s.mistakes, 'mistake')}: ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`
 }
 
+const YOU_WROTE: Record<Lang, string> = { nl: 'Je schreef', en: 'You wrote', ar: 'كتبت' }
+
 function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: string; lang: Lang; explainIn: 'en' | 'local' }) {
   const [open, setOpen] = useState(false)
   const reduced = useReducedMotion()
@@ -206,9 +220,12 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
   const rep = ex.replacements[0]
   const { start, end } = excerpt(text, ex.offset, ex.offset + ex.length, 120)
   const local = explainIn === 'local'
-  const explanation = (local && ex.explanationLocal) || ex.explanation
-  const message = (local && ex.messageLocal) || ex.message
+  const localWhy = local && !!ex.explanationLocal
+  const localMsg = local && !!ex.messageLocal
+  const explanation = localWhy ? ex.explanationLocal : ex.explanation
+  const message = localMsg ? ex.messageLocal : ex.message
   const rtl = isRtl(lang)
+  const dir = rtl ? 'rtl' : undefined
   return (
     <li className="wr-rule">
       <div className="wr-rule-head">
@@ -226,21 +243,37 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
           {text.slice(start, end)}
         </p>
       )}
-      <p className="wr-rule-was">
-        {rep !== undefined && (
-          <>
-            You wrote <s lang={LANG_TAGS[lang]}>{ex.text}</s>.{' '}
-          </>
-        )}
-        <span lang={local && ex.messageLocal ? LANG_TAGS[lang] : 'en'}>{message}</span>
-      </p>
+      {localMsg ? (
+        // the whole line in the practice language, so it reads in one direction
+        <p className="wr-rule-was" lang={LANG_TAGS[lang]} dir={dir}>
+          {rep !== undefined && (
+            <>
+              {YOU_WROTE[lang]} <s>{ex.text}</s>.{' '}
+            </>
+          )}
+          {message}
+        </p>
+      ) : (
+        <p className="wr-rule-was">
+          {rep !== undefined && (
+            <>
+              You wrote{' '}
+              <s lang={LANG_TAGS[lang]} dir={dir}>
+                {ex.text}
+              </s>
+              .{' '}
+            </>
+          )}
+          <span lang="en">{message}</span>
+        </p>
+      )}
       {explanation && (
         <>
           <button type="button" className="ip-link wr-rule-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {open ? 'Hide the rule' : 'Show the rule'}
           </button>
           {open && (
-            <p className={`wr-rule-why${reduced ? '' : ' is-anim'}`} lang={local && ex.explanationLocal ? LANG_TAGS[lang] : 'en'}>
+            <p className={`wr-rule-why${reduced ? '' : ' is-anim'}`} lang={localWhy ? LANG_TAGS[lang] : 'en'} dir={localWhy ? dir : undefined}>
               {explanation}
             </p>
           )}

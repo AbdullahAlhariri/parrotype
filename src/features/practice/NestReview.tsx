@@ -6,12 +6,12 @@ import { useNest } from '@/state/nest'
 import { isRtl, LANG_TAGS, type Lang, type NestItem } from '@/types'
 import { charDiff, type CharOp } from '@/engine'
 import { loadVoices, speak, speechSupported, stopSpeaking, voicesFor } from '@/lib/speech'
+import { browserVoiceName } from '@/lib/audio'
 import { Button, Kbd, Kees, Segmented } from '@/components/ui'
 import { answerCcc, cccDone, cccSummary, currentId, isRightAnswer, MAX_REQUEUE, revealMs, SESSION_CAP, startCcc, type CccState } from './ccc'
 import { NEST_CONFIG } from './plan'
 import { repairHref } from './repair'
-import { SubHead, dueIn, useLocalPref } from './parts'
-import { mascotName } from '@/lib/mascot'
+import { SubHead, dueIn, hintProps, useLocalPref } from './parts'
 
 type Phase = 'show' | 'recall' | 'right' | 'wrong'
 type Mode = 'look' | 'listen'
@@ -40,7 +40,8 @@ interface RunProps {
 function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
   const review = useNest((s) => s.review)
   const rate = useSettings((s) => s.speechRate)
-  const voiceName = useSettings((s) => s.voices[lang])
+  // settings.voices holds 'mix' | 'gemini:<id>' | 'browser:<name>'; the nest reads words with browser speech
+  const voiceName = useSettings((s) => browserVoiceName(s.voices[lang]))
   const [mode, setMode] = useLocalPref<Mode>('nestMode', 'look', MODES)
   const [canListen, setCanListen] = useState(false)
   const [phase, setPhase] = useState<Phase>('show')
@@ -159,7 +160,7 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
               onChange={setMode}
               options={[
                 { value: 'look', label: 'look', title: 'Show it for a moment, then cover it' },
-                { value: 'listen', label: 'listen', title: `${mascotName(lang)} says it; you never see it first` },
+                { value: 'listen', label: 'listen', title: 'Hear it read out; you never see it first' },
               ]}
             />
           )}
@@ -186,7 +187,7 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
         {phase === 'recall' && (
           <form className="nest-card" onSubmit={onRecall}>
             <p className="nest-cue muted small">
-              {listen ? `${mascotName(lang)} says it. Type what you hear.` : item.kind === 'word' ? 'Now type the word from memory.' : 'Now type the sentence from memory.'}
+              {listen ? 'Type what you hear.' : item.kind === 'word' ? 'Now type the word from memory.' : 'Now type the sentence from memory.'}
             </p>
             {listen && <Kees mood="talk" size={56} className="nest-kees" />}
             <input
@@ -229,7 +230,11 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
               {item.target}
             </p>
             <p className="muted small">{boxNote}</p>
-            {item.hint && <p className="nest-hint small">{item.hint}</p>}
+            {item.hint && (
+              <p className="nest-hint small" {...hintProps(item.hint)}>
+                {item.hint}
+              </p>
+            )}
             <div className="nest-actions">
               <Button variant="primary" onClick={next} autoFocus>
                 Next
@@ -257,7 +262,11 @@ function ReviewRun({ lang, items, ccc, onAnswer }: RunProps) {
                 <Kees mood="repeat" size={56} bubble={[`${item.target}.`, `${item.target}.`, `${item.target}.`]} bubbleLang={tag} />
               </div>
             )}
-            {item.hint && <p className="nest-hint small">{item.hint}</p>}
+            {item.hint && (
+              <p className="nest-hint small" {...hintProps(item.hint)}>
+                {item.hint}
+              </p>
+            )}
             <label className="nest-retype-label muted small" htmlFor="nest-retype">
               Type it once more, while you can see it.
             </label>

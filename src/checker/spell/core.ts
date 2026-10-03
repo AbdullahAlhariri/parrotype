@@ -91,7 +91,7 @@ export class CheckerCore {
 
     let dict: Dictionary | undefined
     if (d) {
-      const isKnown = makeIsKnown(d.h, personal)
+      const isKnown = makeIsKnown(d.h, personal, lang)
       dict = { has: (w: string) => isKnown(w) }
     }
     const rules = runRules(text, lang, rulesFor(lang), {
@@ -114,7 +114,7 @@ export class CheckerCore {
     const d = await this.dictWithin(dictIdFor(lang, variant), LOAD_TIMEOUT_MS)
     const freq = await this.freq(lang)
     const personal = this.syncPersonal(d, personalWords)
-    const isKnown = d ? makeIsKnown(d.h, personal) : (x: string) => inPersonal(x, personal) || !!freq?.has(toLookup(x).toLowerCase())
+    const isKnown = d ? makeIsKnown(d.h, personal, lang) : (x: string) => inPersonal(x, personal) || !!freq?.has(toLookup(x).toLowerCase())
     return rankSuggestions(w, {
       lang,
       isKnown,
@@ -131,7 +131,7 @@ export class CheckerCore {
     const d = await this.dictWithin(dictIdFor(lang, variant), LOAD_TIMEOUT_MS)
     const personal = this.syncPersonal(d, personalWords)
     if (!d) return true
-    return makeIsKnown(d.h, personal)(w)
+    return makeIsKnown(d.h, personal, lang)(w)
   }
 
   dictState(id: DictId): DictState {

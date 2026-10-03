@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { LANG_TAGS } from '@/types'
+import { LANG_TAGS, isRtl } from '@/types'
 import { nextPack, type DrillPack } from '@/content/drills'
 import { useSettings } from '@/state/settings'
+import { mascotName } from '@/lib/mascot'
+import { playReaction } from '@/lib/audio'
 import { Link } from '@/lib/router'
 import { Button, Kees, Kbd, Stat, featherBurst, useReducedMotion } from '@/components/ui'
 import type { RoundOutcome, RoundResult } from './GymRound'
 import { Example } from './RulePanel'
 import { Rich } from './Rich'
-import { explain, formatClock, mastery } from './round'
+import { explain, formatClock, mastery, reactionForRound } from './round'
 import { useGym } from './store'
 
 interface Props {
@@ -37,6 +39,7 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
   const next = nextPack(pack.id)
   const m = mastery(pack, known)
   const mood = result.newBest ? 'celebrate' : score / total < 0.7 ? 'oops' : 'curious'
+  const name = mascotName(pack.lang)
 
   useEffect(() => {
     if (!result.newBest || !keesRef.current) return
@@ -44,10 +47,22 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
     return () => window.clearTimeout(id)
   }, [result.newBest, reduced])
 
+  // a recorded line for a new best or a clean round, once, as the mascot lands
+  const said = useRef(false)
+  useEffect(() => {
+    const id = reactionForRound(score, total, result.newBest)
+    if (!id || said.current) return
+    const t = window.setTimeout(() => {
+      said.current = true
+      playReaction(pack.lang, id)
+    }, reduced ? 150 : 450)
+    return () => window.clearTimeout(t)
+  }, [pack.lang, score, total, result.newBest, reduced])
+
   const line = result.newBest
     ? `New best for this pack: ${score} of ${total}!`
     : misses.length === 0
-      ? 'Not one slip. Kees checked twice.'
+      ? `Not one slip. ${name} checked twice.`
       : misses.length === 1
         ? 'One slip. The rule for it is below.'
         : `${misses.length} slips. The rules behind them are below.`
@@ -82,7 +97,7 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
         {misses.length === 0 && (
           <p className="gym-summary-sub">
             {m.known === m.total
-              ? `You know all ${m.total} sentences in this pack. Kees has nothing left to repeat.`
+              ? `You know all ${m.total} sentences in this pack. ${name} has nothing left to repeat.`
               : `${m.known} of ${m.total} sentences in this pack right first time so far. The other ${m.total - m.known} come up first next round.`}
           </p>
         )}
@@ -125,7 +140,7 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
           {next && next.id !== pack.id && (
             <Link to={`/gym?pack=${encodeURIComponent(next.id)}`} className="btn btn-subtle btn-md">
               Next pack:{' '}
-              <span className="mono-text" lang={LANG_TAGS[next.lang]}>
+              <span className="mono-text" lang={LANG_TAGS[next.lang]} dir={isRtl(next.lang) ? 'rtl' : undefined}>
                 {next.title}
               </span>
             </Link>

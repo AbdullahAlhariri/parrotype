@@ -134,6 +134,8 @@ export function rankSuggestions(word: string, ctx: RankContext, limit = 8): Rank
     if (cf !== first && subCost(first, cf, lang) >= 1) score += 0.35
     score += weightOf(c) + (c.kind === 'split' ? SPLIT_WEIGHT[lang] : 0)
     if (c.kind === 'hunspell') score += 0.03 * c.order
+    // Arabic: a hamza on the article (المتخف -> ألمتخف) only parses as question أ + ل, which nobody means
+    if (lang === 'ar' && /^ال/.test(lower) && /^[أإآ]ل/.test(candLower) && lower.length >= 5) score += 0.7
     if (c.kind === 'map') score -= 100
     scored.push({ word: restoreApostrophe(word, cased), score, dist, kind: c.kind, why: c.why, note: c.note })
   }

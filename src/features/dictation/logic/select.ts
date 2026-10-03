@@ -20,13 +20,15 @@ export interface SelectOptions {
   avoid?: ReadonlySet<string>
   /** lowercased words the user often misses; sentences with them come up more often */
   boost?: ReadonlySet<string>
+  /** sentences to favour within a tier, e.g. the ones with a recorded voice */
+  prefer?: (id: string) => boolean
 }
 
 /**
  * Pick `count` sentences. Order of preference: right level and focus, then the focus at a
  * neighbouring level, then the focus at any level, then the level without the focus, then
- * anything. Within a tier, unseen sentences come first and sentences containing words the
- * user tends to miss are more likely. The result is shuffled.
+ * anything. Within a tier, preferred sentences (recorded) come first, then unseen ones, and
+ * sentences containing words the user tends to miss are more likely. The result is shuffled.
  */
 export function selectSentences(pool: readonly DictationSentence[], o: SelectOptions): DictationSentence[] {
   const rand = o.rand ?? Math.random
@@ -51,10 +53,11 @@ export function selectSentences(pool: readonly DictationSentence[], o: SelectOpt
     s,
     tier: tier(s),
     seen: o.avoid?.has(s.id) ? 1 : 0,
+    unpreferred: o.prefer && !o.prefer(s.id) ? 1 : 0,
     // Efraimidis-Spirakis: weighted random order
     key: Math.pow(rand() || Number.EPSILON, 1 / weight(s)),
   }))
-  ranked.sort((a, b) => a.tier - b.tier || a.seen - b.seen || b.key - a.key)
+  ranked.sort((a, b) => a.tier - b.tier || a.unpreferred - b.unpreferred || a.seen - b.seen || b.key - a.key)
   return shuffle(
     ranked.slice(0, Math.max(0, o.count)).map((r) => r.s),
     rand,
@@ -83,8 +86,15 @@ export function selectForWords(
 /**
  * Minimal-pair items from the chosen sets (all sets when `ids` is empty), spread evenly over
  * the sets and over the members of each set, so a 10-item run is never nine times "wordt".
+ * `prefer` (by clip id, e.g. "has a recording") puts those items first in line.
  */
-export function selectPairItems(pairs: readonly MinimalPair[], ids: readonly string[], count: number, rand: () => number = Math.random): DictationItem[] {
+export function selectPairItems(
+  pairs: readonly MinimalPair[],
+  ids: readonly string[],
+  count: number,
+  rand: () => number = Math.random,
+  prefer?: (clip: string) => boolean,
+): DictationItem[] {
   const chosen = ids.length ? pairs.filter((p) => ids.includes(p.id)) : pairs
   // one shuffled queue per (set, member)
   const queues = shuffle(
@@ -95,9 +105,10 @@ export function selectPairItems(pairs: readonly MinimalPair[], ids: readonly str
     rand,
   ).filter((q) => q.length)
   // round robin over the queues gives a balanced order of every sentence once
-  const once: DictationItem[] = []
+  const balanced: DictationItem[] = []
   const longest = Math.max(0, ...queues.map((q) => q.length))
-  for (let r = 0; r < longest; r++) for (const q of queues) if (q[r]) once.push(q[r])
+  for (let r = 0; r < longest; r++) for (const q of queues) if (q[r]) balanced.push(q[r])
+  const once = prefer ? [...balanced.filter((it) => prefer(it.clip)), ...balanced.filter((it) => !prefer(it.clip))] : balanced
   if (!once.length) return []
   const out: DictationItem[] = []
   while (out.length < count) out.push(...once.slice(0, count - out.length))

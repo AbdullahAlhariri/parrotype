@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { LANG_TAGS } from '@/types'
+import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import { findPack } from '@/content/drills'
 import type { ProofText } from '@/content/proofread'
 import { useSettings } from '@/state/settings'
+import { playReaction } from '@/lib/audio'
 import { Link } from '@/lib/router'
 import { Button, Kbd, Kees, Stat, featherBurst, useReducedMotion } from '@/components/ui'
 import { formatClock } from '@/features/gym/round'
-import { segments, type MistakeResult, type ProofGrade, type Segment } from './grade'
+import { ExplainSwitch } from '@/features/gym/RulePanel'
+import { Rich } from '@/features/gym/Rich'
+import { sameWord, segments, type MistakeResult, type ProofGrade, type Segment } from './grade'
 
 interface Props {
   text: ProofText
@@ -15,6 +18,15 @@ interface Props {
   firstPerfect: boolean
   onNext: () => void
   onRetry: () => void
+}
+
+/** Practice-language words inside English copy: their own language, direction and font. */
+function Word({ lang, className, children }: { lang: Lang; className?: string; children: string }) {
+  return (
+    <span className={className} lang={LANG_TAGS[lang]} dir={isRtl(lang) ? 'rtl' : undefined}>
+      {children}
+    </span>
+  )
 }
 
 /** Results after a check: score, the corrected text with what happened where, and a note per miss. */
@@ -27,6 +39,7 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
   const misses = grade.results.filter((r) => r.status !== 'fixed')
   const number = new Map(misses.map((r, i) => [r.index, i + 1]))
   const tag = LANG_TAGS[text.lang]
+  const rtl = isRtl(text.lang)
   const perfect = grade.fixed === grade.total && grade.introduced.length === 0
 
   useEffect(() => {
@@ -34,6 +47,13 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
     const id = window.setTimeout(() => keesRef.current && featherBurst(keesRef.current), reduced ? 0 : 400)
     return () => window.clearTimeout(id)
   }, [firstPerfect, reduced])
+
+  // the mascot says one recorded line the first time a text comes out clean
+  useEffect(() => {
+    if (!firstPerfect) return
+    const id = window.setTimeout(() => playReaction(text.lang, 'perfect'), reduced ? 150 : 400)
+    return () => window.clearTimeout(id)
+  }, [firstPerfect, text.lang, reduced])
 
   const line = firstPerfect
     ? `All ${grade.total} fixed and nothing broken. First time for this one!`
@@ -78,13 +98,16 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
         </button>
       </div>
 
-      <div className={`fix-doc${clean ? ' is-clean' : ''}`} lang={tag}>
+      <div className={`fix-doc${clean ? ' is-clean' : ''}`} lang={tag} dir={rtl ? 'rtl' : 'ltr'}>
         {clean ? text.corrected : segs.map((s, i) => <SegmentView key={i} seg={s} number={number} />)}
       </div>
 
       {misses.length > 0 && (
         <div className="fix-notes">
-          <h3 className="fix-notes-title">What you missed</h3>
+          <div className="fix-notes-head">
+            <h3 className="fix-notes-title">What you missed</h3>
+            <ExplainSwitch lang={text.lang} />
+          </div>
           <ol className="fix-note-list">
             {misses.map((r) => (
               <MissNote key={r.index} result={r} n={number.get(r.index) ?? 0} lang={text.lang} explainIn={explainIn} />
@@ -101,13 +124,13 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
               <li key={i}>
                 {e.expected ? (
                   <>
-                    <span className="fix-right" lang={tag}>
+                    <Word lang={text.lang} className="fix-right">
                       {e.expected}
-                    </span>{' '}
+                    </Word>{' '}
                     <span className="muted">
                       was right; you wrote{' '}
                       {e.typed ? (
-                        <s lang={tag} className="fix-was">
+                        <s lang={tag} dir={rtl ? 'rtl' : undefined} className="fix-was">
                           {e.typed}
                         </s>
                       ) : (
@@ -118,7 +141,7 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
                 ) : (
                   <span className="muted">
                     an extra{' '}
-                    <s lang={tag} className="fix-was">
+                    <s lang={tag} dir={rtl ? 'rtl' : undefined} className="fix-was">
                       {e.typed}
                     </s>
                   </span>
@@ -141,6 +164,15 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
   )
 }
 
+/** English labels inside the practice text keep their own direction (dir isolates them). */
+function Tag({ ok, children }: { ok?: boolean; children: string }) {
+  return (
+    <span className={`fx-tag${ok ? ' fx-tag-ok' : ''}`} lang="en" dir="ltr">
+      {children}
+    </span>
+  )
+}
+
 function SegmentView({ seg, number }: { seg: Segment; number: Map<number, number> }) {
   if (seg.kind === 'text') return <>{seg.text}</>
   if (seg.kind === 'new') {
@@ -149,7 +181,7 @@ function SegmentView({ seg, number }: { seg: Segment; number: Map<number, number
         {seg.error.typed && <s className="fx-was">{seg.error.typed}</s>}
         {seg.text && seg.error.typed && ' '}
         {seg.text && <span className="fx-right">{seg.text}</span>}
-        <span className="fx-tag">new</span>
+        <Tag>new</Tag>
       </span>
     )
   }
@@ -158,7 +190,7 @@ function SegmentView({ seg, number }: { seg: Segment; number: Map<number, number
     return (
       <span className="fx fx-fixed">
         {seg.text}
-        <span className="fx-tag fx-tag-ok">+fixed</span>
+        <Tag ok>+fixed</Tag>
       </span>
     )
   }
@@ -173,14 +205,16 @@ function SegmentView({ seg, number }: { seg: Segment; number: Map<number, number
   )
 }
 
-function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: number; lang: ProofText['lang']; explainIn: 'en' | 'local' }) {
+function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: number; lang: Lang; explainIn: 'en' | 'local' }) {
   const [typed, setTyped] = useState('')
   const m = result.mistake
-  const note = explainIn === 'local' && m.ruleNote.local ? m.ruleNote.local : m.ruleNote.en
-  const noteLang = explainIn === 'local' && m.ruleNote.local ? lang : 'en'
+  const local = explainIn === 'local' && !!m.ruleNote.local
+  const note = local ? m.ruleNote.local : m.ruleNote.en
+  const noteLang: Lang = local ? lang : 'en'
   const pack = m.pack ? findPack(m.pack) : undefined
-  const done = typed.trim() === m.right
+  const done = sameWord(typed, m.right, lang)
   const tag = LANG_TAGS[lang]
+  const rtl = isRtl(lang)
   return (
     <li className="fix-note">
       <span className="fix-note-n tabular" aria-hidden="true">
@@ -188,24 +222,28 @@ function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: nu
       </span>
       <div className="fix-note-body">
         <p className="fix-note-head">
-          <span className="fix-right" lang={tag}>
+          <Word lang={lang} className="fix-right">
             {m.right}
-          </span>{' '}
+          </Word>{' '}
           <span className="muted small">
             {result.status === 'missed' ? (
               'was left as it was'
             ) : (
               <>
                 you made it{' '}
-                <s lang={tag} className="fix-was">
-                  {result.typed || 'disappear'}
-                </s>
+                {result.typed ? (
+                  <s lang={tag} dir={rtl ? 'rtl' : undefined} className="fix-was">
+                    {result.typed}
+                  </s>
+                ) : (
+                  'disappear'
+                )}
               </>
             )}
           </span>
         </p>
-        <p className="fix-note-text" lang={LANG_TAGS[noteLang]}>
-          {note}
+        <p className="fix-note-text" lang={LANG_TAGS[noteLang]} dir={isRtl(noteLang) ? 'rtl' : 'ltr'}>
+          <Rich text={note ?? ''} exampleLang={lang} rtl={isRtl(noteLang)} />
         </p>
         <div className="fix-note-tools">
           <label className="fix-retype">
@@ -215,6 +253,7 @@ function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: nu
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               lang={tag}
+              dir={rtl ? 'rtl' : 'ltr'}
               spellCheck={false}
               autoComplete="off"
               autoCorrect="off"
@@ -223,12 +262,12 @@ function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: nu
               aria-label={`Type ${m.right}`}
               placeholder={m.right}
             />
-            {done && <span className="fx-tag fx-tag-ok">+typed</span>}
+            {done && <Tag ok>+typed</Tag>}
           </label>
           {pack && (
             <Link to={`/gym?pack=${encodeURIComponent(pack.id)}`} className="link-btn fix-drill">
               Practise{' '}
-              <span className="mono-text" lang={LANG_TAGS[pack.lang]}>
+              <span className="mono-text" lang={LANG_TAGS[pack.lang]} dir={isRtl(pack.lang) ? 'rtl' : undefined}>
                 {pack.title}
               </span>
             </Link>
@@ -238,4 +277,3 @@ function MissNote({ result, n, lang, explainIn }: { result: MistakeResult; n: nu
     </li>
   )
 }
-

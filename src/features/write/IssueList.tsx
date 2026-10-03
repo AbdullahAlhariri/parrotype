@@ -21,13 +21,15 @@ interface Props {
   /** LanguageTool status line, when the user has it switched on */
   ltLine?: { text: string; warn: boolean; detail?: string }
   checkerMissing: boolean
+  /** the mascot's name in the current practice language (Kees, Monty, Fustuq) */
+  mascot: string
   /** shown instead of the list while feedback is hidden */
   note?: ReactNode
   /** shown under the list */
   after?: ReactNode
 }
 
-export function IssueList({ issues, revealed, live, activeId, onJump, explainIn, words, target, chars, activeMs, ltLine, checkerMissing, note, after }: Props) {
+export function IssueList({ issues, revealed, live, activeId, onJump, explainIn, words, target, chars, activeMs, ltLine, checkerMissing, mascot, note, after }: Props) {
   const groups = CATEGORY_ORDER.map((c) => ({ category: c, items: issues.filter((i) => i.category === c) })).filter((g) => g.items.length)
   const pct = target ? Math.min(1, words / target) : 0
 
@@ -62,7 +64,7 @@ export function IssueList({ issues, revealed, live, activeId, onJump, explainIn,
         ) : !revealed ? (
           note && <div className="il-note">{note}</div>
         ) : issues.length === 0 ? (
-          <p className="il-note">{live ? 'Nothing to correct so far.' : 'Nothing to correct. Kees read it twice and found nothing.'}</p>
+          <p className="il-note">{live ? 'Nothing to correct so far.' : `Nothing to correct. ${mascot} read it twice and found nothing.`}</p>
         ) : (
           groups.map((g) => <Group key={g.category} category={g.category} items={g.items} activeId={activeId} onJump={onJump} explainIn={explainIn} />)
         )}
@@ -89,10 +91,17 @@ function Group({ category, items, activeId, onJump, explainIn }: { category: Iss
       <ul className="il-items">
         {items.map((i) => {
           const rtl = isRtl(i.lang)
-          const msg = (explainIn === 'local' && i.messageLocal) || i.message
+          const local = explainIn === 'local' && !!i.messageLocal
+          const msg = local ? i.messageLocal : i.message
           return (
             <li key={i.id}>
-              <button type="button" className={`il-item il-item--${markKind(i)}${i.id === activeId ? ' is-active' : ''}`} onClick={() => onJump(i)} aria-current={i.id === activeId ? 'true' : undefined}>
+              <button
+                type="button"
+                className={`il-item il-item--${markKind(i)}${i.id === activeId ? ' is-active' : ''}`}
+                dir={local && rtl ? 'rtl' : undefined}
+                onClick={() => onJump(i)}
+                aria-current={i.id === activeId ? 'true' : undefined}
+              >
                 <span className="il-forms" lang={LANG_TAGS[i.lang]}>
                   {i.replacements[0] !== undefined ? (
                     <>
@@ -109,7 +118,7 @@ function Group({ category, items, activeId, onJump, explainIn }: { category: Iss
                     </span>
                   )}
                 </span>
-                <span className="il-msg" lang={explainIn === 'local' && i.messageLocal ? LANG_TAGS[i.lang] : 'en'}>
+                <span className="il-msg" lang={local ? LANG_TAGS[i.lang] : 'en'} dir={local && rtl ? 'rtl' : undefined}>
                   {msg}
                 </span>
               </button>

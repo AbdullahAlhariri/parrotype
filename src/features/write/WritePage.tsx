@@ -3,7 +3,9 @@ import type { Issue } from '@/types'
 import { isRtl } from '@/types'
 import { useSettings } from '@/state/settings'
 import { setTyping } from '@/lib/focus'
-import { speak, speechSupported, stopSpeaking } from '@/lib/speech'
+import { speak, stopSpeaking } from '@/lib/speech'
+import { mascotName } from '@/lib/mascot'
+import { browserVoiceName, stopAudio } from '@/lib/audio'
 import { Button, Kbd, Kees, Segmented, toast } from '@/components/ui'
 import { kindLabel } from '@/content/prompts'
 import { WriteEditor, type MarkMode, type WriteEditorHandle } from './WriteEditor'
@@ -19,6 +21,8 @@ import { defaultTitle, summarize, type TitleFor, type WriteSummary } from './lib
 import { recordWriteSession } from './lib/record'
 import { countChars, countWords } from './lib/text'
 import { draftWhen } from './lib/drafts'
+import { useHasVoice } from './lib/voice'
+import { ReviewNote } from './ReviewNote'
 import './write.css'
 
 const PLACEHOLDER = { nl: 'Begin hier met schrijven.', en: 'Start writing here.', ar: 'ابدأ الكتابة هنا.' }
@@ -56,7 +60,9 @@ export default function WritePage() {
   const voices = useSettings((s) => s.voices)
   const status = useCheckerStatus()
   const online = useOnline()
+  const hasVoice = useHasVoice(lang)
   const s = useWriteSession(lang)
+  const mascot = mascotName(lang)
 
   const editorRef = useRef<WriteEditorHandle>(null)
   const popRef = useRef<IssuePopoverHandle>(null)
@@ -74,6 +80,8 @@ export default function WritePage() {
   const [now, setNow] = useState(() => Date.now())
   const [speaking, setSpeaking] = useState(false)
   const typingTimer = useRef<number>(0)
+  /** set while a fix is written into the textarea: that is not typing, so the chrome stays */
+  const applyingRef = useRef(false)
 
   const rtl = isRtl(lang)
   const markMode: MarkMode = s.phase === 'review' ? 'lines' : s.phase === 'revealed' ? 'marks' : 'none'
@@ -96,8 +104,9 @@ export default function WritePage() {
   const onText = useCallback(
     (t: string) => {
       s.setText(t)
-      setTypingAt(editorRef.current?.textarea?.selectionStart ?? -1)
       setHasTyped(true)
+      if (applyingRef.current) return
+      setTypingAt(editorRef.current?.textarea?.selectionStart ?? -1)
       setTypingNow(true)
       window.clearTimeout(typingTimer.current)
       typingTimer.current = window.setTimeout(() => setTypingNow(false), PAUSE_MS)
@@ -184,11 +193,11 @@ export default function WritePage() {
   }, [inReview, lines])
   useEffect(() => {
     // the line count arrives after the editor has measured, so this keys on it
-    if (inReview && markedLines > 0) setAnnounce(`Find your mistakes first. Kees marked ${markedLines} ${markedLines === 1 ? 'line' : 'lines'}.`)
-  }, [inReview, markedLines])
+    if (inReview && markedLines > 0) setAnnounce(`Find your mistakes first. ${mascot} marked ${markedLines} ${markedLines === 1 ? 'line' : 'lines'}.`)
+  }, [inReview, markedLines, mascot])
   useEffect(() => {
     if (s.phase === 'revealed' && s.mode === 'done') setAnnounce(s.issues.length ? `${s.issues.length} underlined. Press F8 to go through them.` : 'Nothing to correct.')
-    else if (s.phase === 'checking') setAnnounce('Kees is reading.')
+    else if (s.phase === 'checking') setAnnounce(`${mascot} is reading.`)
   }, [s.phase]) // on phase changes only, not on every edit
 
   /* ---------------- issues ---------------- */
@@ -230,6 +239,7 @@ export default function WritePage() {
     ta.setSelectionRange(offset, offset + length)
     const before = ta.value
     let ok = false
+    applyingRef.current = true
     try {
       // goes through the browser's undo stack, so ctrl+z brings the old word back
       ok = rep ? document.execCommand('insertText', false, rep) : document.execCommand('delete')
@@ -240,6 +250,7 @@ export default function WritePage() {
       onText(before.slice(0, offset) + rep + before.slice(offset + length))
       requestAnimationFrame(() => ta.setSelectionRange(offset + rep.length, offset + rep.length))
     }
+    applyingRef.current = false
     setActiveId(undefined)
     setAnnounce(rep ? `Changed to ${rep}.` : 'Removed.')
     void s.recheckAt(offset)
@@ -275,7 +286,7 @@ export default function WritePage() {
     const final = await s.finish()
     if (final === STALE) return
     if (!final) {
-      if (!useCheckerStatus.getState().unavailable) toast('Kees could not read your text this time. Try again in a moment; your text is saved.', 'bad')
+      if (!useCheckerStatus.getState().unavailable) toast(`${mascot} could not read your text this time. Try again in a moment; your text is saved.`, 'bad')
       return
     }
     const titles = await titlesLoading
@@ -299,7 +310,7 @@ export default function WritePage() {
   const doReview = async () => {
     setActiveId(undefined)
     const ok = await s.review()
-    if (!ok && !useCheckerStatus.getState().unavailable) toast('Kees could not read your text this time. Try again in a moment; your text is saved.', 'bad')
+    if (!ok && !useCheckerStatus.getState().unavailable) toast(`${mascot} could not read your text this time. Try again in a moment; your text is saved.`, 'bad')
   }
 
   const primary = () => {
@@ -366,7 +377,8 @@ export default function WritePage() {
       return
     }
     setSpeaking(true)
-    speak(s.text, lang, { rate: speechRate, voiceName: voices[lang], onEnd: () => setSpeaking(false) })
+    stopAudio()
+    speak(s.text, lang, { rate: speechRate, voiceName: browserVoiceName(voices[lang]), onEnd: () => setSpeaking(false) })
   }
 
   /* ---------------- report ---------------- */
@@ -403,12 +415,13 @@ export default function WritePage() {
 
   // 'report' without data yet means the report is still being put together
   const checking = s.phase === 'checking' || s.phase === 'report'
+  const readingLabel = `${mascot} is reading`
   const secondsLeft = Math.max(0, Math.ceil((s.reviewEndsAt - now) / 1000))
   const primaryLabel =
     s.phase === 'review'
       ? 'Reveal'
       : checking
-        ? 'Kees is reading'
+        ? readingLabel
         : s.mode === 'done' && (s.phase === 'writing' || s.dirty)
           ? s.phase === 'writing'
             ? 'Review'
@@ -430,18 +443,13 @@ export default function WritePage() {
 
   const note =
     s.phase === 'review' ? (
-      <>
-        <p>
-          Kees marked {markedLines} {markedLines === 1 ? 'line' : 'lines'}. Fix what you can find, then reveal.
-        </p>
-        {lang !== 'ar' && <p>The font changed on purpose: your own words look less familiar, so mistakes stand out.</p>}
-      </>
+      <ReviewNote lang={lang} />
     ) : checking ? (
-      <p>Kees is reading.</p>
+      <p>{readingLabel}.</p>
     ) : s.mode === 'live' ? (
       <p>Underlines show up when you pause for a moment.</p>
     ) : empty ? (
-      <p>Write first. Kees reads it when you press Review.</p>
+      <p>Write first. {mascot} reads it when you press Review.</p>
     ) : (
       <p>
         Feedback waits until you press Review, so nothing interrupts you. <Kbd>{MOD}</Kbd> <Kbd>enter</Kbd>
@@ -478,9 +486,10 @@ export default function WritePage() {
             found={s.found}
             left={s.issues.length}
             resumedAt={s.resumed ? s.draft.updatedAt : undefined}
+            mascot={mascot}
             onReveal={() => void s.reveal()}
             onNew={() => s.startNew()}
-            speech={speechSupported() && !empty}
+            speech={hasVoice && !empty}
             speaking={speaking}
             onSpeak={readAloud}
           />
@@ -528,7 +537,7 @@ export default function WritePage() {
                 </>
               ) : (
                 <>
-                  <Kbd>{MOD}</Kbd> <Kbd>enter</Kbd> {primaryLabel === 'Kees is reading' ? 'review' : primaryLabel.toLowerCase()}
+                  <Kbd>{MOD}</Kbd> <Kbd>enter</Kbd> {primaryLabel === readingLabel ? 'review' : primaryLabel.toLowerCase()}
                 </>
               )}
             </p>
@@ -562,6 +571,7 @@ export default function WritePage() {
             activeMs={s.draft.activeMs}
             ltLine={ltLine}
             checkerMissing={status.unavailable}
+            mascot={mascot}
             note={note}
             after={after}
           />
@@ -582,6 +592,7 @@ interface StripProps {
   found: { found: number; total: number } | null
   left: number
   resumedAt?: number
+  mascot: string
   onReveal: () => void
   onNew: () => void
   speech: boolean
@@ -590,12 +601,12 @@ interface StripProps {
 }
 
 /** One line above the editor: the self-review task, the result of it, or "picked up your draft". */
-function Strip({ phase, lines, secondsLeft, found, left, resumedAt, onReveal, onNew, speech, speaking, onSpeak }: StripProps) {
+function Strip({ phase, lines, secondsLeft, found, left, resumedAt, mascot, onReveal, onNew, speech, speaking, onSpeak }: StripProps) {
   if (phase === 'review') {
     return (
       <div className="wp-strip wp-strip--review">
         <p>
-          <strong>Find your mistakes first:</strong> Kees marked {lines} {lines === 1 ? 'line' : 'lines'}.{' '}
+          <strong>Find your mistakes first:</strong> {mascot} marked {lines} {lines === 1 ? 'line' : 'lines'}.{' '}
           <span className="wp-strip-time tabular">Underlines in {secondsLeft} s.</span>
         </p>
         <div className="wp-strip-tools">

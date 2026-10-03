@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { runRules } from '@/checker/engine'
+import { getRules } from '@/checker/rules'
 import { findPrompt, promptsFor, randomPrompt, PROMPT_KINDS } from './index'
 import type { Lang } from '@/types'
 
-const MIN: Record<Lang, number> = { nl: 30, en: 30, ar: 12 }
+const MIN: Record<Lang, number> = { nl: 30, en: 30, ar: 30 }
+const LANGS: Lang[] = ['nl', 'en', 'ar']
 
 describe('writing prompts', () => {
   for (const lang of ['nl', 'en', 'ar'] as Lang[]) {
@@ -39,9 +42,27 @@ describe('writing prompts', () => {
     })
   }
 
-  it('nl and en cover every kind', () => {
-    for (const lang of ['nl', 'en'] as Lang[]) {
-      for (const k of PROMPT_KINDS) expect(promptsFor(lang, k.id).length).toBeGreaterThan(0)
+  it('every language covers every kind', () => {
+    for (const lang of LANGS) {
+      for (const k of PROMPT_KINDS) expect(promptsFor(lang, k.id).length, `${lang} ${k.id}`).toBeGreaterThan(0)
+    }
+  })
+
+  it('prompts themselves pass the rule packs (a prompt must never model a mistake)', () => {
+    const flagged: string[] = []
+    for (const lang of LANGS) {
+      for (const p of promptsFor(lang)) {
+        for (const i of runRules(p.text, lang, getRules(lang), { strictness: 'strict' })) flagged.push(`${p.id} ${i.ruleId} "${i.text}"`)
+      }
+    }
+    expect(flagged).toEqual([])
+  })
+
+  it('Arabic prompts use Arabic script and Arabic punctuation', () => {
+    for (const p of promptsFor('ar')) {
+      expect(p.text).toMatch(/[\u0600-\u06FF]/)
+      expect(p.text).not.toMatch(/[A-Za-z]/)
+      expect(p.text).not.toMatch(/[,?;]/) // Arabic punctuation: ، ؟ ؛
     }
   })
 

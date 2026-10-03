@@ -8,6 +8,7 @@ import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
 import { useEnterKey } from '@/features/practice/parts'
+import { repairHref } from '@/features/practice/repair'
 import { mascotName } from '@/lib/mascot'
 import { completedRead, storyAverages, useStoryProgress, wordCount } from './progress'
 
@@ -60,7 +61,6 @@ export function StoryReader({ story }: { story: Story }) {
   }
   useEnterKey(proceed, phase.kind === 'result')
 
-
   return (
     <div className={`page story-reader${phase.kind === 'typing' ? ' is-typing' : ''}`}>
       <header className="story-head" dir={rtl ? 'rtl' : undefined}>
@@ -90,7 +90,14 @@ export function StoryReader({ story }: { story: Story }) {
 
       {phase.kind === 'result' && (
         <div className="story-result">
-          <ResultView result={phase.result} title={`Page ${page + 1} done`} configLabel={`${story.title} p${page + 1}`} isPb={phase.isPb} onAgain={again}>
+          <ResultView
+            result={phase.result}
+            title={`Page ${page + 1} done`}
+            configLabel={`${story.title} p${page + 1}`}
+            isPb={phase.isPb}
+            onAgain={again}
+            onPractice={(ws) => navigate(repairHref(ws))}
+          >
             <div className="story-next">
               <Button variant="subtle" size="lg" onClick={proceed}>
                 {phase.completed ? 'Finish the story' : phase.nextPage === page + 1 ? 'Next page' : `Go to page ${phase.nextPage + 1}`}
@@ -118,7 +125,8 @@ interface PickerProps {
 
 function PagePicker({ total, page, done, ended, onPick }: PickerProps) {
   return (
-    <nav className="story-pages" aria-label="Pages">
+    // English chrome: page numbers read 1 to n left to right, also above an Arabic story
+    <nav className="story-pages" aria-label="Pages" dir="ltr">
       <span className="story-pages-label muted tabular">{ended ? `${total} pages` : `Page ${page + 1} of ${total}`}</span>
       <ol>
         {Array.from({ length: total }, (_, i) => {

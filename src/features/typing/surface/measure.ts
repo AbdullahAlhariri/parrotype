@@ -4,6 +4,9 @@ import { buildRuns } from './arabicRuns'
 
 export type CaretStyle = 'line' | 'block' | 'underline'
 
+/** Characters the bidi algorithm lays out left to right even inside Arabic text: digits and Latin letters. */
+export const isLtrChar = (c: string) => /^[\p{Nd}\p{Script=Latin}]/u.test(c)
+
 /**
  * Where the caret goes for `charIndex` inside the active word, in px relative to the track
  * (the caret's offset parent). LTR reads offsets of per-letter spans (no layout thrash: one
@@ -48,10 +51,10 @@ export function measureCaret(
     if (!rect.width && !rect.height) rect = span.getBoundingClientRect()
     const base = track.getBoundingClientRect().left
     w = rect.width || em * 0.5
-    // RTL: a letter starts at its right edge
-    x = (after ? rect.left : rect.right) - base
-    if (style === 'line') x -= cw / 2
-    else x -= w
+    // an Arabic letter starts at its right edge; digits (numbers mode) run left to right inside the line
+    const ltr = isLtrChar(view.letters[after ? n - 1 : charIndex].char)
+    if (style === 'line') x = (after ? (ltr ? rect.right : rect.left) : ltr ? rect.left : rect.right) - base - cw / 2
+    else x = (after ? (ltr ? rect.right : rect.left - w) : rect.left) - base
   } else {
     const letters = word.children
     const n = letters.length

@@ -109,6 +109,28 @@ describe('summarize', () => {
     expect(s.hintRules.map((r) => r.ruleId)).toEqual(['maybe'])
   })
 
+  it('lists a spelling rule that explains itself as a rule too (Arabic hidden alif)', () => {
+    const t = 'هاذا اليوم جميل لاكن الجو بارد.'
+    const list = [
+      mkIssue(t, 'هاذا', { ruleId: 'ar.hidden-alif', lang: 'ar', category: 'spelling', replacements: ['هذا'], explanation: 'said, not written', explanationLocal: 'تُنطق ولا تُكتب' }),
+      mkIssue(t, 'لاكن', { ruleId: 'ar.hidden-alif', lang: 'ar', category: 'spelling', replacements: ['لكن'], explanation: 'said, not written' }),
+      mkIssue(t, 'بارد', { ruleId: 'spell', source: 'spell', lang: 'ar', category: 'spelling', replacements: ['باردة'], explanation: 'unknown word' }),
+    ]
+    const s = summarize(t, list)
+    expect(s.words.map((w) => w.right)).toEqual(['هذا', 'لكن', 'باردة'])
+    expect(s.rules).toHaveLength(1)
+    expect(s.rules[0]).toMatchObject({ ruleId: 'ar.hidden-alif', count: 2 })
+    expect(s.mistakes).toBe(3)
+  })
+
+  it('keeps plain misspelling lists out of the rules (the word list already says it all)', () => {
+    const t = 'Dat is eigelijk goed.'
+    const list = [mkIssue(t, 'eigelijk', { ruleId: 'nl.spell.common', category: 'spelling', replacements: ['eigenlijk'], explanation: 'a common misspelling' })]
+    const s = summarize(t, list)
+    expect(s.words).toHaveLength(1)
+    expect(s.rules).toEqual([])
+  })
+
   it('derives instance-free titles from messages', () => {
     expect(ruleTitleFromMessage('With ‘ik’ there is no t: ‘ik vind’')).toBe('With ‘ik’ there is no t')
     expect(ruleTitleFromMessage('Use a capital here.')).toBe('Use a capital here')
@@ -135,6 +157,15 @@ describe('nestItemsFrom', () => {
     const items = nestItemsFrom(t, list, 'nl')
     expect(items.find((i) => i.kind === 'sentence')?.target).toBe('Hij wordt eigenlijk boos.')
     expect(items.filter((i) => i.kind === 'sentence')).toHaveLength(1)
+  })
+
+  it('uses the local explanation as the hint when explanations are shown in the practice language', () => {
+    const t = 'Hij word boos.'
+    const list = [mkIssue(t, 'word', { ruleId: 'dt', replacements: ['wordt'], explanation: 'stem + t', explanationLocal: 'stam + t' })]
+    expect(nestItemsFrom(t, list, 'nl', 'local')[0].hint).toBe('stam + t')
+    expect(nestItemsFrom(t, list, 'nl', 'en')[0].hint).toBe('stem + t')
+    const noLocal = [mkIssue(t, 'word', { ruleId: 'dt', replacements: ['wordt'], explanation: 'stem + t' })]
+    expect(nestItemsFrom(t, noLocal, 'nl', 'local')[0].hint).toBe('stem + t')
   })
 
   it('skips issues without a suggestion and hints', () => {

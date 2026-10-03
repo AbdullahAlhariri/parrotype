@@ -10,7 +10,18 @@ export const ROUGH_ACCURACY = 85
 export const ROUGH_MIN_WORDS = 5
 export const AGAIN_COOLDOWN_MS = 10 * 60 * 1000
 
+// remembered across reloads, so a few rough runs and a refresh don't mean a second sympathy line
+const AGAIN_KEY = 'parrotype.againAt'
 let lastAgainAt = -Infinity
+
+function readAgainAt(): number {
+  try {
+    const v = Number(localStorage.getItem(AGAIN_KEY))
+    return Number.isFinite(v) && v > 0 ? v : -Infinity
+  } catch {
+    return -Infinity
+  }
+}
 
 /** Words the user actually typed something for. */
 const attempted = (r: TypingResult) => r.words.filter((w) => w.typed !== '')
@@ -32,12 +43,24 @@ export function reactionFor(r: TypingResult, isPb: boolean): ReactionId | null {
 
 /** True when an 'again' may play now; remembers it when it does. */
 export function takeAgainSlot(now = Date.now()): boolean {
-  if (now - lastAgainAt < AGAIN_COOLDOWN_MS) return false
+  const last = Math.max(lastAgainAt, readAgainAt())
+  // a stored time in the future (clock changed) does not block forever
+  if (now - last < AGAIN_COOLDOWN_MS && last <= now) return false
   lastAgainAt = now
+  try {
+    localStorage.setItem(AGAIN_KEY, String(now))
+  } catch {
+    /* blocked storage: the in-memory time still applies */
+  }
   return true
 }
 
 /** For tests. */
 export function resetAgainSlot() {
   lastAgainAt = -Infinity
+  try {
+    localStorage.removeItem(AGAIN_KEY)
+  } catch {
+    /* nothing stored */
+  }
 }

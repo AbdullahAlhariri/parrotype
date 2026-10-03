@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   hasRecordings,
   parseVoiceSetting,
+  personaInfo,
   pickPersona,
   playClip,
+  preferredBrowserVoice,
   preloadClip,
-  personaInfo,
+  reactionAvailable,
   sayReaction,
   stopAudio,
   useAudioManifest,
@@ -36,13 +38,19 @@ export interface DictationVoice {
   speaking: boolean
   /** what is playing right now (null when quiet) */
   current: VoiceSource | null
+  /** the mascot's hello is playing (space skips it) */
+  greeting: boolean
+  /** clip id whose recording failed with no browser voice to stand in (show it on screen instead) */
+  failed: string | null
+  /** word by word works (it needs browser speech) */
+  canWords: boolean
   /** who would read this clip id; null when nobody can (memory mode for that sentence) */
   sourceFor: (clipId: string) => VoiceSource | null
   /** read a sentence; returns who reads it, null when nobody can */
   say: (clipId: string, text: string, slow?: boolean) => VoiceSource | null
-  /** one word at a time (browser speech; slow clip without it) */
+  /** one word at a time with the browser voice (a slow reading without one) */
   sayWords: (clipId: string, text: string) => void
-  /** the mascot's hello, once per page visit and language; resolves true unless interrupted */
+  /** the mascot's recorded hello, once per page load and language; resolves false if interrupted */
   greet: () => Promise<boolean>
   preload: (clipId: string) => void
   stop: () => void
@@ -65,12 +73,14 @@ export function useDictationVoice(lang: Lang): DictationVoice {
   const setting = useSettings((s) => s.voices[lang])
   const { manifest, loaded } = useAudioManifest()
   const pref = useMemo(() => parseVoiceSetting(setting), [setting])
-  const browserName = pref.kind === 'browser' && pref.name ? pref.name : undefined
+  const browserName = preferredBrowserVoice(pref)
 
   const [browser, setBrowser] = useState<VoiceStatus>(() => (speechSupported() ? 'loading' : 'unsupported'))
   const [browserVoiceName, setBrowserVoiceName] = useState<string>()
   const [speaking, setSpeaking] = useState(false)
   const [current, setCurrent] = useState<VoiceSource | null>(null)
+  const [greeting, setGreeting] = useState(false)
+  const [failed, setFailed] = useState<string | null>(null)
   const cancelRef = useRef<() => void>(() => {})
   const timers = useRef<number[]>([])
   const run = useRef(0)
@@ -86,7 +96,7 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     }
     setBrowser('loading')
     loadVoices(2500).then(update)
-    // Edge adds its natural voices later; Safari after installs
+    // Edge adds its natural voices after a while; Safari after installs
     const onChange = () => update(speechSynthesis.getVoices())
     speechSynthesis.addEventListener?.('voiceschanged', onChange)
     return () => {
@@ -95,18 +105,24 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     }
   }, [lang, browserName])
 
-  const recorded = !!manifest && hasRecordings(lang)
-  const browserOk = browser === 'ready'
+  const noBrowser = browser === 'none' || browser === 'unsupported'
+  // manifest is a dependency because hasRecordings reads it
+  const recorded = useMemo(() => !!manifest && hasRecordings(lang), [manifest, lang])
   // a browser voice was chosen but this browser has none: the recordings are the better fallback
-  const effective = voiceSetting(pref.kind === 'browser' && (browser === 'none' || browser === 'unsupported') ? { kind: 'mix' } : pref)
-  const status: VoiceStatus =
-    recorded && !effective.startsWith('browser:') ? 'ready' : !loaded && browser !== 'ready' ? 'loading' : browser
+  const effective = useMemo<VoicePreference>(() => (pref.kind === 'browser' && noBrowser ? { kind: 'mix' } : pref), [pref, noBrowser])
+  const usesRecordings = recorded && effective.kind !== 'browser'
+  const status: VoiceStatus = !loaded
+    ? effective.kind === 'browser' && browser === 'ready'
+      ? 'ready'
+      : 'loading'
+    : usesRecordings
+      ? 'ready'
+      : browser
   const personas = useMemo(() => manifest?.voices[lang] ?? [], [manifest, lang])
 
   const sourceFor = useCallback(
     (clipId: string): VoiceSource | null => {
-      // manifest is a dependency because pickPersona reads it
-      const id = manifest ? pickPersona(lang, clipId, parseVoiceSetting(effective)) : null
+      const id = manifest ? pickPersona(lang, clipId, effective) : null
       const persona = id ? personaInfo(lang, id) : undefined
       if (persona) return { kind: 'clip', persona }
       if (browser === 'ready' || browser === 'loading') return { kind: 'browser', voiceName: browserVoiceName }
@@ -128,6 +144,7 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     stopAudio()
     setSpeaking(false)
     setCurrent(null)
+    setGreeting(false)
   }, [])
 
   /** speak one chunk with the browser, resolve when it ends (or the watchdog gives up) */
@@ -176,33 +193,42 @@ export function useDictationVoice(lang: Lang): DictationVoice {
       const src = sourceFor(clipId)
       stop()
       if (!src) return null
+      setFailed(null)
       const id = run.current
       const browserRate = slow ? Math.min(SLOW, rate) : rate
       if (src.kind === 'browser') {
         speakBrowser(text, browserRate, id)
         return src
       }
-      setCurrent(src)
-      setSpeaking(true)
-      const pb = playClip({ lang, sentenceId: clipId, persona: src.persona.id, rate: slow ? SLOW : 1 })
-      cancelRef.current = pb.stop
-      pb.outcome.then((o) => {
-        if (id !== run.current) return
-        // a missing or blocked clip: the browser voice reads it instead, if there is one
-        if (o === 'error' && browserOk) speakBrowser(text, browserRate, id)
-        else {
+      const playFrom = (from: Extract<VoiceSource, { kind: 'clip' }>, tries: number) => {
+        setCurrent(from)
+        setSpeaking(true)
+        const pb = playClip({ lang, sentenceId: clipId, persona: from.persona.id, rate: slow ? SLOW : 1 })
+        cancelRef.current = pb.stop
+        pb.outcome.then((o) => {
+          if (id !== run.current) return
+          if (o === 'error') {
+            // a missing file: another recorded voice, else the browser voice, else on screen
+            const next = sourceFor(clipId)
+            if (next?.kind === 'clip' && next.persona.id !== from.persona.id && tries < 3) return playFrom(next, tries + 1)
+            if (browser === 'ready') return speakBrowser(text, browserRate, id)
+            setFailed(clipId)
+          }
           setSpeaking(false)
           setCurrent(null)
-        }
-      })
+        })
+      }
+      playFrom(src, 1)
       return src
     },
-    [sourceFor, stop, rate, speakBrowser, lang, browserOk],
+    [sourceFor, stop, rate, speakBrowser, lang, browser],
   )
+
+  const canWords = browser === 'ready'
 
   const sayWords = useCallback(
     (clipId: string, text: string) => {
-      if (!browserOk) {
+      if (!canWords) {
         say(clipId, text, true)
         return
       }
@@ -223,17 +249,18 @@ export function useDictationVoice(lang: Lang): DictationVoice {
       }
       void next()
     },
-    [browserOk, say, stop, browserVoiceName, speakOne, rate],
+    [canWords, say, stop, browserVoiceName, speakOne, rate],
   )
 
   const greet = useCallback(async (): Promise<boolean> => {
-    if (greeted.has(lang) || !getSettings().mascotVoice) return true
+    if (greeted.has(lang) || !reactionAvailable(lang, 'hello')) return true
     greeted.add(lang)
     stop()
     const id = run.current
     const mascot = personas.find((p) => p.mascot)
     if (mascot) setCurrent({ kind: 'clip', persona: mascot })
     setSpeaking(true)
+    setGreeting(true)
     let limit = 0
     await Promise.race([sayReaction(lang, 'hello'), new Promise((r) => (limit = window.setTimeout(r, GREET_LIMIT_MS)))])
     clearTimeout(limit)
@@ -241,6 +268,7 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     stopAudio()
     setSpeaking(false)
     setCurrent(null)
+    setGreeting(false)
     return true
   }, [lang, personas, stop])
 
@@ -260,6 +288,9 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     [lang],
   )
 
+  // a new language or voice: whatever was playing belongs to the old one
+  useEffect(() => () => stop(), [lang, setting, stop])
+
   useEffect(
     () => () => {
       run.current++
@@ -270,5 +301,23 @@ export function useDictationVoice(lang: Lang): DictationVoice {
     [],
   )
 
-  return { status, browser, browserVoiceName, personas, pref, setPref, speaking, current, sourceFor, say, sayWords, greet, preload, stop }
+  return {
+    status,
+    browser,
+    browserVoiceName,
+    personas,
+    pref,
+    setPref,
+    speaking,
+    current,
+    greeting,
+    failed,
+    canWords,
+    sourceFor,
+    say,
+    sayWords,
+    greet,
+    preload,
+    stop,
+  }
 }

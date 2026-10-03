@@ -39,7 +39,7 @@ export const itsItIs = regexRule({
   title: "its → it's",
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>[Ii]ts)\s+(?:a|an|the|not|been|gonna|ok|okay|me|you|him|us)\b(?!-)/g,
+  re: /\b(?<w>[Ii]ts)\s+(?:a|an|the|not|been|gonna|ok|okay|me|you|him|us|raining|snowing|freezing|getting|going\s+to)\b(?!-)/g,
   target: 'w',
   fix: () => ["it's"],
   msg: itsMsg,
@@ -48,7 +48,7 @@ export const itsItIs = regexRule({
     flag: 'Its',
     fix: "It's",
     right: "It's a beautiful day.",
-    ok: ['The company changed its name.', 'The dog wagged its tail.', 'Its own rules apply.'],
+    ok: ['The company changed its name.', 'The dog wagged its tail.', 'Its own rules apply.', 'The city and its getaways.'],
   },
 })
 
@@ -142,7 +142,7 @@ export const yourYoure = regexRule({
   title: "your → you're",
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?<w>[Yy]our)\s+(?:(?:not(?!\s+\w+ing\b)|gonna|always|never|already|probably|definitely|actually|kidding|joking|a|an|the)\b(?![-/])|(?:welcome|right|wrong|sure|late|early)(?=\s*[.!?,;]|\s*$)|welcome(?=\s+to\s+(?:join|come|stay|use|take|ask|bring|visit|call|try|have|borrow|share)\b))/g,
+  re: /\b(?<w>[Yy]our)\s+(?:(?:not(?!\s+\w+ing\b)|gonna|always|never|already|probably|definitely|actually|kidding|joking|a|an|the)\b(?![-/])|(?:welcome|right|wrong|sure|late|early)(?=\s*[.!?,;]|\s*$)|welcome(?=\s+to\s+(?:join|come|stay|use|take|ask|bring|visit|call|try|have|borrow|share)\b)|going(?=\s+to\s+(?:be|love|like|have|need|get|see|make|do|want|regret|enjoy|miss|hate|feel|find|lose|win)\b))/g,
   target: 'w',
   fix: () => ["you're"],
   msg: {
@@ -154,7 +154,7 @@ export const yourYoure = regexRule({
     flag: 'Your',
     fix: "You're",
     right: "You're welcome!",
-    ok: ['Your right hand is cold.', 'Thanks for your welcome speech.', 'Your welcome to the team was warm.', 'Your A grade is great.', 'Your very own room.', 'Fix your a/c system.', 'Your not eating vegetables is bad.'],
+    ok: ['Your going-away party was fun.', 'Your going to school every day matters.', 'Your right hand is cold.', 'Thanks for your welcome speech.', 'Your welcome to the team was warm.', 'Your A grade is great.', 'Your very own room.', 'Fix your a/c system.', 'Your not eating vegetables is bad.'],
   },
 })
 
@@ -485,11 +485,11 @@ export const adviceVerb = regexRule({
   title: 'I advice → I advise',
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?:I|we|they|would|will|please|kindly|strongly|can|could|should)\s+(?<w>advice)\b/gi,
-  target: 'w',
+  re: /\b(?:I|we|they|would|will|please|kindly|strongly|can|could|should|(?:can|could|would|will)\s+you)\s+(?<w>advice)\b|\b(?<w2>advice)(?=\s+(?:me|him|her|us|them)\b)/gi,
+  target: ['w', 'w2'],
   fix: () => ['advise'],
   msg: { message: `The verb is ${q('advise')}, with an s`, explanation: adviceExpl },
-  examples: { wrong: 'I advice you to rest.', flag: 'advice', fix: 'advise', right: 'I advise you to rest.', ok: ['Thank you for the advice.', 'I could offer you advice.', 'Listen to advice.'] },
+  examples: { wrong: 'I advice you to rest.', flag: 'advice', fix: 'advise', right: 'I advise you to rest.', ok: ['Thank you for the advice.', 'I could offer you advice.', 'Listen to advice.', 'Can you give me advice?', 'They gave advice to me.'] },
 })
 
 export const adviseNoun = regexRule({
@@ -497,7 +497,7 @@ export const adviseNoun = regexRule({
   title: 'some advise → some advice',
   category: 'grammar',
   confidence: 'high',
-  re: /\b(?:some|any|good|bad|great|my|your|his|her|our|their|professional|legal|medical|financial|expert|useful|helpful|piece\s+of|for|of|need|needs|needed)\s+(?<w>advise)\b/gi,
+  re: /\b(?:some|any|good|bad|great|my|your|his|her|our|their|the|this|that|professional|legal|medical|financial|expert|useful|helpful|piece\s+of|for|of|need|needs|needed)\s+(?<w>advise)\b/gi,
   target: 'w',
   fix: () => ['advice'],
   msg: { message: `The noun is ${q('advice')}, with a c`, explanation: adviceExpl },

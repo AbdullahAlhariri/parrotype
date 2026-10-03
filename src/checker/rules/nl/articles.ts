@@ -115,6 +115,13 @@ export const deHet: Rule = {
   },
 }
 
+/** the word after noun n is a finite verb, or nothing follows in the clause */
+function verbOrEndAfter(ctx: RuleContext, n: number): boolean {
+  const m = next(ctx, n)
+  if (m < 0) return /^\s*[.?!,;:]|^\s*$/.test(ctx.text.slice(ctx.words[n].end, ctx.words[n].end + 3))
+  return FINITE.has(lw(ctx, m))
+}
+
 /* ART-02: preposition + het + de-noun */
 export const hetDe: Rule = {
   id: 'nl.art.het-de',
@@ -128,9 +135,13 @@ export const hetDe: Rule = {
       if (w.lower !== 'het') return
       const p = prev(ctx, i)
       const n = next(ctx, i)
-      if (p < 0 || n < 0 || !PREPOSITIONS.has(lw(ctx, p))) return
+      if (n < 0) return
       const noun = lw(ctx, n)
       if (!isDeNoun(noun) || !nounOk(ctx, n)) return
+      // "Het auto is kapot": at the start of a sentence, when a verb or the end follows the noun
+      // ("Het auto rijden" is a verb phrase, "Heeft het zin?" has het as the subject: both skipped)
+      const start = p < 0 && isSentenceStart(ctx, i) && verbOrEndAfter(ctx, n)
+      if (!start && (p < 0 || !PREPOSITIONS.has(lw(ctx, p)))) return
       out.push(
         hitWord(ctx, i, ['de'], {
           message: `‘${noun}’ is a de-word: ‘de ${noun}’`,

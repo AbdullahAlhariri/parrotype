@@ -261,3 +261,18 @@ describe('daily top-up words', () => {
     expect(dailyMoreWords('ar', '2026-10-03', 1)).toHaveLength(60)
   })
 })
+
+describe('daily challenge capitals', () => {
+  it('starts the word after the story sentence with a capital (nl, en), never in Arabic', async () => {
+    const { capitalise } = await import('./daily')
+    expect(capitalise('komen', 'nl')).toBe('Komen')
+    expect(capitalise('ijs', 'nl')).toBe('IJs')
+    expect(capitalise('the', 'en')).toBe('The')
+    expect(capitalise('في', 'ar')).toBe('في')
+    for (const lang of ['nl', 'en'] as const) {
+      const c = dailyChallenge(lang, '2026-10-03')
+      const next = c.words[c.sentence.split(/\s+/).length]
+      expect(next[0]).toBe(next[0].toUpperCase())
+    }
+  })
+})

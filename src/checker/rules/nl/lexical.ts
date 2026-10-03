@@ -1,5 +1,5 @@
 import type { Rule, RuleHit } from '@/types'
-import { clauseOf, endsClause, fix, hitWord, hitWords, isSubjectSlot, lw, matchFlex, next, opt, prev, spanWithout } from '../../helpers'
+import { clauseOf, endsClause, fix, hitWord, hitWords, isSubjectSlot, lw, matchAt, matchFlex, next, opt, prev, spanWithout } from '../../helpers'
 import { ADJ_BASE, COUNT_NOUNS, INFINITIVES, SUBJECT_PRONOUNS, isKnownNoun, set } from '../../lexicon/nl'
 import { LINKS } from './links'
 
@@ -204,6 +204,40 @@ export const liggenLeggen: Rule = {
   },
 }
 
+/* LEX-06b: "Ik leg de hele dag in bed" -> "lig": leggen without an object before a place */
+const LEG_TO_LIG: Record<string, string> = { leg: 'lig', legt: 'ligt', leggen: 'liggen', legde: 'lag', legden: 'lagen' }
+const LEG_FILLERS = set('al nog even lekker gewoon graag vaak altijd nu net de hele dag middag ochtend avond nacht week ziek languit steeds weer')
+const LEG_PLACES: Array<string[]> = [['in', 'bed'], ['op', 'bed'], ['op', 'de', 'bank'], ['in', 'de', 'zon'], ['op', 'de', 'grond'], ['op', 'het', 'strand'], ['in', 'het', 'gras'], ['in', 'het', 'ziekenhuis'], ['in', 'de', 'tuin']]
+
+export const legInBed: Rule = {
+  id: 'nl.lex.leg-in-bed',
+  lang: 'nl',
+  category: 'grammar',
+  title: 'ik lig in bed (not leg)',
+  confidence: 'medium',
+  check(ctx) {
+    const out: RuleHit[] = []
+    ctx.words.forEach((t, i) => {
+      const right = LEG_TO_LIG[t.lower]
+      if (!right) return
+      let k = next(ctx, i)
+      // only fillers between the verb and the place: anything else may be the object ("Ik leg het boek op bed")
+      for (let steps = 0; k >= 0 && steps < 5 && LEG_FILLERS.has(lw(ctx, k)); steps++) k = next(ctx, k)
+      if (k < 0 || !LEG_PLACES.some((pl) => matchAt(ctx, k, pl))) return
+      out.push(
+        hitWord(ctx, i, [right], {
+          message: `Nothing is being put down: ‘${right}’`,
+          messageLocal: `Er wordt niets neergelegd: ‘${right}’`,
+          explanation: `liggen says where you are (Ik lig in bed). leggen means putting something somewhere and needs an object (Ik leg het boek op bed).`,
+          explanationLocal: `Liggen zegt waar je bent (Ik lig in bed). Leggen is iets ergens neerleggen; daar hoort een voorwerp bij (Ik leg het boek op bed).`,
+          learnMore: LINKS.liggen,
+        }),
+      )
+    })
+    return out
+  },
+}
+
 /* LEX-07: "een hele mooie dag" -> "een heel mooie dag" (style) */
 export const heelHele: Rule = {
   id: 'nl.lex.heel-mooie',
@@ -291,4 +325,4 @@ export const zoalsHoe: Rule = {
   },
 }
 
-export const lexicalRules: Rule[] = [beseffen, meeEens, kunnenKennen, wetenKennen, wetenPersoon, liggenLeggen, heelHele, wieZn, zoalsHoe]
+export const lexicalRules: Rule[] = [beseffen, meeEens, kunnenKennen, wetenKennen, wetenPersoon, liggenLeggen, legInBed, heelHele, wieZn, zoalsHoe]

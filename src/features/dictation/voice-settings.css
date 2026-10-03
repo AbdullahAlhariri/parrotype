@@ -1,0 +1,141 @@
+/* Settings > Dictation: the voices per language. Tokens only; see docs/DESIGN.md. */
+
+.voice-langs {
+  display: grid;
+}
+.voice-lang {
+  border-bottom: var(--hairline) solid var(--border);
+}
+
+/* the language line: name, current choice, chevron; the whole line opens it */
+.voice-lang > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-4);
+  padding-block: var(--s-5);
+  cursor: pointer;
+  list-style: none;
+}
+.voice-lang > summary::-webkit-details-marker {
+  display: none;
+}
+.voice-lang > summary:focus-visible {
+  outline: 2px solid var(--main);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.voice-lang-name {
+  font-weight: 620;
+}
+.voice-lang-choice {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+.voice-lang-choice:lang(ar) {
+  font-family: var(--font-arabic);
+}
+.voice-lang-chevron {
+  align-self: center;
+  margin-inline-start: auto;
+  color: var(--sub);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.voice-lang[open] .voice-lang-chevron {
+  transform: rotate(180deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .voice-lang > summary:hover .voice-lang-choice,
+  .voice-lang > summary:hover .voice-lang-chevron {
+    color: var(--text);
+  }
+}
+
+/* the options: radio, name and blurb, a sample button on the far side */
+.voice-opts {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0 0 var(--s-5);
+  border: 0;
+  min-width: 0;
+}
+.voice-opt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--s-2) var(--s-5);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius-sm);
+}
+.voice-opt:has(input:checked) {
+  background: var(--surface);
+}
+.voice-opt-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s-3);
+  cursor: pointer;
+}
+.voice-opt-main input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--main);
+  transform: translateY(0.15em);
+}
+.voice-opt-text {
+  display: grid;
+  gap: 2px;
+}
+.voice-opt-name {
+  font-weight: 560;
+}
+.voice-opt-name:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: 1.08em;
+}
+.voice-opt-tag {
+  color: var(--sub);
+  font-size: var(--fs-xs);
+  font-weight: 480;
+}
+.voice-opt-blurb {
+  color: var(--sub);
+  font-size: var(--fs-sm);
+  max-width: 34rem;
+}
+.voice-hear {
+  padding-block: var(--s-1);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.voice-opt.is-disabled .voice-opt-main {
+  cursor: default;
+}
+.voice-opt.is-disabled .voice-opt-name {
+  color: var(--sub);
+}
+/* the browser voice list sits under its line, lined up with the text */
+.voice-browser-select {
+  grid-column: 1 / -1;
+  width: 22rem;
+  max-width: calc(100% - 1rem - var(--s-3));
+  margin-inline-start: calc(1rem + var(--s-3));
+  min-height: 2.25rem;
+  padding-block: var(--s-2);
+  font-size: var(--fs-sm);
+}
+.voice-none {
+  padding: var(--s-2) var(--s-3);
+  color: var(--sub);
+  font-size: var(--fs-sm);
+}
+
+@media (max-width: 640px) {
+  .voice-opt {
+    padding-inline: var(--s-2);
+    column-gap: var(--s-3);
+  }
+}

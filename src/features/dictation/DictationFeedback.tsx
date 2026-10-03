@@ -110,10 +110,11 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
   const explainIn = useSettings((s) => s.explainIn) as ExplainIn
   const setSetting = useSettings((s) => s.set)
   const rows = explainTokens(grade, issues, lang, explainIn)
-  const local = explainIn === 'local' && lang !== 'en'
-  const note = item.note ? ((local ? item.note.local : undefined) ?? item.note.en) : undefined
-  const noteDir = local && lang === 'ar' ? 'rtl' : 'ltr'
-  const textLang = local ? LANG_TAGS[lang] : 'en'
+  const wantLocal = explainIn === 'local' && lang !== 'en'
+  const noteLocal = wantLocal && !!item.note?.local
+  const note = item.note ? (noteLocal ? item.note.local : item.note.en) : undefined
+  // every text says which language it is in: Arabic gets its script, font and direction
+  const attrs = (local: boolean) => (local ? { lang: LANG_TAGS[lang], dir: isRtl(lang) ? 'rtl' : 'ltr' } : { lang: 'en', dir: 'ltr' })
   if (!rows.length && !(note && solved)) return null
   return (
     <section className="dict-rules" aria-label="The rule">
@@ -133,16 +134,19 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
         )}
       </div>
       {rows.length > 0 && (
-        <ul className="dict-rule-rows">
+        // Arabic explanations read right to left, so the rows flip: the word on the right, its rule beside it
+        <ul className="dict-rule-rows" dir={wantLocal && isRtl(lang) ? 'rtl' : 'ltr'}>
           {rows.map((r) => (
             <li key={r.key} className="dict-rule">
               <span className="dict-rule-word mono-text" lang={LANG_TAGS[lang]} dir={isRtl(lang) ? 'rtl' : 'ltr'}>
                 {solved && r.token.status !== 'extra' ? <Glyphs glyphs={expectedGlyphs(r.token)} /> : <TypedToken t={r.token} level={2} />}
               </span>
-              <span className="dict-rule-name">{r.name}</span>
-              <div className="dict-rule-body" lang={textLang} dir={noteDir}>
+              <span className="dict-rule-name" {...attrs(r.nameLocal)}>
+                {r.name}
+              </span>
+              <div className="dict-rule-body">
                 {/* before the answer only the general rule; after it, what exactly went wrong */}
-                {r.rule && <p>{r.rule}</p>}
+                {r.rule && <p {...attrs(r.ruleLocal)}>{r.rule}</p>}
                 {solved && r.detail && (
                   <p className="muted small" lang="en" dir="ltr">
                     {r.detail}
@@ -150,7 +154,7 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
                 )}
                 {solved &&
                   r.issues.map((i) => (
-                    <p key={i.ruleId} className="dict-rule-check">
+                    <p key={i.ruleId} className="dict-rule-check" {...attrs(i.messageLocal)}>
                       {i.message}
                     </p>
                   ))}
@@ -160,8 +164,8 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
         </ul>
       )}
       {note && solved && (
-        <p className="dict-note" lang={textLang} dir={noteDir}>
-          <span className="dict-note-label">{local && lang === 'nl' ? 'In deze zin' : local ? 'في هذه الجملة' : 'In this sentence'}</span> {note}
+        <p className="dict-note" {...attrs(noteLocal)}>
+          <span className="dict-note-label">{noteLocal && lang === 'nl' ? 'In deze zin' : noteLocal ? 'في هذه الجملة' : 'In this sentence'}</span> {note}
         </p>
       )}
     </section>
@@ -195,7 +199,7 @@ export function statusText(s: ItemState, item: DictationItem): string {
   const n = g.wrong.length
   if (s.hint === 1) return `${g.correct} of ${g.total} words right. ${n === 1 ? 'The marked word is' : 'The marked words are'} off. Fix and press enter.`
   if (s.hint === 2) return 'Closer: marked letters are wrong, a gap is a missing letter, struck letters are extra.'
-  return n === 1 ? 'Still one word off. Here is the rule for it.' : `Still ${n} words off. Here are the rules.`
+  return n === 1 ? 'One word off. Here is the rule for it.' : `${n} words off. Here are the rules.`
 }
 
 interface Props {

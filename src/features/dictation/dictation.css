@@ -1,5 +1,14 @@
 /* Parrot says (dictation). Tokens only; see docs/DESIGN.md. */
 
+/*
+ * One glyph per letter in Latin text: Recursive's Dutch 'locl' draws i+j as one ĳ under
+ * lang=nl, which hides a typed "ij" as a single letter. Arabic keeps its joining forms.
+ */
+.dict .mono-text:not([dir='rtl']):not(:lang(ar)) {
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'clig' 0, 'dlig' 0, 'calt' 0, 'locl' 0;
+}
+
 .dict {
   /* the answer is the hero: the user's typing size, a little smaller on phones */
   --dict-size: clamp(1.2rem, 0.85rem + 2.2vw, var(--typing-font-size, 1.75rem));
@@ -126,13 +135,85 @@ body[data-typing]:not([data-focus-mode='off']) .dict-buttons:not(:focus-within) 
   min-height: 2.25rem;
 }
 .dict-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-4);
+  min-height: 1.75rem;
   color: var(--sub);
   font-size: var(--fs-xs);
   padding-inline-start: var(--s-1);
   transition: opacity var(--dur-fast) var(--ease-out);
 }
-body[data-typing]:not([data-focus-mode='off']) .dict-voice {
+body[data-typing]:not([data-focus-mode='off']) .dict-voice:not(:focus-within) {
   opacity: 0;
+}
+.dict-voice-note {
+  display: block;
+  min-height: 0;
+}
+
+/* who reads: the name in --text, in --main while the voice is going */
+.dict-speaker-name {
+  color: var(--text);
+  font-weight: 560;
+  transition: color var(--dur-fast) ease;
+}
+.dict-speaker[data-speaking] .dict-speaker-name {
+  color: var(--main);
+}
+.dict-speaker-name:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: 1.1em;
+}
+.dict-voice-link {
+  color: var(--sub);
+}
+
+/* the voice chip: a native select dressed as one line of text */
+.dict-voice-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.dict-voice-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.dict-voice-select select {
+  appearance: none;
+  max-width: 13rem;
+  min-height: 1.75rem;
+  padding: 0 var(--s-5) 0 var(--s-2);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease;
+}
+.dict-voice-select select:focus-visible {
+  outline: 2px solid var(--main);
+  outline-offset: 1px;
+}
+.dict-voice-select option {
+  background: var(--surface);
+  color: var(--text);
+}
+.dict-voice-select svg {
+  position: absolute;
+  inset-inline-end: var(--s-2);
+  pointer-events: none;
+  color: var(--sub);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dict-voice-select select:hover {
+    border-color: var(--sub);
+  }
 }
 .dict-progress {
   grid-area: progress;
@@ -224,29 +305,49 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   white-space: nowrap;
 }
 
-/* memory mode */
+/* memory mode: the sentence takes the field's place, and the field's underline drains as the timer */
+.dict-input.is-hidden {
+  display: none;
+}
 .dict-flash {
-  margin-bottom: var(--s-4);
+  position: relative;
+  min-height: calc(var(--dict-size) * 1.5 + var(--s-3) + var(--s-4));
+  padding: var(--s-3) 0 var(--s-4);
+  border-bottom: 2px solid var(--border);
 }
 .dict-flash-text {
   color: var(--text);
   font-size: var(--dict-size);
   line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.dict-flash[dir='rtl'] .dict-flash-text {
+  line-height: 1.9;
 }
 .dict-flash-timer {
-  display: block;
-  width: 40%;
-  height: 3px;
-  margin-top: var(--s-2);
-  border-radius: 3px;
-  background: var(--sub);
+  position: absolute;
+  inset-inline: 0;
+  bottom: -2px;
+  height: 2px;
+  background: var(--main);
   transform-origin: left center;
   animation-name: dict-drain;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
-.dict-flash-text[dir='rtl'] + .dict-flash-timer {
+.dict-flash[dir='rtl'] .dict-flash-timer {
   transform-origin: right center;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* still a timer, just no movement: it fades instead of shrinking */
+  .dict-flash-timer {
+    animation-name: dict-fade;
+  }
+}
+@keyframes dict-fade {
+  to {
+    opacity: 0.15;
+  }
 }
 @keyframes dict-drain {
   to {
@@ -429,10 +530,14 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   color: var(--sub);
   font-weight: 620;
 }
-.dict-rule-body[dir='rtl'],
+.dict-rule-body [dir='rtl'],
+.dict-rule-name[dir='rtl'],
 .dict-note[dir='rtl'] {
   font-family: var(--font-arabic);
   line-height: 1.9;
+}
+.dict-rule-name[dir='rtl'] {
+  font-size: var(--fs-sm);
 }
 
 .dict-empty {

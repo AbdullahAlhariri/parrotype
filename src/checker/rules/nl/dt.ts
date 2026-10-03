@@ -348,7 +348,10 @@ export const invertedJij: Rule = {
 
 const JE_INV_VERBS = set('wordt vindt houdt rijdt antwoordt redt wedt')
 const JE_SAFE_NEXT = set(`ook nog al niet wel echt toch dan nu misschien eigenlijk graag zelf morgen vandaag straks
-  vaak altijd nooit soms even gewoon er hier daar me mij ons hem haar`)
+  vaak altijd nooit soms even gewoon er hier daar me mij ons hem haar trouwens ooit weleens meestal zo snel later
+  vanavond vanmiddag binnenkort wakker beter ziek moe boos blij`)
+/** fronted question phrases of two words: "Hoe laat word je wakker?" */
+const QUESTION_PHRASE = set('laat vaak lang ver snel oud')
 const JE_SAFE_NEXT_VINDT = set('het dat dit die deze ze ervan erover daarvan')
 const looksParticiple = (w: string) =>
   PARTICIPLES.has(w) || /^(?:ge|be|ver|ont|her|er|op|aan|af|uit|in|mee|weg|terug|door|over|om)\S{2,}[dt]$/.test(w)
@@ -372,8 +375,11 @@ export const invertedJe: Rule = {
       if (!clause) return
       const p = prev(ctx, v)
       const verbFirst = v === clause.from || v === clause.core
+      const pp = p >= 0 ? prev(ctx, p) : -1
       const afterFront =
-        p >= 0 && (p === clause.from || p === clause.core) && (ADV_FRONT.has(lw(ctx, p)) || QUESTION_WORDS.has(lw(ctx, p)))
+        p >= 0 &&
+        (((p === clause.from || p === clause.core) && (ADV_FRONT.has(lw(ctx, p)) || QUESTION_WORDS.has(lw(ctx, p)))) ||
+          (pp >= 0 && (pp === clause.from || pp === clause.core) && lw(ctx, pp) === 'hoe' && QUESTION_PHRASE.has(lw(ctx, p))))
       if (!verbFirst && !afterFront) return
       // "Wordt je dat verteld?" (je = to you) is right
       if (t3 === 'wordt') {

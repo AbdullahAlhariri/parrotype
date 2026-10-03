@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { Button, Icon, Kbd, Kees, type KeesMood } from '@/components/ui'
+import { personaName } from '@/lib/audio'
 import { setTyping } from '@/lib/focus'
 import { Link } from '@/lib/router'
 import { useSettings } from '@/state/settings'
-import { LANG_TAGS, type Issue, type Lang } from '@/types'
+import { LANG_TAGS, isRtl, type Issue, type Lang } from '@/types'
 import { checkAttempt, ruleTitles } from './checker'
 import { DictationFeedback, statusText } from './DictationFeedback'
 import { DictationInput } from './DictationInput'
@@ -14,14 +15,15 @@ import type { DictationItem } from './logic/items'
 import { initialItem, itemReducer, type ItemAction, type ItemState } from './logic/ladder'
 import { recordFirstCheck, recordIssues } from './logic/record'
 import { keesRepeat, type ItemResult } from './logic/summary'
-import type { KeesVoice } from './useKeesVoice'
+import type { DictationVoice, VoiceSource } from './useVoice'
+import { VoiceMenu } from './VoiceMenu'
 
 interface Props {
   lang: Lang
   items: DictationItem[]
   /** sentences flash on screen instead of being spoken */
   memory: boolean
-  voice: KeesVoice
+  voice: DictationVoice
   onFinish: (results: ItemResult[]) => void
   onNewSet: () => void
   /** shown above the stage before the first sentence, e.g. "no Arabic voice in this browser" */
@@ -34,11 +36,19 @@ interface Props {
 
 const INTERACTIVE = 'input, textarea, select, button, a, [contenteditable], dialog, [role="dialog"]'
 
-/** Correct forms Kees repeats after a reveal: one word three times, or each word once. */
+/** Correct forms the parrot repeats after a reveal: one word three times, or each word once. */
 function repeatWords(s: ItemState): string[] {
   const words = [...new Set((s.first?.wrong ?? []).filter((t) => t.status !== 'extra' && t.op.expected).map((t) => t.op.expected!))]
   if (!words.length) return []
   return words.length === 1 ? keesRepeat(words[0]) : words.slice(0, 3).map((w) => `${w}.`)
+}
+
+const LANG_EN: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
+
+/** Who reads, for the line under the buttons and the parrot's accessible name. */
+function speakerName(lang: Lang, src: VoiceSource): string {
+  if (src.kind === 'clip') return personaName(lang, src.persona)
+  return 'the browser voice'
 }
 
 export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, notice, noticeShort, autoStart = false }: Props) {
@@ -59,39 +69,64 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   const last = index === items.length - 1
   const sayText = item ? (item.say ?? item.text) : ''
 
+  // who reads this sentence; nobody (no recording, no browser voice) means it shows on screen
+  const loading = voice.status === 'loading'
+  const source = item && !memory ? voice.sourceFor(item.clip) : null
+  const noVoiceHere = !memory && !!item && ((!loading && !source) || voice.failed === item.clip)
+  const showsText = memory || noVoiceHere
+
   const focusInput = () => window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 0)
 
   /* ---------------- playback ---------------- */
 
+  const speakItem = useCallback(
+    (slow: boolean, words: boolean, first: boolean) => {
+      if (!item) return
+      const go = () => {
+        if (words) voice.sayWords(item.clip, sayText)
+        else if (!voice.say(item.clip, sayText, slow)) setFlashKey(Date.now())
+      }
+      // the mascot says hello once before the very first sentence; space again skips it
+      if (first) voice.greet().then((ok) => ok && go())
+      else go()
+    },
+    [item, voice, sayText],
+  )
+
   const play = useCallback(
     (slow = false, words = false) => {
       if (!item) return
+      const first = index === 0 && listens === 0
       setStarted(true)
       itemStart.current ??= performance.now()
       setListens((n) => n + 1)
-      if (memory) {
+      if (showsText) {
         setFlashKey(Date.now())
         return
       }
-      if (voice.status === 'loading') {
+      if (loading) {
         pending.current = { slow, words }
         return
       }
-      if (words) voice.sayWords(sayText)
-      else voice.say(sayText, slow)
+      speakItem(slow, words, first)
     },
-    [item, memory, voice, sayText],
+    [item, index, listens, showsText, loading, speakItem],
   )
 
-  // a play requested while voices were still loading
+  // a play requested while the voices were still loading
   useEffect(() => {
-    if (voice.status === 'loading' || !pending.current) return
+    if (loading || !pending.current) return
     const p = pending.current
     pending.current = null
-    if (memory) setFlashKey(Date.now())
-    else if (p.words) voice.sayWords(sayText)
-    else voice.say(sayText, p.slow)
-  }, [voice, memory, sayText])
+    if (showsText) setFlashKey(Date.now())
+    else speakItem(p.slow, p.words, index === 0)
+  }, [loading, showsText, speakItem, index])
+
+  // the recording did not load and no browser voice can stand in: show it instead
+  const failedHere = !!item && voice.failed === item.clip
+  useEffect(() => {
+    if (failedHere && started) setFlashKey(Date.now())
+  }, [failedHere, started])
 
   // every next sentence plays by itself (the Enter that moved on is the user gesture)
   const playRef = useRef(play)
@@ -101,6 +136,13 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
     const t = window.setTimeout(() => playRef.current(), index === 0 ? 350 : 220)
     return () => clearTimeout(t)
   }, [index, autoStart])
+
+  // warm the cache: this sentence (the first one) and the next
+  const preload = voice.preload
+  useEffect(() => {
+    if (memory) return
+    for (const it of items.slice(index, index + 2)) preload(it.clip)
+  }, [index, items, memory, preload])
 
   const onFlashHidden = useCallback(() => {
     setFlashKey(null)
@@ -243,29 +285,35 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   /* ---------------- view ---------------- */
 
   const flashing = flashKey !== null
-  const mood: KeesMood = voice.speaking
+  const speaker = voice.speaking ? voice.current : source
+  // the parrot talks when he reads (his own recordings, or the browser voice); with another voice he listens along
+  const parrotTalks = voice.speaking && (!voice.current || voice.current.kind === 'browser' || !!voice.current.persona.mascot)
+  const mood: KeesMood = parrotTalks
     ? 'talk'
-    : flashing
-      ? 'reading'
-      : st.phase === 'done'
-        ? st.first?.perfect
-          ? 'curious'
-          : 'idle'
-        : st.phase === 'retype'
-          ? 'repeat'
-          : st.phase === 'feedback'
-            ? 'reading'
-            : started
-              ? 'listen'
-              : 'idle'
+    : voice.speaking
+      ? 'listen'
+      : flashing
+        ? 'reading'
+        : st.phase === 'done'
+          ? st.first?.perfect
+            ? 'curious'
+            : 'idle'
+          : st.phase === 'retype'
+            ? 'repeat'
+            : st.phase === 'feedback'
+              ? 'reading'
+              : started
+                ? 'listen'
+                : 'idle'
   const bubble = st.phase === 'retype' ? repeatWords(st) : undefined
   const describedBy = 'dict-keys'
+  const canWords = voice.canWords && !showsText && (listens >= 2 || st.attempts > 0)
 
   const placeholder = !started || flashing
     ? ''
     : st.phase === 'retype'
       ? 'Type it correctly once'
-      : memory
+      : showsText
         ? 'Type what you saw'
         : 'Type what you heard'
 
@@ -281,12 +329,12 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
             bubbleLang={LANG_TAGS[lang]}
             bubblePlacement="top"
             stayWhileTyping
-            label={voice.speaking ? 'Kees is reading the sentence' : undefined}
+            label={voice.speaking && voice.current ? `${speakerName(lang, voice.current)} is reading` : undefined}
           />
         </div>
         <div className="dict-controls">
-          <div className="dict-buttons" role="group" aria-label={memory ? 'Show the sentence' : 'Playback'}>
-            {memory ? (
+          <div className="dict-buttons" role="group" aria-label={showsText ? 'Show the sentence' : 'Playback'}>
+            {showsText ? (
               <Button variant="subtle" size="sm" onClick={() => play()} disabled={flashing}>
                 <Icon name="play" size={16} />
                 {listens ? 'Show it again' : 'Show it'}
@@ -295,12 +343,12 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
               <>
                 <Button variant="subtle" size="sm" onClick={() => play()} aria-keyshortcuts="Control+Space">
                   <Icon name="play" size={16} />
-                  {listens ? 'Hear it again' : 'Hear it'}
+                  {listens && !voice.greeting ? 'Hear it again' : 'Hear it'}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => play(true)} aria-keyshortcuts="Control+Shift+Space">
                   Slowly
                 </Button>
-                {(listens >= 2 || st.attempts > 0) && (
+                {canWords && (
                   <Button variant="ghost" size="sm" onClick={() => play(false, true)} aria-keyshortcuts="Alt+W">
                     Word by word
                   </Button>
@@ -308,12 +356,33 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
               </>
             )}
           </div>
-          {!memory && voice.voiceName && (
-            <p className="dict-voice">
-              Voice: {voice.voiceName}. <Link to="/settings#voices">Change</Link>
-            </p>
+          {!memory && (
+            <div className="dict-voice">
+              {noVoiceHere ? (
+                <p className="dict-speaker">
+                  {voice.failed === item.clip ? 'The recording did not load' : 'No recording of this one'} and no {LANG_EN[lang]} browser voice, so it
+                  shows on screen.
+                </p>
+              ) : voice.greeting && voice.current ? (
+                <p className="dict-speaker" data-speaking>
+                  <SpeakerName lang={lang} src={voice.current} /> says hello. <Kbd>space</Kbd> skips it.
+                </p>
+              ) : speaker ? (
+                <p className="dict-speaker" data-speaking={voice.speaking || undefined}>
+                  <span className="dict-speaker-label">read by </span>
+                  <SpeakerName lang={lang} src={speaker} />
+                </p>
+              ) : null}
+              {voice.personas.length > 0 ? (
+                <VoiceMenu lang={lang} voice={voice} />
+              ) : (
+                <Link to="/settings#dictation" className="dict-voice-link">
+                  Voice settings
+                </Link>
+              )}
+            </div>
           )}
-          {noticeShort && (started || index > 0) && <p className="dict-voice">{noticeShort}</p>}
+          {noticeShort && (started || index > 0) && <p className="dict-voice dict-voice-note">{noticeShort}</p>}
         </div>
         <p className="dict-progress tabular" aria-label={`Sentence ${index + 1} of ${items.length}`}>
           {index + 1}
@@ -325,7 +394,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         <p className="dict-intro">
           {memory
             ? 'Press space and the first sentence shows for a few seconds. Then type it from memory.'
-            : 'Press space and Kees reads the first sentence aloud.'}
+            : 'Press space to hear the first sentence.'}
         </p>
       )}
 
@@ -345,7 +414,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         label={st.phase === 'retype' ? 'Type the sentence correctly' : 'Your answer'}
       />
       <div className="dict-under">
-        <KeyHints id={describedBy} st={st} started={started} empty={!text} memory={memory} last={last} canWords={listens >= 2 || st.attempts > 0} />
+        <KeyHints id={describedBy} st={st} started={started} empty={!text} memory={showsText} last={last} canWords={canWords} />
         {/* first stop after the field, so tab then enter starts a new set (as the footer says) */}
         <button type="button" className="dict-restart link-btn" onClick={onNewSet} title="New set (tab, then enter)">
           <Icon name="restart" size={16} />
@@ -358,6 +427,17 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         {st.phase === 'answer' ? '' : statusText(st, item)}
       </p>
     </section>
+  )
+}
+
+/** The reader's name; Arabic persona names are Arabic script, so they get their own lang and direction. */
+function SpeakerName({ lang, src }: { lang: Lang; src: VoiceSource }) {
+  const name = speakerName(lang, src)
+  const native = src.kind === 'clip' && !src.persona.mascot && isRtl(lang)
+  return (
+    <bdi className="dict-speaker-name" lang={native ? LANG_TAGS[lang] : undefined}>
+      {name}
+    </bdi>
   )
 }
 

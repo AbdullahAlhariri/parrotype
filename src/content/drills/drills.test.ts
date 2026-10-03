@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ALL_PACKS, PACKS, fillGap, nextPack, splitGap } from './index'
 import { parseItem } from './build'
 import { LANGS } from '@/types'
+import { stripTashkeel } from '@/engine/text'
 
 const BANNED = /—|unlock|supercharge|seamless|effortless|journey/i
 
@@ -16,10 +17,15 @@ describe('drill content', () => {
     for (const lang of LANGS) for (const p of PACKS[lang]) expect(p.lang).toBe(lang)
   })
 
-  it('has enough items per pack (40+ for Dutch, a full round elsewhere)', () => {
+  it('has enough items per pack (40+ for Dutch, 25+ for Arabic, a full round elsewhere)', () => {
+    const min = { nl: 40, en: 20, ar: 25 } as const
     for (const p of ALL_PACKS) {
-      expect(p.items.length, p.id).toBeGreaterThanOrEqual(p.lang === 'nl' ? 40 : 20)
+      expect(p.items.length, p.id).toBeGreaterThanOrEqual(min[p.lang])
     }
+  })
+
+  it('has at least ten packs per language', () => {
+    for (const lang of LANGS) expect(PACKS[lang].length, lang).toBeGreaterThanOrEqual(10)
   })
 
   it('has a rule in English, and in the practice language for nl and ar', () => {
@@ -74,6 +80,37 @@ describe('drill content', () => {
         expect(p.rule.en).not.toMatch(BANNED)
         expect(p.rule.local ?? '').not.toMatch(BANNED)
       })
+    })
+  }
+})
+
+describe('Arabic drill content', () => {
+  const TASHKEEL = /[\u064B-\u0652\u0670]/u
+  const TATWEEL = /\u0640/u
+  const practice = (p: (typeof PACKS)['ar'][number]) =>
+    p.items.flatMap((i) => [i.sentence, i.answer, ...(i.alternatives ?? []), ...(i.accept ?? [])])
+  const explanations = (p: (typeof PACKS)['ar'][number]) => [p.title, p.rule.en, p.rule.local ?? '', ...p.items.flatMap((i) => [i.hint?.en ?? '', i.hint?.local ?? ''])]
+
+  for (const p of PACKS.ar) {
+    it(`${p.id}: plain letters without tashkeel (tatweel only to show a prefix in explanations)`, () => {
+      for (const s of practice(p)) {
+        expect(s, s).not.toMatch(TASHKEEL)
+        expect(s, s).not.toMatch(TATWEEL)
+      }
+      for (const s of explanations(p)) expect(s, s).not.toMatch(TASHKEEL)
+    })
+
+    it(`${p.id}: Arabic punctuation in sentences and Arabic explanations`, () => {
+      for (const item of p.items) expect(item.sentence, item.sentence).not.toMatch(/[,;?]/)
+      expect(p.rule.local ?? '').toMatch(/[\u0600-\u06FF]/)
+      expect(p.rule.local ?? '').not.toMatch(/[,;?]/)
+      for (const item of p.items) expect(item.hint?.local ?? '', item.sentence).not.toMatch(/[a-z]/i)
+    })
+
+    it(`${p.id}: wrong options still differ once harakat are stripped`, () => {
+      for (const item of p.items) {
+        for (const a of item.alternatives ?? []) expect(stripTashkeel(a), item.sentence).not.toBe(item.answer)
+      }
     })
   }
 })

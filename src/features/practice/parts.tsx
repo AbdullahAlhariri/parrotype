@@ -5,6 +5,14 @@ import type { Lang } from '@/types'
 /** Language names inside English copy ("mistakes in Dutch"). The native names sit badly in an English sentence, and العربية next to digits reorders. */
 export const LANG_IN_ENGLISH: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
 
+const ARABIC_SCRIPT = /[\u0600-\u06FF]/
+
+/**
+ * lang and dir for a short text that may be English or in the practice language (nest hints are
+ * stored in whichever language explanations were set to): Arabic runs right to left.
+ */
+export const hintProps = (text: string): { lang?: string; dir: 'rtl' | 'auto' } => (ARABIC_SCRIPT.test(text) ? { lang: 'ar', dir: 'rtl' } : { dir: 'auto' })
+
 /** "Weak spots" link back to the hub, above a sub-page title. */
 export function SubHead({ title, children, back = '/practice', backLabel = 'Weak spots' }: { title: ReactNode; children?: ReactNode; back?: string; backLabel?: string }) {
   return (

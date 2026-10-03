@@ -37,6 +37,7 @@ export const taaMarbutaInside: ArRule = arRule(
       flag: [
         ['سيارةك جميلة', 'سيارةك', 'سيارتك'],
         ['زرت المدينةالكبيرة', 'المدينةالكبيرة', 'المدينة الكبيرة'],
+        ['تعلمت العربيةة في الصغر', 'العربيةة', 'العربية'],
       ],
       ok: ['مدرستي قريبة من بيتي، وسيارتك أمام الباب.', 'مدرستان كبيرتان في المدينة.'],
     },
@@ -48,11 +49,24 @@ export const taaMarbutaInside: ArRule = arRule(
       const i = w.indexOf('ة')
       if (i < 0 || i === w.length - 1 || !LETTER.test(w[i + 1])) continue
       const rest = w.slice(i + 1)
-      const fixes = PRONOUN_SUFFIX.test(rest) ? [`${w.slice(0, i)}ت${rest}`] : [`${w.slice(0, i + 1)} ${rest}`, `${w.slice(0, i)}ت${rest}`]
+      // a doubled ة (العربيةة) is a slip of the finger: drop one
+      const fixes = rest.startsWith('ة')
+        ? [w.slice(0, i + 1) + rest.slice(1)]
+        : PRONOUN_SUFFIX.test(rest)
+          ? [`${w.slice(0, i)}ت${rest}`]
+          : [`${w.slice(0, i + 1)} ${rest}`, `${w.slice(0, i)}ت${rest}`]
       out.push(
         tokenHit(t, fixes, {
-          message: PRONOUN_SUFFIX.test(rest) ? `Before a suffix ${q('ة')} becomes ${q('ت')}: ${q(fixes[0])}` : `${q('ة')} ends a word: missing space?`,
-          messageLocal: PRONOUN_SUFFIX.test(rest) ? `التاء المربوطة تصير تاء مفتوحة قبل الضمير: ${qa(fixes[0])}.` : `التاء المربوطة في آخر الكلمة فقط؛ هل نسيت المسافة؟`,
+          message: rest.startsWith('ة')
+            ? `${q('ة')} typed twice: ${q(fixes[0])}`
+            : PRONOUN_SUFFIX.test(rest)
+              ? `Before a suffix ${q('ة')} becomes ${q('ت')}: ${q(fixes[0])}`
+              : `${q('ة')} ends a word: missing space?`,
+          messageLocal: rest.startsWith('ة')
+            ? `التاء المربوطة مكررة: ${qa(fixes[0])}.`
+            : PRONOUN_SUFFIX.test(rest)
+              ? `التاء المربوطة تصير تاء مفتوحة قبل الضمير: ${qa(fixes[0])}.`
+              : `التاء المربوطة في آخر الكلمة فقط؛ هل نسيت المسافة؟`,
           explanation: `ة only appears at the end of a word. Before a suffix it turns into ت (سيارة, سيارتك). If two words are glued together, add a space after the ة.`,
           explanationLocal: `التاء المربوطة لا تأتي إلا في آخر الكلمة، وإذا اتصل بها ضمير صارت تاء مفتوحة: سيارة، سيارتك.`,
         }),

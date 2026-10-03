@@ -126,13 +126,15 @@ export function TypingSurface(props: TypingSurfaceProps) {
     [session],
   )
 
-  /** one key into the session */
+  /** One input into the session: typed text, a backspace, or ctrl+backspace (the whole word). */
   const feed = useCallback(
-    (key: string | null, wholeWord = false) => {
+    (op: { text: string } | { back: 'char' | 'word' }) => {
       if (session.finished) return
       const now = performance.now()
       const wasStarted = session.started
-      const ok = key === null ? (wholeWord ? session.deleteWord(now) : null) : session.input(key, now)
+      // text comes from beforeinput/composition, never from key names, so a mobile keyboard
+      // that delivers a whole word ("Copy", "Home") is typed, not filtered out as a named key
+      const ok = 'text' in op ? session.insertText(op.text, now) : op.back === 'word' ? session.deleteWord(now) : session.input('Backspace', now)
       if (!ok) return
       if (document.body.dataset.typing !== 'true') setTyping(true)
       if (!wasStarted) {
@@ -179,8 +181,8 @@ export function TypingSurface(props: TypingSurfaceProps) {
     const ta = inputRef.current
     if (!ta) return
     return attachInput(ta, {
-      text: (data) => feed(data),
-      backspace: (word) => (word ? feed(null, true) : feed('Backspace')),
+      text: (data) => feed({ text: data }),
+      backspace: (word) => feed({ back: word ? 'word' : 'char' }),
       composing: setComposing,
       caps: setCaps,
     })
@@ -378,7 +380,9 @@ export function TypingSurface(props: TypingSurfaceProps) {
         caps={caps}
       />
       <div className="ts-stage" onMouseDown={focusInput}>
-        <div ref={viewportRef} className="ts-viewport mono-text" dir={rtl ? 'rtl' : 'ltr'} lang={tag} translate="no" aria-hidden="true">
+        {/* lang only for Arabic: under lang=nl the font's 'locl' draws i+j as one ĳ glyph across the
+            letter spans (typing.css turns locl off as well). The accessible copy below carries lang. */}
+        <div ref={viewportRef} className="ts-viewport mono-text" dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? tag : undefined} translate="no" aria-hidden="true">
           <div ref={trackRef} className="ts-track">
             {items}
             <div ref={caretElRef} className="ts-caret is-idle" />

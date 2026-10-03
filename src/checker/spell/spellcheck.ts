@@ -1,6 +1,9 @@
 import type { Issue, Lang, Token } from '@/types'
+import { apostropheLike } from '../engine'
+import { isForeignSentence } from '../foreign'
 import { ABBREVIATIONS, splitSentences, tokenize } from '../tokenize'
 import type { FreqRanks } from './freq'
+import { isExtraWord, phraseRanges } from './extra'
 import { spellCopy } from './messages'
 import { rankSuggestions, type MisspellingMap, type RankedSuggestion, type SpellBackend } from './rank'
 import { ARABIC_RE, LATIN_RE, caseShape, toLookup } from './text'
@@ -17,14 +20,17 @@ export interface SpellCheckOptions {
   maxSuggestions?: number
 }
 
-/** Dictionary membership with the personal dictionary, ĳ ligatures and curly apostrophes handled. */
-export function makeIsKnown(backend: SpellBackend, personal?: ReadonlySet<string>) {
+/**
+ * Dictionary membership with the personal dictionary, ĳ ligatures and curly apostrophes handled.
+ * With a language, the extra word list (chat abbreviations, loanwords, Dutch places in Arabic) counts too.
+ */
+export function makeIsKnown(backend: SpellBackend, personal?: ReadonlySet<string>, lang?: Lang) {
   const memo = new Map<string, boolean>()
   return (word: string): boolean => {
     const w = toLookup(word)
     let hit = memo.get(w)
     if (hit !== undefined) return hit
-    hit = inPersonal(w, personal) || backend.testSpelling(w)
+    hit = inPersonal(w, personal) || (!!lang && isExtraWord(w, lang)) || backend.testSpelling(w)
     if (memo.size > 5000) memo.clear()
     memo.set(w, hit)
     return hit
@@ -42,25 +48,33 @@ export function inPersonal(word: string, personal?: ReadonlySet<string>): boolea
 }
 
 const CLITIC = /^['’][stnkmr]$/i
+const OPEN_QUOTE = /["“„«‘'‚]/
+const CLOSE_QUOTE = /["”»’'“‘]/
+const AR_PREFIX = /^(?:[وف]?(?:[بلك]?ال|لل|[بلك])|[وف])/
+
+/** fixes that only change a mark or a letter's shape: a capitalised word with one of these is no name */
+const MARK_KINDS: ReadonlySet<string> = new Set(['map', 'case', 'trema', 'accent', 'trema-drop'])
+/** the Arabic rewrites that target this user's real mistakes (hamza, ة/ه, ى/ي) */
+const AR_TARGETED: ReadonlySet<string> = new Set(['map', 'hamza', 'hamza-drop', 'hamza-seat', 'ta-marbuta', 'alif-maqsura', 'final-alif'])
+
+/**
+ * Arabic words have no capitals, so a name or loanword the dictionary lacks (أوتريخت, روتردام) looks
+ * like a typo. Only a targeted rewrite, or a fix that is a word people write and a small slip away,
+ * is sure; a far or rare fix is just a hint.
+ */
+function arabicConfidence(best: RankedSuggestion, common: boolean): Issue['confidence'] {
+  if (AR_TARGETED.has(best.kind)) return 'high'
+  if (common && best.dist <= 1) return 'high'
+  if (common && best.dist < 1.6) return 'medium'
+  return 'low'
+}
+
+const isCapitalised = (w: string) => {
+  const shape = caseShape(w)
+  return shape === 'capital' || shape === 'upper'
+}
 const HAS_DIGIT = /\p{N}/u
 const LETTER = /\p{L}/u
-
-/* The user writes in three languages. Skip sentences that are clearly in another one. */
-const STOP: Record<'nl' | 'en', ReadonlySet<string>> = {
-  nl: new Set('de het een en van ik je jij niet dat op te zijn met voor naar maar ook wat er hij zij we wij heb heeft dit die is'.split(' ')),
-  en: new Set('the and of to you with are this that have it for not be my your was were will would what they'.split(' ')),
-}
-
-function isForeign(words: Token[], lang: Lang): boolean {
-  const arabic = words.filter((t) => ARABIC_RE.test(t.text)).length
-  if (lang === 'ar') return arabic === 0
-  if (arabic * 2 > words.length) return true
-  const own = lang === 'nl' ? STOP.nl : STOP.en
-  const other = lang === 'nl' ? STOP.en : STOP.nl
-  const o = words.filter((t) => other.has(t.lower) && !own.has(t.lower)).length
-  const m = words.filter((t) => own.has(t.lower) && !other.has(t.lower)).length
-  return o >= 3 && o > m * 2
-}
 
 interface Piece {
   text: string
@@ -112,7 +126,7 @@ export function checkSpelling(
   opts: SpellCheckOptions = {},
 ): Issue[] {
   if (!text.trim()) return []
-  const isKnown = makeIsKnown(backend, opts.personal)
+  const isKnown = makeIsKnown(backend, opts.personal, lang)
   const tokens = tokenize(text, lang)
   const sentences = splitSentences(text, tokens)
   const budget = opts.suggestBudgetMs ?? 350
@@ -145,20 +159,69 @@ export function checkSpelling(
     return ranked
   }
 
+  const phrases = phraseRanges(text, lang)
   for (const s of sentences) {
     const words = s.tokens.filter((t) => t.isWord)
-    if (!words.length || isForeign(words, lang)) continue
+    if (!words.length || isForeignSentence(words, lang)) continue
     words.forEach((tok, wi) => {
-      if (abbreviation(tok)) return
+      if (abbreviation(tok) || quotedMention(tok)) return
+      if (phrases.some(([a, b]) => tok.start >= a && tok.end <= b)) return
       const ps = pieces(tok, wi === 0, lang, isKnown)
       if (ps === 'ok') return
+      // a capitalised neighbour (not the sentence's first word) makes a capitalised word part of a name
+      const nameNext = wi + 1 < words.length && isCapitalised(words[wi + 1].text)
+      const namePrev = wi > 1 && isCapitalised(words[wi - 1].text)
       for (const p of ps) {
-        const issue = checkPiece(p, ps.length > 1)
+        const issue = checkPiece(p, ps.length > 1, nameNext || namePrev)
         if (issue) issues.push(issue)
       }
     })
   }
   return issues
+
+  /** one word in quotes: the writer talks about the word (She typed "teh"), so it is not checked */
+  function quotedMention(tok: Token): boolean {
+    const open = text[tok.start - 1]
+    const close = text[tok.end]
+    if (!open || !close || !OPEN_QUOTE.test(open) || !CLOSE_QUOTE.test(close)) return false
+    const before = text[tok.start - 2]
+    const after = text[tok.end + 1]
+    return (before === undefined || /[\s([:]/.test(before)) && (after === undefined || !LETTER.test(after))
+  }
+
+  /** a capitalised word mid-sentence that splits into two known words is a street or place (Lauriergracht) */
+  function knownCompound(w: string): boolean {
+    const lower = toLookup(w).toLowerCase()
+    const chars = [...lower]
+    for (let i = 3; i <= chars.length - 3; i++) {
+      if (isKnown(chars.slice(0, i).join('')) && isKnown(chars.slice(i).join(''))) return true
+    }
+    return false
+  }
+
+  /**
+   * A plural verb with an object pronoun (أن يعلموه، كتبوها، ساعدوني): the alif of waw al-jama'a drops
+   * before the pronoun, and Ayaspell lacks many of these. Known when the bare plural (يعلموا / يعلمون) is.
+   */
+  function arabicObjectForm(w: string): boolean {
+    const m = /^(.{2,}و)(ه|ها|هم|هما|هن|ك|كم|كما|ني|نا)$/.exec(w)
+    return !!m && (isKnown(`${m[1]}ا`) || isKnown(`${m[1]}ن`))
+  }
+
+  /** frequency rank of an Arabic word, with or without its proclitics */
+  function arabicRank(w: string): number | undefined {
+    if (!freq) return undefined
+    const lookup = toLookup(w)
+    const own = freq.get(lookup)
+    if (own !== undefined) return own
+    const m = AR_PREFIX.exec(lookup)
+    return m ? freq.get(lookup.slice(m[0].length)) : undefined
+  }
+
+  /** an Arabic suggestion people actually write (in the frequency list) */
+  function commonArabic(w: string): boolean {
+    return arabicRank(w) !== undefined
+  }
 
   /** bijv., blz., Dr. and other abbreviations the dictionary knows with their dot */
   function abbreviation(tok: Token): boolean {
@@ -166,10 +229,11 @@ export function checkSpelling(
     return ABBREVIATIONS.has(tok.lower) || isKnown(tok.text + '.')
   }
 
-  function checkPiece(p: Piece, isPart: boolean): Issue | null {
+  function checkPiece(p: Piece, isPart: boolean, inName: boolean): Issue | null {
     const w = p.text
     if (!lookable(w, lang) || isKnown(w)) return null
     const lookup = toLookup(w)
+    if (lang === 'ar' && arabicObjectForm(lookup)) return null
     // possessive with 's: names everywhere (Fatima's, Yusra's), any known word in English (teacher's).
     // Dutch "computer's" stays flagged: after a consonant the plural is just -s.
     const poss = /^(.+)'s$/.exec(lookup)
@@ -186,14 +250,26 @@ export function checkSpelling(
       // common word (Ideeen, a long Huiswerkopdrcht), because capitals there are mostly names.
       if (!best || !isKnown(best.word.toLowerCase())) return null
       if (!p.initial && !(best.score < 0.75 || ([...w].length >= 8 && best.dist <= 1))) return null
+      if (!p.initial && knownCompound(w)) return null // Lauriergracht, Keizersgracht
+      // a capitalised neighbour (Sifan Hassan) or a fix two letters away (Mehmet -> Meet): a name
+      if (!MARK_KINDS.has(best.kind) && (inName || best.dist >= 1.5)) return null
     }
     if (isPart && !ranked.length && shape !== 'lower') return null
+    // Arabic has no capitals to spot names and loanwords by, so the frequency list stands in: a word
+    // people write (البيتزا, السوشي) that no targeted rewrite turns into a dictionary word, and that is
+    // at least as common as its nearest fix, is left alone. (لاكن is rarer than لكن: still flagged.)
+    if (lang === 'ar' && freq?.has(lookup) && !ranked.some((r) => AR_TARGETED.has(r.kind))) {
+      const own = freq.get(lookup)!
+      const fix = best ? arabicRank(best.word) : undefined
+      if (fix === undefined || own <= fix) return null
+    }
 
-    const replacements = ranked.slice(0, max).map((r) => r.word)
+    const replacements = ranked.slice(0, max).map((r) => apostropheLike(text, w, r.word))
     const copy = spellCopy(w, best, lang)
     // a capitalised word a whole letter away from its fix may still be a name we do not know (Priya)
     const unsure = shape === 'capital' && best && best.kind !== 'map' && !caseFix && best.dist >= 1
-    const confidence = !replacements.length ? 'medium' : unsure ? 'medium' : 'high'
+    let confidence: Issue['confidence'] = !replacements.length ? 'low' : unsure ? 'medium' : 'high'
+    if (lang === 'ar' && best) confidence = arabicConfidence(best, commonArabic(best.word))
     return {
       id: `spell@${p.start}:${w.length}`,
       ruleId: 'spell',

@@ -19,7 +19,7 @@ const words = (page: string) =>
 describe('stories content', () => {
   it('has enough stories per language', () => {
     expect(storiesFor('nl').length).toBeGreaterThanOrEqual(4)
-    expect(storiesFor('en').length).toBeGreaterThanOrEqual(3)
+    expect(storiesFor('en').length).toBeGreaterThanOrEqual(4)
     expect(storiesFor('ar').length).toBeGreaterThanOrEqual(4)
   })
 

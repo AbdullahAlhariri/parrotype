@@ -356,6 +356,8 @@ export const apostrophePlural: Rule = {
 
 /* zon -> zo'n */
 const ZON_PREV = set('de die deze het een geen mijn onze zijn haar hun jouw uw the la le')
+/** feelings that go with zo'n: "zo'n honger", "zo'n hekel" */
+const ZON_MASS = set('honger dorst pijn zin haast hekel spijt moeite mazzel geluk plezier last')
 
 export const zoN: Rule = {
   id: 'nl.spell.zo-n',
@@ -372,7 +374,7 @@ export const zoN: Rule = {
       const n = next(ctx, i)
       if (n < 0) return
       const nw = lw(ctx, n)
-      if (!ADJ_BASE.has(nw) && !COUNT_NOUNS.has(nw)) return
+      if (!ADJ_BASE.has(nw) && !COUNT_NOUNS.has(nw) && !ZON_MASS.has(nw)) return
       out.push(
         hitWord(ctx, i, ["zo'n"], {
           message: `Did you mean ‘zo'n’ (such a)?`,

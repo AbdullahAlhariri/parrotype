@@ -30,6 +30,14 @@ describe('selectSentences', () => {
     expect(out.every((s) => s.level === 2)).toBe(true)
   })
 
+  it('favours sentences with a recording within a tier, but never over the level and focus', () => {
+    const recorded = new Set(['b', 'd'])
+    const out = selectSentences(POOL, { level: 1, focus: ['dt'], count: 2, rand: seeded(3), prefer: (id) => recorded.has(id) })
+    // a, b and h match level and focus; b is the only recorded one there, then a or h (d is a level off)
+    expect(out.map((s) => s.id)).toContain('b')
+    expect(out.map((s) => s.id)).not.toContain('d')
+  })
+
   it('prefers level + focus, then the focus at neighbouring levels', () => {
     const out = selectSentences(POOL, { level: 1, focus: ['dt'], count: 4, rand: seeded(2) })
     expect(out.map((s) => s.id).sort()).toEqual(['a', 'b', 'd', 'h'])
@@ -105,5 +113,20 @@ describe('selectPairItems', () => {
 
   it('uses all sets when none are chosen', () => {
     expect(selectPairItems(PAIRS.nl, [], 20, seeded(4)).length).toBe(20)
+  })
+
+  it('puts preferred (recorded) sentences first', () => {
+    const recorded = new Set(['dalla-zalla-1', 'dalla-zalla-2', 'kitaba-kitabuh-3'])
+    const out = selectPairItems(PAIRS.ar, [], 3, seeded(5), (clip) => recorded.has(clip))
+    expect(new Set(out.map((i) => i.clip))).toEqual(recorded)
+  })
+
+  it('gives minimal-pair items the clip id of their recording (pair id and a number from 1)', () => {
+    const p = PAIRS.nl.find((x) => x.id === 'word-wordt')!
+    const out = selectPairItems(PAIRS.nl, ['word-wordt'], p.sentences.length, seeded(6))
+    for (const it of out) {
+      const n = Number(it.clip.slice('word-wordt-'.length))
+      expect(p.sentences[n - 1].text).toBe(it.text)
+    }
   })
 })

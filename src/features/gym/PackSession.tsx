@@ -9,6 +9,7 @@ import { Button, Kbd, Segmented } from '@/components/ui'
 import { GymRound, type RoundResult } from './GymRound'
 import { RoundSummary } from './RoundSummary'
 import { RulePanel } from './RulePanel'
+import { isolateArabic } from './Rich'
 import { explain, pickRound, ROUND_SIZE } from './round'
 import { useGym } from './store'
 
@@ -108,7 +109,7 @@ export function PackSession({ pack }: { pack: DrillPack }) {
             )}
           </div>
         </div>
-        <p className="gym-blurb gym-fade">{pack.blurb}</p>
+        <p className="gym-blurb gym-fade">{isolateArabic(pack.blurb)}</p>
       </header>
 
       {stage === 'rule' && (

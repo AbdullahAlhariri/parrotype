@@ -51,7 +51,9 @@ export const COUNT_NOUNS = set(`moeder vader broer zus zusje broertje oma opa oo
   dokter familie fiets auto huis kamer telefoon mobiel tas boek jas hond kat paard laptop computer sleutel portemonnee
   pen bril horloge schoen broek trui shirt fototoestel camera bed tuin school werk baan naam adres bericht brief
   mail e-mail vraag antwoord reactie aanvraag bestelling bezoek komst account wachtwoord rekening nummer
-  telefoonnummer verjaardag feest kantoor koffer rugzak paspoort rijbewijs huiswerk mening idee plan cadeau`)
+  telefoonnummer verjaardag feest kantoor koffer rugzak paspoort rijbewijs huiswerk mening idee plan cadeau
+  knie hoofd arm been voet hand rug buik neus oor oog tand nek schouder vinger enkel pols keel muts sjaal jurk rok
+  jasje sleutelbos oplader tablet agenda kaart fietssleutel huissleutel kamer slaapkamer stoel bureau`)
 
 /** formal nouns after "Bedankt voor u ..." */
 export const THANKS_NOUNS = set(`bericht brief mail e-mail vraag antwoord reactie aanvraag bestelling bezoek komst

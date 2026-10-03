@@ -38,10 +38,16 @@ const BY_LANG: Record<Lang, string[]> = {
   ar: [
     'On the Arabic 101 layout, لا has its own key: B.',
     'Taa marbuta (ة) sits on M, haa (ه) on I.',
-    'Shift + H gives أ, Shift + Y gives إ.',
+    'Shift + H gives أ, Shift + Y gives إ, Shift + N gives آ.',
     'The home row bumps are under ب and ت.',
+    'Alif maqsura (ى) is on N, yaa (ي) on D. على ends in one, في in the other.',
+    'With punctuation on, the Arabic comma ، is Shift + K and ؟ is Shift + /.',
+    'Hamza is part of the spelling: أن, إن and آن are three different words.',
   ],
 }
+
+/** Unicode isolate, so an Arabic word inside an English sentence keeps the numbers after it in place. */
+const iso = (s: string) => `\u2068${s}\u2069`
 
 /** A tip for run number `n`. Every third tip is personal when there is history to use. */
 export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissStat> = {}): string {
@@ -52,11 +58,13 @@ export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissSt
     const m = top[(n / 3) % top.length | 0]
     if (m.kind && n % 2 === 0) {
       const name = typoName(m.kind, lang).en.toLowerCase()
-      return `Your most frequent slip in "${m.word}" is ${name}. ${tipFor(m.kind, lang).en}`
+      return `Your most frequent slip in "${iso(m.word)}" is ${name}. ${tipFor(m.kind, lang).en}`
     }
     const typed = m.typed[0]
     const book = `${mascotName(lang)} has written it in his little book.`
-    return typed ? `You typed "${typed}" for "${m.word}" ${m.count} times so far. ${book}` : `"${m.word}" went wrong ${m.count} times so far. ${book}`
+    return typed
+      ? `You typed "${iso(typed)}" for "${iso(m.word)}" ${m.count} times so far. ${book}`
+      : `"${iso(m.word)}" went wrong ${m.count} times so far. ${book}`
   }
   const pool = [...BY_LANG[lang], ...GENERAL]
   return pool[n % pool.length]

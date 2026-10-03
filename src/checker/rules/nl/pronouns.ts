@@ -99,6 +99,8 @@ function attributiveAhead(ctx: RuleContext, n: number): boolean {
 }
 
 /* PRN-03: "voor jouw." -> "voor jou."; PRN-04: "met jou fiets" -> "met jouw fiets" */
+/** particles of separable verbs: "Ik ga met jouw mee" can only be jou */
+const JOU_PARTICLES = set('mee toe heen')
 const OTHER_POSSESSIVES = set("mijn m'n zijn z'n haar onze ons hun uw jullie")
 
 export const jouwJou: Rule = {
@@ -117,6 +119,8 @@ export const jouwJou: Rule = {
           if (!/^\s*[.?!,;:)]|^\s*$/.test(gap)) return
           // "jouw, mijn en zijn boek" is a list of possessives
           if (/^\s*,/.test(gap) && OTHER_POSSESSIVES.has(lw(ctx, i + 1))) return
+        } else if (JOU_PARTICLES.has(lw(ctx, n))) {
+          // "met jouw mee": the particle of a separable verb, never a noun
         } else if (!PREPOSITIONS.has(lw(ctx, n)) || /^-/.test(ctx.text.slice(ctx.words[n].end)) || attributiveAhead(ctx, n)) return
         out.push(
           hitWord(ctx, i, ['jou'], {
@@ -130,7 +134,12 @@ export const jouwJou: Rule = {
       } else if (w.lower === 'jou') {
         const p = prev(ctx, i)
         const n = next(ctx, i)
-        if (p < 0 || n < 0 || !PREPOSITIONS.has(lw(ctx, p)) || !ownedNoun(ctx, n, false)) return
+        if (n < 0) return
+        const noun = lw(ctx, n)
+        const thanks = p > 0 && matchAt(ctx, p - 1, [set('bedankt dank dankjewel dankuwel'), 'voor']) && THANKS_NOUNS.has(noun)
+        // "Is dit jou jas?": an owned noun that closes the clause can only be jouw + noun
+        const closing = ownedNoun(ctx, n, false) && /^\s*[.?!,;:)]|^\s*$/.test(gapAfter(ctx, n))
+        if (!thanks && !closing && (p < 0 || !PREPOSITIONS.has(lw(ctx, p)) || !ownedNoun(ctx, n, false))) return
         out.push(
           hitWord(
             ctx,
@@ -212,7 +221,7 @@ export const alsIkJou: Rule = {
   check(ctx) {
     const out: RuleHit[] = []
     ctx.words.forEach((_w, i) => {
-      if (!matchAt(ctx, i, ['als', 'ik', 'jij', set('was waren ben')])) return
+      if (!matchAt(ctx, i, ['als', 'ik', set('jij jouw'), set('was waren ben')])) return
       out.push(
         hitWord(ctx, i + 2, ['jou'], {
           message: `Fixed phrase: ‘als ik jou was’`,

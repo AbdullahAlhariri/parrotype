@@ -7,6 +7,17 @@ function startsSentence(ctx: RuleContext, offset: number) {
   return !!s && s.tokens.find((t) => t.isWord)?.start === offset
 }
 
+/**
+ * "Pieces of eight! pieces of eight!": a cry repeated after an exclamation mark keeps its small letter.
+ * True when the previous sentence ends in ! and starts with the same word.
+ */
+function repeatedCry(ctx: RuleContext, offset: number, word: string) {
+  const k = ctx.sentences.findIndex((x) => offset >= x.start && offset < x.end)
+  const prev = k > 0 ? ctx.sentences[k - 1] : undefined
+  if (!prev || !/!\s*$/.test(prev.text)) return false
+  return prev.tokens.find((t) => t.isWord)?.lower === word.toLowerCase()
+}
+
 // Capital letters (rules 39-43). Arabic has no capitals at all, and Dutch writes days, months and 'ik'
 // in lowercase, so these come up a lot when switching languages.
 
@@ -41,7 +52,7 @@ export const sentenceStartCap = regexRule({
   notAfter:
     /(?:\b[A-Za-z]\.(?:[A-Za-z]\.)*|\b(?:Corp|Inc|Ltd|Co|Jr|Sr|St|Mt|No|Fig|approx|Dept|Univ|Ave|Rd|vs|etc|Mr|Mrs|Ms|Dr|Prof|Gen|Sgt|Capt|Lt|Col|Gov|Sen|Rep|ft|in|cm|mm|km|kg|lbs?|oz|sec|[Mm]sec|min|hrs?|PhD|cf|ca|al|eds?|vol|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Bros|Rev|Hon|est|dept|govt|misc|tel|ext|nos?|ref|figs?|eqs?|ch|para|resp|incl|excl|avg|max|viz|ibid)\.)\s+$/,
   // the shared sentence splitter must agree that a sentence starts here (abbreviations, initials, quotes)
-  when: (f) => startsSentence(f.ctx, f.start),
+  when: (f) => startsSentence(f.ctx, f.start) && !repeatedCry(f.ctx, f.start, f.text),
   fix: (f) => [cap(f.text)],
   keepCase: false,
   msg: (_f, fixes) => ({
@@ -53,7 +64,7 @@ export const sentenceStartCap = regexRule({
     flag: 'then',
     fix: 'Then',
     right: 'I was tired. Then I slept.',
-    ok: ['We bought fruit, e.g. apples.', 'I love my iPhone. iPhones are nice.', '"Am I late?" she asked.', 'Wait.. and then?', 'It starts at 5 a.m. tomorrow.', 'Exports from the U.S. boomed.', 'Acme Corp. must pay.'],
+    ok: ['Pieces of eight! pieces of eight!', 'We bought fruit, e.g. apples.', 'I love my iPhone. iPhones are nice.', '"Am I late?" she asked.', 'Wait.. and then?', 'It starts at 5 a.m. tomorrow.', 'Exports from the U.S. boomed.', 'Acme Corp. must pay.'],
   },
 })
 

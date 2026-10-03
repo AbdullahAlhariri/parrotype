@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { LANG_TAGS } from '@/types'
+import { LANG_TAGS, isRtl } from '@/types'
 import type { ProofText } from '@/content/proofread'
+import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
 import { useNest } from '@/state/nest'
 import { setTyping } from '@/lib/focus'
@@ -12,7 +13,7 @@ import { useFix } from './store'
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 /** Save one check: stats session, a rule hit and a nest entry per missed mistake, text progress. */
-function record(text: ProofText, grade: ProofGrade, durationMs: number): boolean {
+function record(text: ProofText, grade: ProofGrade, durationMs: number, explainIn: 'en' | 'local'): boolean {
   const stats = useStats.getState()
   const missed = grade.results.filter((r) => r.status !== 'fixed')
   stats.addSession({
@@ -36,7 +37,7 @@ function record(text: ProofText, grade: ProofGrade, durationMs: number): boolean
       target,
       wrong: [sentenceAt(text.text, m.at)],
       ruleId,
-      hint: m.ruleNote.en,
+      hint: explainIn === 'local' && m.ruleNote.local ? m.ruleNote.local : m.ruleNote.en,
     })
   }
   return useFix.getState().record(text.id, grade.fixed, grade.total, grade.introduced.length)
@@ -53,7 +54,7 @@ export function FixSession({ text, onNext }: Props) {
   const [started, setStarted] = useState(() => Date.now())
   const [result, setResult] = useState<{ grade: ProofGrade; durationMs: number; firstPerfect: boolean } | null>(null)
   const area = useRef<HTMLTextAreaElement>(null)
-  const edits = useMemo(() => countEdits(text.text, value), [text.text, value])
+  const edits = useMemo(() => countEdits(text.text, value, text.lang), [text.text, text.lang, value])
   const n = text.mistakes.length
 
   // the editor grows with its text instead of scrolling inside the page
@@ -68,7 +69,7 @@ export function FixSession({ text, onNext }: Props) {
     setTyping(false)
     const grade = gradeProofread(text, value)
     const durationMs = Date.now() - started
-    const firstPerfect = record(text, grade, durationMs)
+    const firstPerfect = record(text, grade, durationMs, useSettings.getState().explainIn)
     setResult({ grade, durationMs, firstPerfect })
     window.scrollTo({ top: 0 })
   }
@@ -104,6 +105,7 @@ export function FixSession({ text, onNext }: Props) {
           }
         }}
         lang={LANG_TAGS[text.lang]}
+        dir={isRtl(text.lang) ? 'rtl' : 'ltr'}
         aria-label={`${text.title}: text to proofread`}
         aria-describedby="fix-count"
         spellCheck={false}

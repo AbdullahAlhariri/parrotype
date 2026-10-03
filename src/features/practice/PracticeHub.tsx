@@ -216,8 +216,10 @@ function DrillSection({ lang, weak, keySamples, primary }: { lang: Lang; weak: W
       {weak.length > 0 && (
         <ul className="weak-chips" aria-label="Weak keys">
           {weak.map((w) => (
-            <li key={w.kind + w.unit} className="weak-chip" lang={LANG_TAGS[lang]}>
-              <Kbd>{w.unit}</Kbd>
+            <li key={w.kind + w.unit} className="weak-chip">
+              <span className="weak-chip-key" lang={LANG_TAGS[lang]}>
+                <Kbd>{w.unit}</Kbd>
+              </span>
               <span className="weak-chip-rate tabular">{pct(w.errorRate)}</span>
               <span className="weak-chip-note muted small">missed, {w.samples} tries</span>
             </li>

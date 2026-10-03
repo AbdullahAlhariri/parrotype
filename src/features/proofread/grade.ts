@@ -1,4 +1,6 @@
-import { alignWords, type WordOp } from '@/engine/align'
+import type { Lang } from '@/types'
+import { alignWords, type AlignOptions, type WordOp } from '@/engine/align'
+import { stripTashkeel } from '@/engine/text'
 import type { PlantedMistake, ProofText } from '@/content/proofread'
 
 export type MistakeStatus = 'fixed' | 'missed' | 'changed'
@@ -34,8 +36,13 @@ export interface ProofGrade {
 
 type Range = [number, number]
 
-const norm = (s: string) =>
-  s.normalize('NFC').replace(/[‘’ʼ`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()
+/** Arabic is compared without tashkeel: typing a fatha or a shadda is never a mistake. */
+const alignOpts = (lang: Lang): AlignOptions => (lang === 'ar' ? { ignoreDiacritics: true } : {})
+
+const norm = (s: string, lang: Lang) => {
+  const out = s.normalize('NFC').replace(/[‘’ʼ`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()
+  return lang === 'ar' ? stripTashkeel(out) : out
+}
 
 /** Where each op sits in one of the two texts. Ops missing from that side get a zero-width range. */
 function positions(ops: WordOp[], side: 'expRange' | 'typedRange'): Range[] {
@@ -68,7 +75,7 @@ function* variants(options: string[][], prefix: number[] = []): Generator<number
  * reads as a split or merge with its neighbour is still graded as one mistake.
  */
 export function gradeProofread(text: ProofText, edited: string): ProofGrade {
-  const ops = alignWords(text.corrected, edited)
+  const ops = alignWords(text.corrected, edited, alignOpts(text.lang))
   const exp = positions(ops, 'expRange')
   const typ = positions(ops, 'typedRange')
   const n = ops.length
@@ -118,7 +125,7 @@ export function gradeProofread(text: ProofText, edited: string): ProofGrade {
         cursor = spans[j][1]
       })
       candidate += text.corrected.slice(cursor, region[1])
-      if (norm(candidate) === norm(typed)) {
+      if (norm(candidate, text.lang) === norm(typed, text.lang)) {
         statuses = pick.map((p, j) => (p === options[j].length - 1 ? 'missed' : 'fixed'))
         break
       }
@@ -139,10 +146,13 @@ export function gradeProofread(text: ProofText, edited: string): ProofGrade {
 }
 
 /** Words the user has changed so far compared with the starting text (for the live counter). */
-export function countEdits(original: string, edited: string): number {
+export function countEdits(original: string, edited: string, lang: Lang = 'nl'): number {
   if (original === edited) return 0
-  return alignWords(original, edited).filter((op) => op.op !== 'equal').length
+  return alignWords(original, edited, alignOpts(lang)).filter((op) => op.op !== 'equal').length
 }
+
+/** A retyped word matches the fix: same letters, ignoring spacing, curly quotes and Arabic tashkeel. */
+export const sameWord = (typed: string, right: string, lang: Lang) => norm(typed, lang) === norm(right, lang)
 
 export type Segment =
   | { kind: 'text'; text: string }

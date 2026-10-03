@@ -172,6 +172,8 @@ function arabicEndings(w: string): Candidate[] {
     add(stem + 'ا', 'final-alif') // مرحبى -> مرحبا
   }
   if (w.endsWith('ا') && w.length > 2) add(stem + 'ى', 'final-alif')
+  // tanween typed as a noon: مهندسن -> مهندسا (an accusative -an written the way it sounds)
+  if (w.endsWith('ن') && w.length >= 4) out.push({ word: stem + 'ا', kind: 'final-alif', weight: -0.4 })
   return out
 }
 
@@ -184,7 +186,9 @@ function arabicCandidates(w: string): Candidate[] {
   const hamzas: Candidate[] = []
   for (const p of prefixes) {
     if (!w.startsWith(p + 'ا') || w.length <= p.length + 1) continue
-    for (const h of ['أ', 'إ', 'آ']) hamzas.push({ word: p + h + w.slice(p.length + 1), kind: 'hamza', weight: p ? 0.3 : 0 })
+    // a hamza on the article itself (المتخف -> ألمتخف) only reads as interrogative أ + ل: rare
+    const onArticle = !p && w.startsWith('ال') && w.length >= 5
+    for (const h of ['أ', 'إ', 'آ']) hamzas.push({ word: p + h + w.slice(p.length + 1), kind: 'hamza', weight: p ? 0.3 : onArticle ? 0.7 : 0 })
   }
   out.push(...hamzas)
   // both slips at once, the classic one: الي -> إلى

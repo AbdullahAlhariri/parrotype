@@ -10,9 +10,21 @@ describe('CMP-01 groter dan (strict)', () => {
       ['Het is anders als vroeger.', 'als', 'dan'],
       ['Zij is ouder als mijn broer.', 'als', 'dan'],
     ]))
-  it('is a style rule: off in normal mode', () => {
-    expect(groterAls.strictOnly).toBe(true)
-    expect(check('Hij is groter als ik.', groterAls, { strictness: 'normal' })).toEqual([])
+  it('in normal mode only flags a plain comparison (pronoun or my brother at the end)', () => {
+    expect(groterAls.strictOnly).toBeFalsy()
+    const normal = { strictness: 'normal' as const }
+    for (const t of ['Hij is groter als ik.', 'Zij is ouder als mijn broer.', 'Het was beter als vorig jaar.']) {
+      expect(check(t, groterAls, normal).map((i) => i.replacements[0]), t).toEqual(['dan'])
+    }
+    for (const t of [
+      'Het is anders als vroeger.',
+      'Een appel is beter als tussendoortje.',
+      'Hij is bekender als zanger dan als acteur.',
+      'Zij is bekender als zijn vrouw dan als schrijver.',
+      'Het is beter als je komt.',
+    ]) {
+      expect(check(t, groterAls, normal), t).toEqual([])
+    }
   })
   it('leaves conditional als alone', () =>
     expectClean(groterAls, [

@@ -1,3 +1,4 @@
+import type { ReactionId } from '@/lib/audio'
 import type { TypoKind } from '@/types'
 import type { Grade, GradedToken, HintLevel } from './grade'
 import type { DictationItem } from './items'
@@ -114,7 +115,10 @@ export function summarise(results: readonly ItemResult[]): SessionSummary {
   }
 }
 
-/** ["wordt.", "wordt.", "wordt."]: Kees only ever repeats the correct form (his bubble shows them one by one). */
+/** A perfect set gets the mascot's 'perfect' line, any other set 'done'. */
+export const summaryReaction = (s: SessionSummary): ReactionId => (s.items > 0 && s.clean === s.items ? 'perfect' : 'done')
+
+/** ["wordt.", "wordt.", "wordt."]: the parrot only ever repeats the correct form (his bubble shows them one by one). */
 export const keesRepeat = (word: string, times = 3) => Array.from({ length: times }, () => `${word}.`)
 
 /** "3 min 12 s", "48 s" */
@@ -124,13 +128,16 @@ export function formatDuration(ms: number): string {
   return m ? `${m} min ${s % 60} s` : `${s} s`
 }
 
-/** One dry, specific line about the run. `name` turns a typo tag into words ("d/t ending"). */
-export function feedbackLine(s: SessionSummary, name: (tag: string) => string): string {
+/**
+ * One dry, specific line about the run. `name` turns a typo tag into words ("d/t ending"),
+ * `mascot` is the parrot's name in this language.
+ */
+export function feedbackLine(s: SessionSummary, name: (tag: string) => string, mascot = 'Kees'): string {
   if (!s.items) return ''
   if (s.targets) {
     if (s.targetsRight === s.targets) return `The right word every time, ${s.targets} out of ${s.targets}.`
     const miss = s.targets - s.targetsRight
-    return `${miss} of ${s.targets} times the other word. Kees will bring those back.`
+    return `${miss} of ${s.targets} times the other word. ${mascot} will bring those back.`
   }
   if (!s.mistakes) return 'Every word right on the first try.'
   const tags = new Map<string, number>()

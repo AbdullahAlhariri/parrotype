@@ -13,6 +13,10 @@ describe('gym links', () => {
     }
   })
 
+  it('links to every pack the gym has', () => {
+    for (const p of ALL_PACKS) expect(GYM_PACKS[p.id]?.title, p.id).toBe(p.title)
+  })
+
   it('maps checker rules onto the pack for the same contrast', () => {
     expect(gymPackFor('nl.dt.hij-t')?.id).toBe('nl.dt')
     expect(gymPackFor('nl.agr.stem-t')?.id).toBe('nl.dt')
@@ -25,10 +29,21 @@ describe('gym links', () => {
     expect(gymPackFor('lt:EN_A_VS_AN')?.id).toBe('en.a-an')
     expect(gymPackFor('ar.ha-for-taa')?.id).toBe('ar.taa')
     expect(gymPackFor('gym.nl.au-ou')?.id).toBe('nl.au-ou')
+    expect(gymPackFor('ar.hamza-omitted')?.id).toBe('ar.hamza')
+    expect(gymPackFor('ar.hamza-seat')?.id).toBe('ar.hamza-mid')
+    expect(gymPackFor('ar.final-hamza')?.id).toBe('ar.hamza-end')
+    expect(gymPackFor('ar.waw-jamaa-jussive')?.id).toBe('ar.waw-jamaa')
+    expect(gymPackFor('ar.extra-alif')?.id).toBe('ar.waw-jamaa')
+    expect(gymPackFor('ar.tanween-extra-alif')?.id).toBe('ar.tanween')
+    expect(gymPackFor('ar.hidden-alif')?.id).toBe('ar.hidden-alif')
+    expect(gymPackFor('ar.dad-dha')?.id).toBe('ar.dad-dha')
+    expect(gymPackFor('ar.interdental')?.id).toBe('ar.dhal-zay')
+    expect(gymPackFor('ar.inshallah')?.id).toBe('ar.common')
+    expect(gymPackFor('gym.ar.lam-shamsiyya')?.id).toBe('ar.lam-shamsiyya')
   })
 
   it('leaves rules the gym cannot drill alone', () => {
-    for (const id of ['nl.punct.space-before', 'nl.cap.ik', 'nl.wo.verb-second', 'en.run-on-and', 'spell', 'lt:WHITESPACE_RULE', 'gym.nope']) {
+    for (const id of ['nl.punct.space-before', 'nl.cap.ik', 'nl.wo.verb-second', 'en.run-on-and', 'ar.latin-punct', 'ar.dialect-word', 'spell', 'lt:WHITESPACE_RULE', 'gym.nope']) {
       expect(gymPackFor(id), id).toBeNull()
     }
   })

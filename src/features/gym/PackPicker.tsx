@@ -1,10 +1,11 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import { LANGS, LANG_NAMES, LANG_TAGS, isRtl, type Lang } from '@/types'
+import { LANG_NAMES, LANG_TAGS, isRtl } from '@/types'
 import { packsFor, type DrillPack } from '@/content/drills'
 import { useSettings } from '@/state/settings'
+import { mascotName } from '@/lib/mascot'
 import { Link } from '@/lib/router'
-import { Segmented } from '@/components/ui'
-import { mastery } from './round'
+import { isolateArabic } from './Rich'
+import { LANG_IN_ENGLISH, mastery, ROUND_SIZE } from './round'
 import { useGym, type PackProgress } from './store'
 
 const href = (p: DrillPack) => `/gym?pack=${encodeURIComponent(p.id)}`
@@ -31,27 +32,21 @@ function suggestion(packs: DrillPack[], progress: Record<string, PackProgress>):
 }
 
 export function PackPicker({ missing }: { missing?: string }) {
-  // the packs follow the practice language, the same one the header switches
+  // the packs follow the practice language; the header switch is the only way to change it
   const lang = useSettings((s) => s.lang)
-  const setSetting = useSettings((s) => s.set)
   const progress = useGym((s) => s.packs)
   const packs = packsFor(lang)
   const tip = suggestion(packs, progress)
-  const pick = (l: Lang) => setSetting('lang', l)
 
   return (
     <div className="gym-picker">
       <header className="page-head gym-head">
         <div>
           <h1 className="page-title">Grammar gym</h1>
-          <p className="page-lede">Fifteen sentences a round, one rule per pack. Type the missing word. A slip shows the rule, then you type the right word once.</p>
+          <p className="page-lede">
+            {packs.length} {LANG_IN_ENGLISH[lang]} packs, one rule each. Fifteen sentences a round: type the missing word. A slip shows the rule, then you type the right word once.
+          </p>
         </div>
-        <Segmented
-          ariaLabel="Packs in"
-          value={lang}
-          onChange={pick}
-          options={LANGS.map((l) => ({ value: l, label: l === 'ar' ? LANG_NAMES.ar : LANG_NAMES[l].toLowerCase(), lang: LANG_TAGS[l] }))}
-        />
       </header>
 
       {missing && <p className="gym-missing">There is no pack called {missing}. These are the ones there are.</p>}
@@ -65,10 +60,10 @@ export function PackPicker({ missing }: { missing?: string }) {
             </span>
             {tip.resume ? (
               <span className="muted tabular">
-                , {progress[tip.pack.id].lastScore} of {progress[tip.pack.id].bestOf || 15}
+                , {progress[tip.pack.id].lastScore} of {progress[tip.pack.id].bestOf || ROUND_SIZE}
               </span>
             ) : (
-              <span className="muted">. {lang === 'nl' ? 'It is the slip Kees hears most.' : 'It is first for a reason.'}</span>
+              <span className="muted">. It is the slip {mascotName(lang)} hears most.</span>
             )}
           </p>
           <Link to={href(tip.pack)} className="btn btn-primary btn-md">
@@ -104,7 +99,7 @@ function PackRow({ pack, progress }: { pack: DrillPack; progress?: PackProgress 
       <span className="gym-pack-title-cell mono-text" lang={LANG_TAGS[pack.lang]} dir={rtl ? 'rtl' : 'ltr'}>
         {pack.title}
       </span>
-      <span className="gym-pack-blurb">{pack.blurb}</span>
+      <span className="gym-pack-blurb">{isolateArabic(pack.blurb)}</span>
       <span className="gym-pack-meta tabular" aria-hidden="true">
         {played ? (
           <>

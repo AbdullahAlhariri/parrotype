@@ -1,4 +1,5 @@
 import type { Confidence, Dictionary, Issue, Lang, Rule, RuleContext, RuleHit } from '@/types'
+import { isForeignSentence } from './foreign'
 import { buildContext } from './tokenize'
 
 export interface RunOptions {
@@ -52,7 +53,7 @@ function isValidHit(h: RuleHit, text: string) {
 
 function toIssue(rule: Rule, h: RuleHit, text: string, lang: Lang): Issue {
   const flagged = text.slice(h.offset, h.offset + h.length)
-  const replacements = [...new Set(h.replacements)].filter((r) => r !== flagged)
+  const replacements = [...new Set(h.replacements.map((r) => apostropheLike(text, flagged, r)))].filter((r) => r !== flagged)
   return {
     id: `${rule.id}@${h.offset}:${h.length}`,
     ruleId: rule.id,
@@ -117,32 +118,10 @@ export function resolveOverlaps(input: Issue[]): Issue[] {
 /* Foreign sentences                                                   */
 /* ------------------------------------------------------------------ */
 
-// The user practises three languages, so a Dutch text may quote an English sentence. Skip those.
-const STOP: Record<'nl' | 'en', ReadonlySet<string>> = {
-  nl: new Set('de het een en van ik je jij niet dat op te zijn met voor naar maar ook wat er hij zij we wij heb heeft dit die is'.split(' ')),
-  en: new Set('the and of to you with are this that have it for not be my your was were will would what they'.split(' ')),
-}
-const ARABIC = /[؀-ۿ]/
-
 function foreignRanges(ctx: RuleContext): Array<[number, number]> {
-  const out: Array<[number, number]> = []
-  for (const s of ctx.sentences) {
-    const words = s.tokens.filter((t) => t.isWord)
-    if (!words.length) continue
-    const arabic = words.filter((t) => ARABIC.test(t.text)).length
-    let foreign: boolean
-    if (ctx.lang === 'ar') foreign = arabic === 0
-    else if (arabic * 2 > words.length) foreign = true
-    else {
-      const other = ctx.lang === 'nl' ? STOP.en : STOP.nl
-      const own = ctx.lang === 'nl' ? STOP.nl : STOP.en
-      const o = words.filter((t) => other.has(t.lower) && !own.has(t.lower)).length
-      const m = words.filter((t) => own.has(t.lower) && !other.has(t.lower)).length
-      foreign = o >= 3 && o > m * 2
-    }
-    if (foreign) out.push([s.start, s.end])
-  }
-  return out
+  return ctx.sentences
+    .filter((s) => isForeignSentence(s.tokens.filter((t) => t.isWord), ctx.lang))
+    .map((s): [number, number] => [s.start, s.end])
 }
 
 /* ------------------------------------------------------------------ */
@@ -179,6 +158,16 @@ function mentionRanges(ctx: RuleContext): Array<[number, number]> {
 /* ------------------------------------------------------------------ */
 /* Replacements                                                        */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Write the apostrophes in a fix the way the writer does: curly (’) when the flagged text has one, or
+ * when the text only uses curly ones (s’avonds -> ’s avonds, fotos -> foto’s).
+ */
+export function apostropheLike(text: string, flagged: string, fix: string) {
+  if (!fix.includes("'")) return fix
+  const curly = flagged.includes('’') || (!flagged.includes("'") && text.includes('’') && !text.includes("'"))
+  return curly ? fix.replace(/'/g, '’') : fix
+}
 
 export function applyReplacement(text: string, issue: Pick<Issue, 'offset' | 'length'>, replacement: string) {
   return text.slice(0, issue.offset) + replacement + text.slice(issue.offset + issue.length)

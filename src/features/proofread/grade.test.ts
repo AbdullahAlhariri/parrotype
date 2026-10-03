@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_TEXTS, findText } from '@/content/proofread'
-import { countEdits, gradeProofread, segments, sentenceAt } from './grade'
+import { countEdits, gradeProofread, sameWord, segments, sentenceAt } from './grade'
 
 describe('gradeProofread on every shipped text', () => {
   for (const t of ALL_TEXTS) {
@@ -65,6 +65,38 @@ describe('gradeProofread details', () => {
     const g = gradeProofread(nl, edited)
     expect(g.results.find((r) => r.mistake.right === 'tandarts')?.status).toBe('missed')
     expect(g.introduced).toEqual([])
+  })
+
+  it('grades Arabic without counting tashkeel as a change', () => {
+    const ar = findText('ar-01')!
+    const voweled = ar.corrected.replace('أنا بخير', 'أَنَا بخير')
+    const g = gradeProofread(ar, voweled)
+    expect(g.fixed).toBe(ar.mistakes.length)
+    expect(g.introduced).toEqual([])
+    expect(countEdits(ar.text, ar.text.replace('بخير', 'بِخَيْرٍ'), 'ar')).toBe(0)
+  })
+
+  it('grades an Arabic fix that splits one word into two', () => {
+    const ar = findText('ar-04')!
+    const g = gradeProofread(ar, ar.text.replace('إنشاء الله', 'إن شاء الله'))
+    expect(g.results.find((r) => r.mistake.rule === 'inshallah')?.status).toBe('fixed')
+    expect(g.results.filter((r) => r.status === 'fixed')).toHaveLength(1)
+    expect(g.introduced).toEqual([])
+  })
+
+  it('tells an Arabic wrong edit apart from an untouched mistake', () => {
+    const ar = findText('ar-01')!
+    const g = gradeProofread(ar, ar.text.replace('الى أمستردام', 'إلي أمستردام'))
+    const r = g.results.find((x) => x.mistake.right === 'إلى')!
+    expect(r.status).toBe('changed')
+    expect(r.typed).toBe('إلي')
+  })
+
+  it('matches a retyped word loosely', () => {
+    expect(sameWord(' إلى ', 'إلى', 'ar')).toBe(true)
+    expect(sameWord('إلَى', 'إلى', 'ar')).toBe(true)
+    expect(sameWord('الى', 'إلى', 'ar')).toBe(false)
+    expect(sameWord('word', 'wordt', 'nl')).toBe(false)
   })
 
   it('counts edits against the starting text', () => {

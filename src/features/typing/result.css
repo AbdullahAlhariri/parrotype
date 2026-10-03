@@ -350,3 +350,8 @@
     padding: var(--s-5);
   }
 }
+
+/* words to practise: one glyph per key, so no Dutch ĳ ('locl') */
+.tr .mono-text:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}

@@ -87,13 +87,20 @@ let manifestPromise: Promise<AudioManifest | null> | null = null
 let state: ManifestState = { manifest: null, loaded: false }
 const listeners = new Set<() => void>()
 
+/** A manifest that has not arrived after this long counts as missing (browser speech then). */
+const MANIFEST_TIMEOUT_MS = 6000
+
 /** Loads the manifest once; resolves to null when it is missing (dev without audio, offline). */
 export function loadManifest(): Promise<AudioManifest | null> {
-  manifestPromise ??= (typeof fetch === 'function' ? fetch(MANIFEST_URL) : Promise.reject(new Error('no fetch')))
+  if (manifestPromise) return manifestPromise
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : undefined
+  const timer = setTimeout(() => ctrl?.abort(), MANIFEST_TIMEOUT_MS)
+  manifestPromise = (typeof fetch === 'function' ? fetch(MANIFEST_URL, { signal: ctrl?.signal }) : Promise.reject(new Error('no fetch')))
     .then((r) => (r.ok ? r.json() : null))
     .then(parseManifest)
     .catch(() => null)
     .then((m) => {
+      clearTimeout(timer)
       state = { manifest: m, loaded: true }
       listeners.forEach((l) => l())
       return m
@@ -145,41 +152,49 @@ export function sampleClip(lang: Lang, persona: string): string | null {
 /**
  * How the user wants dictation voiced, from settings.voices[lang]:
  * 'mix' / undefined = rotate recorded voices, 'gemini:<id>' = one recorded voice,
- * 'browser:<name>' or a legacy plain name = the browser's own speech ('browser:' = its best voice).
+ * 'browser:<name>' = the browser's own speech ('browser:' = its best voice).
+ * A plain name is a browser voice picked before there were recordings: the recordings win,
+ * and that voice still reads whatever has no recording (`browser` on the mix).
  */
-export type VoicePreference = { kind: 'mix' } | { kind: 'gemini'; id: string } | { kind: 'browser'; name: string }
+export type VoicePreference = { kind: 'mix'; browser?: string } | { kind: 'gemini'; id: string } | { kind: 'browser'; name: string }
 
 export function parseVoiceSetting(v: string | undefined): VoicePreference {
   if (!v || v === 'mix') return { kind: 'mix' }
   if (v.startsWith('gemini:')) return { kind: 'gemini', id: v.slice(7) }
   if (v.startsWith('browser:')) return { kind: 'browser', name: v.slice(8) }
-  return { kind: 'browser', name: v }
+  return { kind: 'mix', browser: v }
 }
 
 export const voicePreference = (lang: Lang): VoicePreference => parseVoiceSetting(getSettings().voices[lang])
 
-/** The settings value for a preference (inverse of parseVoiceSetting). */
-export const voiceSetting = (p: VoicePreference): string => (p.kind === 'mix' ? 'mix' : p.kind === 'gemini' ? `gemini:${p.id}` : `browser:${p.name}`)
+/** The settings value for a preference (inverse of parseVoiceSetting; a legacy name stays as it was). */
+export const voiceSetting = (p: VoicePreference): string =>
+  p.kind === 'mix' ? (p.browser ?? 'mix') : p.kind === 'gemini' ? `gemini:${p.id}` : `browser:${p.name}`
+
+/** The browser voice of a preference: the chosen one, or undefined for the best voice. */
+export const preferredBrowserVoice = (p: VoicePreference): string | undefined =>
+  (p.kind === 'browser' ? p.name : p.kind === 'mix' ? p.browser : undefined) || undefined
 
 /**
  * The browser voice name to hand to speech.ts (speak/pickVoice) for a settings value:
- * the chosen voice for 'browser:<name>', undefined (= the best voice) for everything else.
+ * the chosen voice for 'browser:<name>' (or a legacy name), undefined (= the best voice) otherwise.
  */
-export const browserVoiceName = (v: string | undefined): string | undefined => {
-  const p = parseVoiceSetting(v)
-  return p.kind === 'browser' && p.name ? p.name : undefined
-}
+export const browserVoiceName = (v: string | undefined): string | undefined => preferredBrowserVoice(parseVoiceSetting(v))
 
 const pageSession = Math.floor(Math.random() * 1e6)
+
+/** Clip urls that failed to load this session (listed in the manifest, but missing or broken). */
+const broken = new Set<string>()
 
 /**
  * The recorded voice to use for a sentence, or null when browser speech should be used.
  * 'mix' picks deterministically per sentence and page session, so replays keep the same voice;
- * a chosen voice without a clip for this sentence falls back to the mix.
+ * a chosen voice without a clip for this sentence falls back to the mix. Clips that failed to
+ * load are skipped, so the next call names another voice (or null).
  */
 export function pickPersona(lang: Lang, sentenceId: string, pref: VoicePreference = voicePreference(lang)): string | null {
   if (pref.kind === 'browser') return null
-  const available = state.manifest?.clips[lang]?.[sentenceId] ?? []
+  const available = (state.manifest?.clips[lang]?.[sentenceId] ?? []).filter((p) => !broken.has(clipUrl(lang, p, sentenceId)))
   if (!available.length) return null
   if (pref.kind === 'gemini' && available.includes(pref.id)) return pref.id
   return available[hashString(`${pageSession}:${sentenceId}`) % available.length]
@@ -232,7 +247,11 @@ function play(url: string, rate = 1): Playback {
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const onEnded = () => self.finish('ended')
-  const onError = () => self.finish('error')
+  // a load or decode failure (not a blocked autoplay): this file is no good for the session
+  const onError = () => {
+    if (current === self) broken.add(url)
+    self.finish('error')
+  }
   const onPlaying = () => (started = true)
   // a pause we did not ask for (media keys, another tab taking over); the pause of the previous
   // clip arrives before this one plays, hence `started`
@@ -287,6 +306,13 @@ export function preloadClip(lang: Lang, persona: string, sentenceId: string) {
 }
 
 const speechBusy = () => typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking
+
+/**
+ * Would playReaction play right now? Synchronous, for callers that show the mascot talking
+ * (needs the manifest to be loaded already).
+ */
+export const reactionAvailable = (lang: Lang, id: ReactionId) =>
+  !!getSettings().mascotVoice && !audioBusy() && !speechBusy() && !!state.manifest?.reactions[lang]?.includes(id)
 
 /**
  * A short recorded line from the mascot, for rare moments only. Resolves when it is over:

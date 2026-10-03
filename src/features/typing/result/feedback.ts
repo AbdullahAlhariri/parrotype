@@ -78,3 +78,37 @@ export function feedbackLine(r: TypingResult, items: PractiseItem[]): string {
   if (r.consistency >= 80) return `Steady rhythm: ${Math.round(r.consistency)}% consistency.`
   return wrong === 1 ? 'One word left wrong. It is listed below.' : `${wrong} words left wrong. They are listed below.`
 }
+
+export interface TipGroup {
+  name: string
+  tip: string
+  tipLocal?: string
+  n: number
+}
+
+/**
+ * Up to `max` tips for the most common typo types. Types that share a tip (swapped letters on
+ * one hand and on two hands) are merged under their common name, so no tip is shown twice.
+ */
+export function tipGroups(items: PractiseItem[], max = 2): TipGroup[] {
+  const groups = new Map<string, TipGroup & { names: Set<string> }>()
+  for (const it of items) {
+    if (!it.label) continue
+    const tip = it.label.tip.en
+    const g = groups.get(tip)
+    if (g) {
+      g.n++
+      g.names.add(it.name)
+    } else groups.set(tip, { name: it.name, tip, tipLocal: it.label.tip.local, n: 1, names: new Set([it.name]) })
+  }
+  return [...groups.values()]
+    .sort((a, b) => b.n - a.n)
+    .slice(0, max)
+    .map(({ names, ...g }) => ({ ...g, name: names.size > 1 ? commonName([...names]) : g.name }))
+}
+
+/** "Swapped letters (one hand)" + "Swapped letters (two hands)" -> "Swapped letters" */
+function commonName(names: string[]): string {
+  const bare = names.map((n) => n.replace(/\s*\(.*\)$/, ''))
+  return bare.every((b) => b === bare[0]) ? bare[0] : names[0]
+}

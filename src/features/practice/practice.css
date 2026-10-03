@@ -246,8 +246,12 @@
 /* Dutch typing text: no ĳ ligature (Recursive maps i+j to one glyph under lang=nl via locl) */
 .practice .mono-text:not(:lang(ar)),
 .daily .mono-text:not(:lang(ar)),
-.weak-chip:not(:lang(ar)) .kbd {
+.weak-chip-key:not(:lang(ar)) .kbd {
   font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+.weak-chip-key:lang(ar) .kbd {
+  font-family: var(--font-arabic);
+  font-variant-ligatures: common-ligatures;
 }
 .practice-subhead .page-lede {
   margin-top: 0;
@@ -614,4 +618,9 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
   .nest-card {
     animation: none;
   }
+}
+
+/* Practice words are typed letter by letter: Recursive's Dutch 'locl' would draw i+j as one ĳ */
+.practice .mono-text:not(:lang(ar)) {
+  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
 }

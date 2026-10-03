@@ -11,6 +11,8 @@ interface Props {
   canListen: boolean
 }
 
+const PAIR_EXAMPLE: Record<Lang, string> = { nl: 'word or wordt?', en: 'then or than?', ar: 'كتابة or كتابه?' }
+
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
 
 /** Monkeytype-style config bar: plain text options, the active one in --main. */
@@ -31,8 +33,8 @@ export function DictationSetup({ lang, config: c, onChange, canListen }: Props) 
           value={c.mode}
           onChange={(mode) => set({ mode })}
           options={[
-            { value: 'sentences', label: 'sentences', title: 'Kees reads a sentence, you type it' },
-            { value: 'pairs', label: 'which one?', title: 'Sound-alike words in a sentence: word or wordt?' },
+            { value: 'sentences', label: 'sentences', title: 'You hear a sentence and type it' },
+            { value: 'pairs', label: 'which one?', title: `Sound-alike words in a sentence: ${PAIR_EXAMPLE[lang]}` },
           ]}
         />
         {!pairs && (
@@ -69,11 +71,11 @@ export function DictationSetup({ lang, config: c, onChange, canListen }: Props) 
         </div>
         {canListen && (
           <Segmented<Playback>
-            ariaLabel="How Kees gives the sentence"
+            ariaLabel="How you get the sentence"
             value={c.playback}
             onChange={(playback) => set({ playback })}
             options={[
-              { value: 'listen', label: 'listen', title: 'Kees reads it aloud' },
+              { value: 'listen', label: 'listen', title: 'A voice reads it aloud' },
               { value: 'memory', label: 'memory', title: 'The sentence flashes on screen, then you type it from memory' },
             ]}
           />

@@ -1,4 +1,4 @@
-import { LANG_TAGS } from '@/types'
+import { LANG_TAGS, isRtl } from '@/types'
 import type { ProofText } from '@/content/proofread'
 import { Link } from '@/lib/router'
 import type { TextProgress } from './store'
@@ -26,7 +26,7 @@ export function TextList({ id, texts, current, progress, onPick }: Props) {
               aria-current={t.id === current ? 'true' : undefined}
               onClick={onPick}
             >
-              <span className="fix-list-title" lang={LANG_TAGS[t.lang]}>
+              <span className="fix-list-title" lang={LANG_TAGS[t.lang]} dir={isRtl(t.lang) ? 'rtl' : undefined}>
                 {t.title}
               </span>
               <span className="fix-list-level muted">level {t.difficulty}</span>

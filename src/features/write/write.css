@@ -2,6 +2,12 @@
 
 .write {
   padding-block: var(--s-6) var(--s-9);
+  /* Recursive's Dutch locl turns "ij" into one ĳ glyph; a spelling tool shows the two letters typed */
+  font-feature-settings: 'locl' 0;
+}
+/* Arabic practice text: Naskh for Arabic, Recursive for any Latin word in between (not a serif fallback) */
+.write :lang(ar):not(.we *) {
+  font-family: 'Noto Naskh Arabic', 'Recursive Sans', var(--font-arabic);
 }
 
 /* ------------------------------------------------------------------ */
@@ -262,9 +268,10 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   line-height: var(--we-line);
   letter-spacing: 0;
   word-spacing: 0;
-  font-kerning: normal;
-  font-variant-ligatures: common-ligatures;
-  font-feature-settings: normal;
+  /* one glyph per typed letter, and nothing that could shape differently across the mirror's spans */
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'clig' 0, 'calt' 0, 'locl' 0;
   text-transform: none;
   text-indent: 0;
   text-align: start;
@@ -274,8 +281,19 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   tab-size: 4;
 }
 .we[data-lang='ar'] .we-text {
-  font-family: var(--font-arabic);
+  font-family: 'Noto Naskh Arabic', 'Recursive Sans', var(--font-arabic);
   font-weight: 400;
+  /* Arabic needs its joining forms, lam-alif and mark positioning */
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures;
+  font-feature-settings: normal;
+}
+
+/* marks inside the mirror take everything from it (the global :lang(ar) font must not reach them) */
+.we .we-text * {
+  font: inherit;
+  font-feature-settings: inherit;
+  letter-spacing: inherit;
 }
 
 .we-mirror {
@@ -364,8 +382,11 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .we--lines:not([data-lang='ar']) .we-text {
   font-family: var(--font-typing, var(--font-mono));
   font-weight: 400;
-  font-kerning: none;
-  font-variant-ligatures: none;
+}
+/* Arabic: a sans (kufi-like) system face instead of Naskh. Every platform has one, so it stays offline. */
+.we--lines[data-lang='ar'] .we-text {
+  font-family: 'Noto Sans Arabic', 'Segoe UI', 'Geeza Pro', Tahoma, 'DejaVu Sans', sans-serif;
+  font-weight: 400;
 }
 
 /* self-review: only the lines are marked */
@@ -494,6 +515,15 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 }
 .il-note > p + p {
   margin-top: var(--s-2);
+}
+/* words in the practice language inside a note: the thing to look for */
+.wp-form {
+  color: var(--text);
+  font-weight: 560;
+}
+.wp-form:lang(ar) {
+  font-size: 1.25em;
+  line-height: 1;
 }
 
 .il-group-title {
@@ -711,7 +741,7 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 }
 .ip-reps:lang(ar) .ip-rep,
 .il-forms:lang(ar) {
-  font-family: var(--font-arabic);
+  font-family: 'Noto Naskh Arabic', 'Recursive Sans', var(--font-arabic);
   font-size: 1.3rem;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -992,12 +1022,19 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   font-size: var(--fs-lg);
   font-variant-ligatures: none;
 }
-.wr-words:lang(ar) .wr-word-right {
-  font-family: var(--font-arabic);
-}
 .wr-word-wrong {
   color: var(--sub);
   font-size: var(--fs-sm);
+}
+/* Arabic words read right to left but line up under the heading like every other block */
+.wr-words[dir='rtl'] {
+  justify-content: flex-end;
+}
+.wr-words:lang(ar) .wr-word-right {
+  font-size: 1.75rem;
+}
+.wr-words:lang(ar) .wr-word-wrong {
+  font-size: var(--fs-base);
 }
 .wr-word-n {
   color: var(--sub);
@@ -1034,6 +1071,16 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .wr-rule-ex:lang(ar) {
   font-size: 1.4rem;
   line-height: 1.9;
+}
+/* right-to-left lines hug their text and sit at the start of the column, under their heading */
+.wr-rule-ex[dir='rtl'],
+.wr-rule-was[dir='rtl'],
+.wr-rule-why[dir='rtl'] {
+  width: fit-content;
+  max-width: 100%;
+}
+.wr-rule-why[dir='rtl'] {
+  max-width: 36rem;
 }
 .wr-fix {
   background: none;
@@ -1088,4 +1135,9 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   .wr-side {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Arabic draft titles line up with the English meta line under them */
+.wd-title[dir='rtl'] {
+  text-align: left;
 }

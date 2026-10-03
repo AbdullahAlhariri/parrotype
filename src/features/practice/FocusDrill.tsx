@@ -57,8 +57,10 @@ export function FocusDrill({ units }: { units: string[] }) {
           <div className="drill-lede">
             <ul className="weak-chips is-inline" aria-label="Drilled keys">
               {targets.map((w) => (
-                <li key={w.kind + w.unit} className="weak-chip" lang={LANG_TAGS[lang]}>
-                  <Kbd>{w.unit}</Kbd>
+                <li key={w.kind + w.unit} className="weak-chip">
+                  <span className="weak-chip-key" lang={LANG_TAGS[lang]}>
+                    <Kbd>{w.unit}</Kbd>
+                  </span>
                   {w.samples > 0 && <span className="weak-chip-rate tabular">{pct(w.errorRate)}</span>}
                 </li>
               ))}

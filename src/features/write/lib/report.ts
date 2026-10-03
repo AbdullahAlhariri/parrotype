@@ -14,6 +14,9 @@ export const CATEGORY_LABEL: Record<IssueCategory, string> = {
 /** Display order: the things that are actually wrong first, style last. */
 export const CATEGORY_ORDER: IssueCategory[] = ['spelling', 'typo', 'grammar', 'capitalization', 'punctuation', 'style']
 
+/** misspelling-list rules (nl.spell.common, en.misspelling): their only lesson is the word itself */
+const GENERIC_SPELLING = /\.(common|misspellings?)$/
+
 export const isSpelling = (i: Pick<Issue, 'category'>) => i.category === 'spelling' || i.category === 'typo'
 
 /** Hints (style, low confidence) are shown but never counted as mistakes or sent to the nest. */
@@ -98,6 +101,9 @@ export function summarize(text: string, issues: readonly Issue[], titleFor: Titl
       const w = words.get(key)
       if (w) w.count++
       else words.set(key, { wrong: i.text, right: i.replacements[0], count: 1 })
+      // a spelling rule that can explain itself (هذا، لكن; إن شاء الله; -ig/-lijk) is worth showing as
+      // a rule too; plain misspelling lists add nothing to "Words to practise"
+      if (i.source === 'rules' && i.explanation && !GENERIC_SPELLING.test(i.ruleId)) addRule(rules, i)
     } else addRule(rules, i)
     if (i.replacements[0]) {
       const key = `${i.ruleId}|${i.replacements[0].toLowerCase()}`
@@ -134,7 +140,7 @@ export type NestAdd = Pick<NestItem, 'lang' | 'kind' | 'target'> & Partial<Pick<
  * What goes into the mistake nest: misspelled words (target = first suggestion) and, for grammar,
  * the corrected sentence (every counted fix in that sentence applied) with the rule as a hint.
  */
-export function nestItemsFrom(text: string, issues: readonly Issue[], lang: Lang): NestAdd[] {
+export function nestItemsFrom(text: string, issues: readonly Issue[], lang: Lang, explainIn: 'en' | 'local' = 'en'): NestAdd[] {
   const out: NestAdd[] = []
   const seen = new Set<string>()
   const mistakes = issues.filter(isMistake)
@@ -152,7 +158,8 @@ export function nestItemsFrom(text: string, issues: readonly Issue[], lang: Lang
     const wrong = text.slice(start, end).trim()
     if (!target || target === wrong || seen.has(`s|${target}`)) continue
     seen.add(`s|${target}`)
-    out.push({ lang, kind: 'sentence', target, wrong: [wrong], ruleId: i.ruleId, hint: i.explanation ?? i.message })
+    const hint = (explainIn === 'local' && (i.explanationLocal ?? i.messageLocal)) || i.explanation || i.message
+    out.push({ lang, kind: 'sentence', target, wrong: [wrong], ruleId: i.ruleId, hint })
   }
   return out
 }

@@ -21,7 +21,11 @@ export function StoryList({ missing }: { missing?: string }) {
       <header className="page-head stories-head">
         <div>
           <h1 className="page-title">Stories</h1>
-          <p className="page-lede">Short stories to type, one page at a time. Capitals and punctuation count. {mascotName(lang)} keeps your place.</p>
+          <p className="page-lede">
+            Short stories to type, one page at a time.{' '}
+            {lang === 'ar' ? 'Punctuation counts, Arabic commas and question marks included.' : 'Capitals and punctuation count.'}{' '}
+            {mascotName(lang)} keeps your place.
+          </p>
         </div>
         <p className="stories-count muted small tabular">
           {stories.length} in {LANG_IN_ENGLISH[lang]}

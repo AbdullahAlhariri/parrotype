@@ -19,18 +19,34 @@ function conditionalAfter(ctx: RuleContext, als: number): boolean {
   if (s >= 0 && COND_SUBJ.has(lw(ctx, s)) && s < end) return true // subject + more words: a clause
   for (let k = als + 1; k <= end; k++) {
     const w = lw(ctx, k)
+    if (w === 'zijn' && k < end && isKnownNoun(lw(ctx, k + 1))) continue // "als zijn vader": possessive
     if (isFiniteForm(w) || (k > als + 1 && /\p{Ll}{3,}t$/u.test(w) && !isKnownNoun(w))) return true
   }
   return false
 }
 
+const CMP_PRONOUNS = set('ik jij hij zij wij we jullie ze u mij jou hem haar ons hen hun iemand iedereen niemand')
+const CMP_DETERMINERS = set("mijn m'n jouw je zijn z'n haar onze ons hun uw de het die dat deze dit vorig vorige")
+
+/** "ouder als ik.", "groter als zijn vader.", "beter als vorig jaar.": nothing but the compared thing follows */
+function plainComparison(ctx: RuleContext, als: number): boolean {
+  const c = clauseOf(ctx, als)
+  const end = c ? c.to : ctx.words.length - 1
+  for (let k = als + 1; k < ctx.words.length && sameSentence(ctx, als, k); k++) if (lw(ctx, k) === 'dan') return false
+  const a = next(ctx, als)
+  if (a < 0 || a > end) return false
+  if (CMP_PRONOUNS.has(lw(ctx, a))) return a === end
+  if (!CMP_DETERMINERS.has(lw(ctx, a))) return false
+  const n = next(ctx, a)
+  return n >= 0 && n === end && (isKnownNoun(lw(ctx, n)) || ['jaar', 'week', 'maand', 'keer'].includes(lw(ctx, n)))
+}
+
 export const groterAls: Rule = {
   id: 'nl.cmp.groter-dan',
   lang: 'nl',
-  category: 'style',
+  category: 'grammar',
   title: 'groter dan (not als)',
   confidence: 'medium',
-  strictOnly: true,
   check(ctx) {
     const out: RuleHit[] = []
     ctx.words.forEach((w, i) => {
@@ -41,6 +57,9 @@ export const groterAls: Rule = {
       if (!COMPARE_WORDS.has(cmp) || NOT_COMPARISON.has(cmp)) return
       if (cmp === 'meer' && lw(ctx, i + 1) === 'een') return // "meer als een broer" = more like a brother
       if (conditionalAfter(ctx, i)) return
+      // In normal mode only the sure cases: a pronoun or "my brother" closing the comparison. "Beter als
+      // ontbijt" (as breakfast) and "bekender als zanger dan als acteur" use als in another sense.
+      if (ctx.strictness !== 'strict' && !plainComparison(ctx, i)) return
       out.push(
         hitWord(ctx, i, ['dan'], {
           message: `After a comparative: ‘${cmp} dan’`,
@@ -64,6 +83,8 @@ const AFTER_PARTICLE = set('nog toch eigenlijk wel ook niet maar weer echt ineen
 const danIsParticle = (ctx: RuleContext, dan: number) => {
   const n = next(ctx, dan)
   if (n < 0) return true
+  // "even groot dan zijn broer": zijn + noun is the possessive, not the verb
+  if (lw(ctx, n) === 'zijn' && next(ctx, n) >= 0 && isKnownNoun(lw(ctx, n + 1))) return false
   return isFiniteForm(lw(ctx, n)) || AFTER_PARTICLE.has(lw(ctx, n)) // "zo duur dan moet je..." (dan = then)
 }
 

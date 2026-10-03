@@ -26,7 +26,7 @@ export const GYM_PACKS: Record<string, GymPack> = {
   'nl.ei-ij': { id: 'nl.ei-ij', lang: 'nl', title: 'ei / ij', spelling: true },
   'nl.au-ou': { id: 'nl.au-ou', lang: 'nl', title: 'au / ou', spelling: true },
   'nl.trema-apostrof': { id: 'nl.trema-apostrof', lang: 'nl', title: "ideeën / auto's", spelling: true },
-  'nl.compounds': { id: 'nl.compounds', lang: 'nl', title: 'tandarts / tand arts', spelling: true },
+  'nl.compounds': { id: 'nl.compounds', lang: 'nl', title: 'aaneen / los', spelling: true },
   'en.its': { id: 'en.its', lang: 'en', title: "its / it's" },
   'en.your': { id: 'en.your', lang: 'en', title: "your / you're" },
   'en.their': { id: 'en.their', lang: 'en', title: "their / there / they're" },
@@ -42,6 +42,15 @@ export const GYM_PACKS: Record<string, GymPack> = {
   'ar.hamza': { id: 'ar.hamza', lang: 'ar', title: 'أ / إ / ا', spelling: true },
   'ar.taa': { id: 'ar.taa', lang: 'ar', title: 'ة / ه', spelling: true },
   'ar.alif-maqsura': { id: 'ar.alif-maqsura', lang: 'ar', title: 'ى / ي', spelling: true },
+  'ar.hamza-mid': { id: 'ar.hamza-mid', lang: 'ar', title: 'سؤال / رئيس / سأل', spelling: true },
+  'ar.hamza-end': { id: 'ar.hamza-end', lang: 'ar', title: 'شيء / شاطئ / بدأ', spelling: true },
+  'ar.waw-jamaa': { id: 'ar.waw-jamaa', lang: 'ar', title: 'كتبوا / يكتبون', spelling: true },
+  'ar.tanween': { id: 'ar.tanween', lang: 'ar', title: 'جدا / مساء', spelling: true },
+  'ar.hidden-alif': { id: 'ar.hidden-alif', lang: 'ar', title: 'هذا / لكن', spelling: true },
+  'ar.lam-shamsiyya': { id: 'ar.lam-shamsiyya', lang: 'ar', title: 'الشمس / الليل', spelling: true },
+  'ar.dad-dha': { id: 'ar.dad-dha', lang: 'ar', title: 'ض / ظ', spelling: true },
+  'ar.dhal-zay': { id: 'ar.dhal-zay', lang: 'ar', title: 'ذ / ز / ظ', spelling: true },
+  'ar.common': { id: 'ar.common', lang: 'ar', title: 'الآن / لأن / إن شاء الله', spelling: true },
 }
 
 /** Checker rule id patterns (src/checker/rules) and the pack that drills the same contrast. */
@@ -70,9 +79,17 @@ const RULE_TO_PACK: [RegExp, string][] = [
   [/^en\.since-(duration|present)$/, 'en.since-for'],
   [/^en\.(make-homework|make-photo|do-mistake|make-a-walk|make-fun)$/, 'en.make-do'],
   [/^en\.(borrow-me|lend-borrow|learn-me)$/, 'en.lend-teach'],
-  [/^ar\.(hamza-|an-hamza$|final-hamza$|wasl-)/, 'ar.hamza'],
+  [/^ar\.hamza-seat$/, 'ar.hamza-mid'],
+  [/^ar\.final-hamza$/, 'ar.hamza-end'],
+  [/^ar\.(hamza-|an-hamza$|wasl-)/, 'ar.hamza'],
   [/^ar\.(taa-marbuta|ha-for-taa)/, 'ar.taa'],
-  [/^ar\.(alif-maqsura|ya-for-maqsura|maqsura-for-ya)/, 'ar.alif-maqsura'],
+  [/^ar\.(alif-maqsura|ya-for-maqsura|maqsura-for-ya|ala-ali$)/, 'ar.alif-maqsura'],
+  [/^ar\.(waw-jamaa|extra-alif)/, 'ar.waw-jamaa'],
+  [/^ar\.tanween-/, 'ar.tanween'],
+  [/^ar\.hidden-alif$/, 'ar.hidden-alif'],
+  [/^ar\.dad-dha$/, 'ar.dad-dha'],
+  [/^ar\.interdental$/, 'ar.dhal-zay'],
+  [/^ar\.(inshallah|mashallah|bi-idhn|masuul)$/, 'ar.common'],
 ]
 
 /** The gym pack for a rule id, or null when the gym has nothing for it (punctuation, word order...). */

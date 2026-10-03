@@ -1,4 +1,4 @@
-import { LANG_NAMES, LANG_TAGS, isRtl } from '@/types'
+import { LANG_NAMES, LANG_TAGS, isRtl, type Lang } from '@/types'
 import { splitGap, type DrillItem, type DrillPack } from '@/content/drills'
 import { useSettings } from '@/state/settings'
 import { Segmented } from '@/components/ui'
@@ -30,11 +30,14 @@ export function Example({ item, lang }: { item: DrillItem; lang: DrillPack['lang
   )
 }
 
-/** Which language explanations come in. Only shown when the pack has a translation. */
-export function ExplainSwitch({ pack }: { pack: DrillPack }) {
+/**
+ * Which language explanations come in: English or the practice language (Dutch, Arabic).
+ * This is the explanation language only; the practice language changes in the header.
+ */
+export function ExplainSwitch({ lang }: { lang: Lang }) {
   const explainIn = useSettings((s) => s.explainIn)
   const set = useSettings((s) => s.set)
-  if (!pack.rule.local) return null
+  if (lang === 'en') return null
   return (
     <Segmented
       ariaLabel="Explanations in"
@@ -42,7 +45,7 @@ export function ExplainSwitch({ pack }: { pack: DrillPack }) {
       onChange={(v) => set('explainIn', v)}
       options={[
         { value: 'en', label: 'English' },
-        { value: 'local', label: LANG_NAMES[pack.lang], lang: LANG_TAGS[pack.lang] },
+        { value: 'local', label: LANG_NAMES[lang], lang: LANG_TAGS[lang] },
       ]}
     />
   )
@@ -57,7 +60,7 @@ export function RulePanel({ pack, withExamples = false, id }: { pack: DrillPack;
     <div className="gym-rule" id={id}>
       <div className="gym-rule-top">
         <span className="gym-rule-label">The rule</span>
-        <ExplainSwitch pack={pack} />
+        {pack.rule.local && <ExplainSwitch lang={pack.lang} />}
       </div>
       <RuleText text={rule.text} lang={rule.lang} exampleLang={pack.lang} />
       {withExamples && (

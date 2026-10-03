@@ -1,6 +1,6 @@
 import { forwardRef, useId, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Issue } from '@/types'
-import { LANG_TAGS } from '@/types'
+import { LANG_TAGS, isRtl } from '@/types'
 import { Kbd } from '@/components/ui'
 import { MARK_LABEL, markKind } from './lib/segments'
 import { isSpelling } from './lib/report'
@@ -66,10 +66,14 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
   const ruleId = useId()
   const kind = markKind(issue)
   const local = explainIn === 'local'
-  const message = (local && issue.messageLocal) || issue.message
-  const messageLang = local && issue.messageLocal ? LANG_TAGS[issue.lang] : 'en'
-  const explanation = (local && issue.explanationLocal) || issue.explanation
-  const explanationLang = local && issue.explanationLocal ? LANG_TAGS[issue.lang] : 'en'
+  const localMsg = local && !!issue.messageLocal
+  const localWhy = local && !!issue.explanationLocal
+  const message = localMsg ? issue.messageLocal : issue.message
+  const explanation = localWhy ? issue.explanationLocal : issue.explanation
+  // text in the practice language keeps its own direction; when the explanation is Arabic the whole
+  // card reads right to left, so the message, the fix and the rule line up on one edge
+  const textDir = isRtl(issue.lang) ? 'rtl' : undefined
+  const cardDir = localMsg && textDir ? 'rtl' : 'ltr'
   const reps = issue.replacements.slice(0, 4)
 
   useImperativeHandle(ref, () => ({
@@ -117,19 +121,19 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
       ref={rootRef}
       className={`ip ip--${kind}${pos?.above ? ' is-above' : ''}`}
       role="dialog"
-      dir="ltr"
+      dir={cardDir}
       aria-label={`${MARK_LABEL[kind]}: ${issue.text}`}
       style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden', top: anchor.bottom, left: 0 }}
       onKeyDown={onKeyDown}
     >
       <div className="ip-head">
         <span className={`ip-kind ip-kind--${kind}`}>{MARK_LABEL[kind]}</span>
-        <span className="ip-count tabular">
+        <span className="ip-count tabular" dir="ltr">
           {index + 1} of {total}
         </span>
       </div>
 
-      <p className="ip-msg" lang={messageLang}>
+      <p className="ip-msg" lang={localMsg ? LANG_TAGS[issue.lang] : 'en'} dir={localMsg ? textDir : undefined}>
         {message}
       </p>
 
@@ -154,7 +158,9 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
             {ruleOpen ? 'Hide the rule' : 'Show the rule'}
           </button>
           <div id={ruleId} hidden={!ruleOpen} className="ip-rule-body">
-            <p lang={explanationLang}>{explanation}</p>
+            <p lang={localWhy ? LANG_TAGS[issue.lang] : 'en'} dir={localWhy ? textDir : undefined}>
+              {explanation}
+            </p>
             {issue.learnMore && (
               <a href={issue.learnMore} target="_blank" rel="noreferrer noopener">
                 {sourceName(issue.learnMore)} explains it
@@ -173,12 +179,12 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
         <button type="button" className="ip-link" onClick={onIgnore}>
           Ignore
         </button>
-        {onAddWord && isSpelling(issue) && (
+        {onAddWord && isSpelling(issue) && !/\s/.test(issue.text) && (
           <button type="button" className="ip-link" onClick={onAddWord}>
             Add to my dictionary
           </button>
         )}
-        <span className="ip-keys" aria-hidden="true">
+        <span className="ip-keys" aria-hidden="true" dir="ltr">
           <Kbd>F8</Kbd> next
         </span>
       </div>

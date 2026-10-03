@@ -2,7 +2,7 @@ import type { Story } from './types'
 
 // Original stories (CC0, written for parrotype). Spelling avoids every word that differs
 // between US and UK English, so both variants accept the text as written.
-// Traps worth typing correctly: its/it's, their/they're, apostrophes, numbers in words.
+// Traps worth typing correctly: its/it's, their/they're, flour/flower, desert/dessert, apostrophes.
 
 export const EN_STORIES: Story[] = [
   {
@@ -48,6 +48,21 @@ export const EN_STORIES: Story[] = [
       `Nobody had ever taught him a greeting that was also a wish. He was so pleased that he did not take anything apart for a whole afternoon, which Sam later described as a personal record. Layla wrote the greeting on a piece of paper so that he would not forget it, and he kept the paper under his water bowl, where the important things go.`,
       `From then on, Layla visited every afternoon. She taught Monty a new Arabic word each day, and Monty taught her a Dutch one in return. She liked uitwaaien best, which means going outside in strong wind to clear your head. She tried it on the beach the next weekend and came back with sand in her ears and a very clear head.`,
       `The word Monty liked best was sabr, which means patience. "That's a good word for a parrot," he said. "It took me a whole week to say it properly." Layla laughed and said that this was exactly what the word meant. Monty put it in the wooden box, right at the top, where he would see it every night.`,
+    ],
+  },
+  {
+    id: 'en-shopping-list',
+    lang: 'en',
+    title: 'The shopping list',
+    blurb: 'Sam writes a shopping list in a hurry. Monty follows it to the letter, which is the problem.',
+    level: 'medium',
+    pages: [
+      `Sam always wrote her shopping list on the back of an envelope, in a hurry, while the kettle boiled. Monty read it out loud while she looked for her keys. He read every word exactly as it was written, because a list, in his opinion, was a contract. For years this was not a problem. Then came the Saturday of the cake.`,
+      `Sam's sister was coming for dinner, and Sam had promised a lemon cake. She wrote the list quickly: "Flower, sugar, six eggs, two lemons, butter, something for desert." Then she gave Monty the envelope and some coins, because the shop on the corner knew him well and gave him a peanut every time. Monty studied the list through his monocle and frowned.`,
+      `The shopkeeper read the list too and scratched his head. "I sell flour," he said, "but flowers are next door." Monty considered this. A list was a contract. He bought sugar, eggs, lemons and butter, then went next door and chose six yellow tulips, because they matched the lemons. The desert was more difficult.`,
+      `He asked the shopkeeper for a desert. The shopkeeper laughed so hard that he had to sit down. Then he poured a spoonful of sand into a paper bag, "for the desert," and added a chocolate bar, "for the dessert, which has a double s." Monty did not see the difference yet, but he paid politely and flew home with everything.`,
+      `Sam opened the bag on the kitchen table. Sugar, eggs, lemons and butter. Six yellow tulips. A spoonful of sand. A chocolate bar. No flour. "Monty," she said slowly, "where is the flour?" Monty pointed his beak at the tulips with great dignity. "You wrote flower," he said. "I bought flowers. I also bought you a small desert, as requested."`,
+      `Sam looked at the envelope for a long time. Then she laughed, put the tulips in a vase and went to the shop herself. The cake was late but excellent, and her sister loved the flowers. Since then, Sam reads every list twice before she hands it over. Monty still keeps the sand in a jar on the shelf. He says it is the smallest desert in the world.`,
     ],
   },
 ]

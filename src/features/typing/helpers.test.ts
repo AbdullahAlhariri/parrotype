@@ -157,7 +157,8 @@ describe('tips', () => {
     const misses: Record<string, WordMissStat> = {
       wordt: { word: 'wordt', count: 4, lastAt: 1, typed: ['word'] },
     }
-    const tips = Array.from({ length: 9 }, (_, n) => pickTip('nl', n, misses))
+    // Unicode isolates around the quoted words keep Arabic words from reordering the sentence
+    const tips = Array.from({ length: 9 }, (_, n) => pickTip('nl', n, misses).replace(/[\u2068\u2069]/g, ''))
     expect(tips.some((t) => t.includes('"word" for "wordt" 4 times'))).toBe(true)
     expect(new Set(tips).size).toBeGreaterThan(4)
     for (const t of tips) expect(t).not.toMatch(/!|—/)

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { annotate } from 'rough-notation'
-import { LANG_TAGS, type Lang } from '@/types'
+import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import { Button } from '@/components/ui'
 import { useSettings } from '@/state/settings'
 import { mascotName } from '@/lib/mascot'
-import { practiseWords, type PractiseItem } from './feedback'
+import { practiseWords, tipGroups, type PractiseItem } from './feedback'
 
 type RoughAnnotation = ReturnType<typeof annotate>
 
@@ -44,15 +44,7 @@ export function PractiseWords({ items, fixed, lang, onPractice, animate, delay =
     }
   }, [key, animate, delay])
 
-  // up to two tips, for the most common typo types
-  const groups = new Map<string, { name: string; tip: string; tipLocal?: string; n: number }>()
-  for (const it of items) {
-    if (!it.label) continue
-    const g = groups.get(it.name)
-    if (g) g.n++
-    else groups.set(it.name, { name: it.name, tip: it.label.tip.en, tipLocal: it.label.tip.local, n: 1 })
-  }
-  const tips = [...groups.values()].sort((a, b) => b.n - a.n).slice(0, 2)
+  const tips = tipGroups(items)
 
   if (!items.length) {
     return (
@@ -98,7 +90,13 @@ export function PractiseWords({ items, fixed, lang, onPractice, animate, delay =
           {tips.map((t) => (
             <li key={t.name}>
               <span className="tr-tip-name">{t.name}.</span>{' '}
-              {local && t.tipLocal ? <span lang={tag}>{t.tipLocal}</span> : t.tip}
+              {local && t.tipLocal ? (
+                <span lang={tag} dir={isRtl(lang) ? 'rtl' : undefined}>
+                  {t.tipLocal}
+                </span>
+              ) : (
+                t.tip
+              )}
             </li>
           ))}
         </ul>

@@ -8,7 +8,7 @@ describe('quotes', () => {
   it('has enough quotes per language', () => {
     expect(QUOTES.nl.length).toBeGreaterThanOrEqual(40)
     expect(QUOTES.en.length).toBeGreaterThanOrEqual(40)
-    expect(QUOTES.ar.length).toBeGreaterThanOrEqual(15)
+    expect(QUOTES.ar.length).toBeGreaterThanOrEqual(30)
   })
 
   it.each(LANGS)('%s: every quote is typable and has a source', (lang) => {

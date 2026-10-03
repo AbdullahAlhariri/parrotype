@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DICTATION, PAIRS } from '@/content/dictation'
+import { hasClip, reactionAvailable, sayReaction, useAudioManifest } from '@/lib/audio'
+import { mascotName } from '@/lib/mascot'
 import { Link, navigate, useQuery } from '@/lib/router'
 import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
@@ -12,8 +14,8 @@ import { DictationSummary } from './DictationSummary'
 import { configLabel, itemFromSentence, type DictationConfig, type DictationItem } from './logic/items'
 import { recordSession } from './logic/record'
 import { selectForWords, selectPairItems, selectSentences } from './logic/select'
-import { summarise, type ItemResult, type SessionSummary } from './logic/summary'
-import { useKeesVoice, type VoiceStatus } from './useKeesVoice'
+import { summarise, summaryReaction, type ItemResult, type SessionSummary } from './logic/summary'
+import { useDictationVoice, type VoiceStatus } from './useVoice'
 import './dictation.css'
 
 /** Words the user missed at least twice: sentences with them come up more often. */
@@ -27,13 +29,16 @@ function weakWords(lang: Lang): Set<string> {
 }
 
 function buildItems(lang: Lang, c: DictationConfig): DictationItem[] {
-  if (c.mode === 'pairs') return selectPairItems(PAIRS[lang], c.pairs, c.length)
+  // to listen, sentences with a recorded voice first (the rest fall back to the browser voice)
+  const prefer = c.playback === 'listen' ? (id: string) => hasClip(lang, id) : undefined
+  if (c.mode === 'pairs') return selectPairItems(PAIRS[lang], c.pairs, c.length, Math.random, prefer)
   return selectSentences(DICTATION[lang], {
     level: c.level,
     focus: c.focus,
     count: c.length,
     avoid: loadRecent(lang),
     boost: weakWords(lang),
+    prefer,
   }).map((s) => itemFromSentence(s, lang))
 }
 
@@ -45,15 +50,20 @@ const VOICE_HELP: Record<Lang, string> = {
   ar: 'Edge, Safari, Windows and most phones have one. Desktop Chrome usually does not.',
 }
 
+/** Only when nothing can read aloud: the recordings did not load and the browser has no voice. */
 function VoiceNotice({ lang, status }: { lang: Lang; status: VoiceStatus }) {
-  const what = status === 'unsupported' ? 'This browser cannot speak' : `This browser has no ${LANG_EN[lang]} voice`
+  const what = status === 'unsupported' ? 'this browser cannot speak' : `this browser has no ${LANG_EN[lang]} voice`
   return (
     <div className="dict-notice" role="note">
       <p>
-        <strong>{what}, so Kees cannot read aloud.</strong> Memory mode instead: the sentence shows for a few seconds, then you type it.
+        <strong>
+          The recorded voices did not load and {what}, so {mascotName(lang)} cannot read aloud.
+        </strong>{' '}
+        Memory mode instead: the sentence shows for a few seconds, then you type it.
       </p>
       <p className="muted">
-        {status === 'unsupported' ? 'Try Edge, Safari or Chrome.' : VOICE_HELP[lang]} <Link to="/settings#voices">Voice settings</Link>
+        {status === 'unsupported' ? 'Try Edge, Safari or Chrome, or reload when you are online.' : `Reload when you are online. ${VOICE_HELP[lang]}`}{' '}
+        <Link to="/settings#dictation">Voice settings</Link>
       </p>
     </div>
   )
@@ -63,7 +73,8 @@ function VoiceNotice({ lang, status }: { lang: Lang; status: VoiceStatus }) {
 function VoiceNote({ lang, status }: { lang: Lang; status: VoiceStatus }) {
   return (
     <>
-      {status === 'unsupported' ? 'No speech in this browser' : `No ${LANG_EN[lang]} voice here`}, so memory mode. <Link to="/settings#voices">Voice settings</Link>
+      No recordings and {status === 'unsupported' ? 'no speech in this browser' : `no ${LANG_EN[lang]} browser voice`}, so memory mode.{' '}
+      <Link to="/settings#dictation">Voice settings</Link>
     </>
   )
 }
@@ -74,7 +85,7 @@ interface Session {
   config: DictationConfig
   /** "Practise these words" sets are not built from the config */
   label?: string
-  /** started from a button: Kees reads the first sentence right away */
+  /** started from a button: the first sentence plays right away */
   autoStart?: boolean
 }
 
@@ -86,7 +97,8 @@ interface Finished {
 
 export default function DictationPage() {
   const lang = useSettings((s) => s.lang)
-  const voice = useKeesVoice(lang)
+  const voice = useDictationVoice(lang)
+  const [mascotTalks, setMascotTalks] = useState(false)
   const [config, setConfig] = useState<DictationConfig>(() => {
     const saved = loadConfig(lang)
     const linked = configFromQuery(saved, new URLSearchParams(location.search), lang)
@@ -96,8 +108,13 @@ export default function DictationPage() {
   })
   // the query string the setup above already came from
   const appliedQuery = useRef(new URLSearchParams(location.search).toString())
-  const [session, setSession] = useState<Session>(() => ({ key: 1, items: buildItems(lang, config), config }))
+  // the first set waits for the voice list (a few ms), so it can favour sentences with a recording
+  const { loaded: audioLoaded } = useAudioManifest()
+  const [session, setSession] = useState<Session | null>(null)
   const [finished, setFinished] = useState<Finished | null>(null)
+  useEffect(() => {
+    if (audioLoaded) setSession((s) => s ?? { key: 1, items: buildItems(lang, config), config })
+  }, [audioLoaded, lang, config])
 
   const canListen = voice.status === 'ready' || voice.status === 'loading'
   const memory = !canListen || config.playback === 'memory'
@@ -105,7 +122,8 @@ export default function DictationPage() {
   const start = useCallback(
     (c: DictationConfig, opts: { items?: DictationItem[]; label?: string; autoStart?: boolean } = {}) => {
       setFinished(null)
-      setSession((s) => ({ key: s.key + 1, items: opts.items ?? buildItems(lang, c), config: c, label: opts.label, autoStart: opts.autoStart }))
+      setMascotTalks(false)
+      setSession((s) => ({ key: (s?.key ?? 0) + 1, items: opts.items ?? buildItems(lang, c), config: c, label: opts.label, autoStart: opts.autoStart }))
     },
     [lang],
   )
@@ -148,20 +166,28 @@ export default function DictationPage() {
   }
 
   const finish = (results: ItemResult[]) => {
+    if (!session) return
     const summary = summarise(results)
     const pairName = (id: string) => PAIRS[lang].find((p) => p.id === id)?.words.join('/') ?? id
     const label = session.label ?? configLabel(lang, session.config, memory, pairName)
     recordSession(lang, summary, label, session.config.mode === 'pairs')
     pushRecent(lang, results.map((r) => r.item.id))
     setFinished({ summary, results, label })
+    // one recorded line from the mascot (if that is on); he talks in the summary while it plays
+    const line = summaryReaction(summary)
+    if (reactionAvailable(lang, line)) {
+      setMascotTalks(true)
+      sayReaction(lang, line).finally(() => setMascotTalks(false))
+    }
   }
 
   const practise = (words: string[]) => {
-    if (!finished) return
+    if (!finished || !session) return
     if (session.config.mode === 'pairs') {
       const missed = [...new Set(finished.results.filter((r) => r.first.targetOk === false).map((r) => r.item.pairId!))]
       const ids = missed.length ? missed : session.config.pairs
-      start({ ...session.config, pairs: ids }, { items: selectPairItems(PAIRS[lang], ids, session.config.length), autoStart: true })
+      const prefer = session.config.playback === 'listen' ? (id: string) => hasClip(lang, id) : undefined
+      start({ ...session.config, pairs: ids }, { items: selectPairItems(PAIRS[lang], ids, session.config.length, Math.random, prefer), autoStart: true })
       return
     }
     const seen = new Set(finished.results.map((r) => r.item.id))
@@ -180,13 +206,14 @@ export default function DictationPage() {
     <div className="dict page">
       <h1 className="sr-only">Parrot says: hear it, type it</h1>
       <DictationSetup lang={lang} config={config} onChange={changeConfig} canListen={canListen} />
-      {finished ? (
+      {!session ? null : finished ? (
         <DictationSummary
           lang={lang}
           summary={finished.summary}
           config={finished.label}
           onAgain={() => start(session.config, { autoStart: true })}
           onPractise={practise}
+          talking={mascotTalks}
         />
       ) : session.items.length ? (
         <DictationRun
@@ -202,7 +229,7 @@ export default function DictationPage() {
           autoStart={session.autoStart}
         />
       ) : (
-        <p className="dict-empty">{config.mode === 'pairs' ? 'No sentences for these pairs yet. Pick another pair.' : 'No sentences match this setup. Pick fewer focus tags.'}</p>
+        <p className="dict-empty">{config.mode === 'pairs' ? 'No sentences for these pairs. Pick another pair.' : 'No sentences match this setup. Pick fewer focus tags.'}</p>
       )}
     </div>
   )

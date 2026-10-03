@@ -238,7 +238,7 @@ export function GymRound({ pack, items, choose, onFinish, onRestart }: Props) {
                 {phase === 'wrong' ? (
                   <>
                     Type{' '}
-                    <b className="mono-text" lang={LANG_TAGS[lang]}>
+                    <b className="mono-text" lang={LANG_TAGS[lang]} dir={rtl ? 'rtl' : undefined}>
                       {item.answer}
                     </b>{' '}
                     to go on.

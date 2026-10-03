@@ -1,6 +1,8 @@
+import type { Lang } from '@/types'
 import type { Explained } from '@/content/drills/types'
 
-export type ProofLang = 'nl' | 'en'
+/** Every practice language has Fix it texts. Kept as its own name for older imports. */
+export type ProofLang = Lang
 
 export interface PlantedMistake {
   wrong: string

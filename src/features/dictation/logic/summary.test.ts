@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { gradeAttempt } from './grade'
 import type { DictationItem } from './items'
 import { configLabel, DEFAULT_CONFIG } from './items'
-import { feedbackLine, formatDuration, keesRepeat, summarise, type ItemResult } from './summary'
+import { feedbackLine, formatDuration, keesRepeat, summarise, summaryReaction, type ItemResult } from './summary'
 
-const item = (text: string, target?: string): DictationItem => ({ id: text, lang: 'nl', text, focus: [], target })
+const item = (text: string, target?: string): DictationItem => ({ id: text, clip: text, lang: 'nl', text, focus: [], target })
 
 const result = (text: string, typed: string, extra: Partial<ItemResult> = {}): ItemResult => {
   const first = gradeAttempt(text, typed, 'nl', extra.item?.target)
@@ -75,5 +75,19 @@ describe('feedbackLine', () => {
   })
   it('says so when everything was right', () => {
     expect(feedbackLine(summarise([result('Ik heb twee ideeën.', 'Ik heb twee ideeën.')]), name)).toBe('Every word right on the first try.')
+  })
+})
+
+describe('mascot lines', () => {
+  it('uses the parrot of the language in the pair-mode line', () => {
+    const r = result('Hij wordt boos.', 'Hij word boos.', { item: item('Hij wordt boos.', 'wordt') })
+    const s = summarise([r])
+    expect(feedbackLine(s, (t) => t, 'Fustuq')).toBe('1 of 1 times the other word. Fustuq will bring those back.')
+  })
+
+  it("plays 'perfect' only for a set without a single wrong sentence", () => {
+    expect(summaryReaction(summarise([result('Ik heb twee ideeën.', 'Ik heb twee ideeën.')]))).toBe('perfect')
+    expect(summaryReaction(summarise([result('Ik heb twee ideeën.', 'Ik heb twee ideeën.'), result('Hij wordt boos.', 'Hij word boos.')]))).toBe('done')
+    expect(summaryReaction(summarise([]))).toBe('done')
   })
 })

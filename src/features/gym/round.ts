@@ -1,9 +1,13 @@
 import type { Lang } from '@/types'
 import type { DrillItem, DrillPack, Explained } from '@/content/drills'
+import type { ReactionId } from '@/lib/audio'
 import { hashString, shuffle } from '@/lib/random'
 import { stripTashkeel } from '@/engine'
 
 export const ROUND_SIZE = 15
+
+/** Language names inside English copy. */
+export const LANG_IN_ENGLISH: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
 
 /** Stable key for an item, so progress survives reordering the content. */
 export const itemKey = (item: DrillItem) => hashString(item.sentence).toString(36)
@@ -88,4 +92,11 @@ export function explain(e: Explained | undefined, packLang: Lang, explainIn: 'en
 export const formatClock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** The mascot's recorded line after a round: a new best, or every sentence right. Rare on purpose. */
+export function reactionForRound(score: number, total: number, newBest: boolean): ReactionId | null {
+  if (newBest) return 'record'
+  if (total >= 10 && score === total) return 'perfect'
+  return null
 }

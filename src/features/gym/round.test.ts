@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { seeded } from '@/lib/random'
 import { findPack, type DrillItem } from '@/content/drills'
-import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, pickRound, settledForm } from './round'
+import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, pickRound, reactionForRound, settledForm } from './round'
 import { useGym } from './store'
 
 const item = (sentence: string, answer: string, alternatives: string[] = [], accept?: string[]): DrillItem => ({ sentence, answer, alternatives, accept })
@@ -85,6 +85,29 @@ describe('helpers', () => {
     expect(explain({ en: 'A', local: 'B' }, 'nl', 'local')).toEqual({ text: 'B', lang: 'nl' })
     expect(explain({ en: 'A' }, 'en', 'local')).toEqual({ text: 'A', lang: 'en' })
     expect(explain(undefined, 'nl', 'en')).toBeNull()
+  })
+
+  it('accepts a multi-word Arabic answer with extra spaces or tashkeel', () => {
+    const pack = findPack('ar.common')!
+    const it1 = pack.items.find((i) => i.answer === 'إن شاء')!
+    expect(isRight(it1, 'إن  شاءَ', 'ar')).toBe(true)
+    expect(isRight(it1, 'إنشاء', 'ar')).toBe(false)
+  })
+
+  it('shows Arabic explanations when asked, for every Arabic pack', () => {
+    for (const id of ['ar.hamza', 'ar.hamza-mid', 'ar.tanween', 'ar.dhal-zay']) {
+      const pack = findPack(id)!
+      expect(explain(pack.rule, 'ar', 'local')?.lang).toBe('ar')
+      expect(explain(pack.items[0].hint, 'ar', 'local')?.lang).toBe('ar')
+      expect(explain(pack.items[0].hint, 'ar', 'en')?.lang).toBe('en')
+    }
+  })
+
+  it('lets the mascot speak only for a new best or a clean round', () => {
+    expect(reactionForRound(12, 15, true)).toBe('record')
+    expect(reactionForRound(15, 15, false)).toBe('perfect')
+    expect(reactionForRound(14, 15, false)).toBeNull()
+    expect(reactionForRound(5, 5, false)).toBeNull()
   })
 
   it('formats the clock', () => {

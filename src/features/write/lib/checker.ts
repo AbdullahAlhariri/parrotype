@@ -23,6 +23,7 @@ interface CheckerModule {
   checkRules?: (text: string, lang: Lang, opts?: { strictness?: 'normal' | 'strict' }) => Issue[]
   preloadLanguage?: (lang: Lang) => unknown
   addToPersonalDictionary?: (word: string, lang: Lang) => unknown
+  getPersonalDictionary?: (lang: Lang) => string[]
   languageToolStatus?: unknown
 }
 
@@ -70,6 +71,8 @@ function watchLtStatus(mod: CheckerModule) {
 /* ------------------------------------------------------------------ */
 
 let loading: Promise<CheckerModule | null> | null = null
+/** the module once it has loaded, for synchronous lookups (the personal dictionary) */
+let loaded: CheckerModule | null = null
 
 export function loadChecker(): Promise<CheckerModule | null> {
   if (!loading) {
@@ -79,7 +82,8 @@ export function loadChecker(): Promise<CheckerModule | null> {
         const usable = typeof mod.checkText === 'function' || typeof mod.checkRules === 'function'
         if (usable) watchLtStatus(mod)
         useCheckerStatus.setState({ unavailable: !usable })
-        return usable ? mod : null
+        loaded = usable ? mod : null
+        return loaded
       })
       .catch((err) => {
         if (import.meta.env.DEV) console.warn('[write] checker failed to load', err)
@@ -131,8 +135,21 @@ export async function addWordToDictionary(word: string, lang: Lang): Promise<voi
   rememberPersonalWord(lang, word)
 }
 
-/** Words accepted locally (only used when the checker has no personal dictionary). */
-export const localPersonalWords = readPersonalWords
+/**
+ * Every word the user accepted, lowercased: the checker's personal dictionary (the one settings
+ * edits, so removing a word there brings its underline back) plus the local fallback copy.
+ * The checker only applies it to Hunspell; the editor also uses it for rule and LanguageTool
+ * spelling calls, so "Add to my dictionary" always does what it says.
+ */
+export function personalWords(lang: Lang): Set<string> {
+  const set = readPersonalWords(lang)
+  try {
+    for (const w of loaded?.getPersonalDictionary?.(lang) ?? []) set.add(w.toLowerCase())
+  } catch {
+    /* the local copy still counts */
+  }
+  return set
+}
 
 /** Rule titles ("d/t after hij/zij/het") for stats and the report. */
 export async function ruleTitles(lang: Lang): Promise<Map<string, string>> {

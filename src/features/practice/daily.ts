@@ -30,6 +30,13 @@ export function dailySentencePool(lang: Lang): string[] {
   })
 }
 
+/** "ijs" -> "IJs" (Dutch digraph), "komen" -> "Komen"; Arabic has no capitals. */
+export function capitalise(w: string, lang: Lang): string {
+  if (lang === 'ar' || !w) return w
+  if (lang === 'nl' && w.startsWith('ij')) return 'IJ' + w.slice(2)
+  return w[0].toUpperCase() + w.slice(1)
+}
+
 export function dailyChallenge(lang: Lang, day: string = dayKey()): DailyChallenge {
   const rand = seeded(dailySeed(day, lang))
   const pool = dailySentencePool(lang)
@@ -42,7 +49,8 @@ export function dailyChallenge(lang: Lang, day: string = dayKey()): DailyChallen
     for (let i = 0; i < 20 && (w === words[words.length - 1] || w === words[words.length - 2]); i++) {
       w = list[Math.floor(rand() * list.length)]
     }
-    words.push(w)
+    // the story sentence ends with a full stop, so the word after it starts a sentence too
+    words.push(words.length === head.length && head.length ? capitalise(w, lang) : w)
   }
   return { day, lang, sentence, words }
 }

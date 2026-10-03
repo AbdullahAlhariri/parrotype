@@ -64,10 +64,28 @@ function clauseBreakBetween(ctx: RuleContext, a: number, b: number): boolean {
   return false
 }
 
-function participleAfterAux(ctx: RuleContext, map: ReadonlyMap<string, string>, dstem: boolean): RuleHit[] {
+const DETERMINER_BEFORE = set("de het een geen dit dat deze die mijn m'n jouw je uw zijn z'n haar ons onze hun elk ieder")
+const INSEPARABLE_T = /^(?:be|ver|ont|her|er|ge)\p{Ll}{3,}[^dt]t$/u
+
+/**
+ * Verbs with an unstressed prefix (be-, ver-, ont-, her-, er-, ge-) have no ge- in the participle, so
+ * the present form and the participle differ only in the last letter: bezorgt / bezorgd. When the
+ * dictionary knows both, the t-form after an auxiliary is the slip. ("een verwijt" is a noun: skipped.)
+ */
+function derivedParticiple(ctx: RuleContext, i: number): string | undefined {
+  const w = lw(ctx, i)
+  if (!ctx.dict || !INSEPARABLE_T.test(w) || CONF_PRES_TO_PART.has(w) || DSTEM_PRES_TO_PART.has(w)) return undefined
+  const p = prev(ctx, i)
+  if (p >= 0 && DETERMINER_BEFORE.has(lw(ctx, p))) return undefined
+  const right = w.slice(0, -1) + 'd'
+  return ctx.dict.has(w) && ctx.dict.has(right) ? right : undefined
+}
+
+function participleAfterAux(ctx: RuleContext, map: ReadonlyMap<string, string>, dstem: boolean, derive = false): RuleHit[] {
   const out: RuleHit[] = []
   ctx.words.forEach((w, i) => {
-    const right = map.get(w.lower)
+    const listed = map.get(w.lower)
+    const right = listed ?? (derive ? derivedParticiple(ctx, i) : undefined)
     if (!right) return
     const c = clauseOf(ctx, i)
     if (!c) return
@@ -79,6 +97,7 @@ function participleAfterAux(ctx: RuleContext, map: ReadonlyMap<string, string>, 
     const n = next(ctx, i)
     if (!confidence && n >= 0 && endsClause(ctx, n) && isAux(ctx, n) && lw(ctx, n) !== 'zijn') confidence = 'medium'
     if (!confidence) return
+    if (!listed) confidence = 'medium'
     out.push(hitWord(ctx, i, [right], participleMessage(w.lower, right, dstem), confidence))
   })
   return out
@@ -90,7 +109,7 @@ export const auxParticiple: Rule = {
   category: 'grammar',
   title: 'participle after heeft/is (gebeurd)',
   confidence: 'high',
-  check: (ctx) => participleAfterAux(ctx, CONF_PRES_TO_PART, false),
+  check: (ctx) => participleAfterAux(ctx, CONF_PRES_TO_PART, false, true),
 }
 
 export const dstemParticiple: Rule = {

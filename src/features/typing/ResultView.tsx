@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { errorStats } from '@/engine'
-import { LANG_NAMES, LANG_TAGS, type TypingResult } from '@/types'
+import { LANG_TAGS, type Lang, type TypingResult } from '@/types'
 import { Button, Icon, Kbd } from '@/components/ui'
 import { Kees, featherBurst, useReducedMotion, type KeesMood } from '@/components/kees'
 import { playReaction, type ReactionId } from '@/lib/audio'
@@ -30,6 +30,9 @@ export interface ResultViewProps {
    */
   reaction?: ReactionId | false
 }
+
+/** language names inside the English chrome (the native name next to digits reorders in Arabic) */
+const LANG_IN_ENGLISH: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
 
 /** reveal sequence: number 0-400 ms, chart line 0-600 ms, the mascot lands at 600 ms */
 const LAND_MS = 600
@@ -170,7 +173,7 @@ export function ResultView({ result, title, configLabel, isPb = false, onAgain, 
             <div>
               <dt>test</dt>
               <dd className="tr-dd-text">{configLabel}</dd>
-              <dd className="tr-dd-sub">{LANG_NAMES[result.lang]}</dd>
+              <dd className="tr-dd-sub">{LANG_IN_ENGLISH[result.lang]}</dd>
             </div>
           </dl>
 

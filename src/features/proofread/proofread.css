@@ -4,14 +4,19 @@
 .fix-page-head {
   flex-wrap: wrap;
 }
-/* no ĳ ligature from Recursive's Dutch locl in the typing face */
-.fix .mono-text:not(:lang(ar)) {
+/* Recursive's Dutch locl draws i+j as one ĳ glyph, in the sans as well as the mono. In text you
+   edit letter by letter that reads as one key, so Latin text here gets no locl and no ligatures.
+   Arabic keeps its shaping. */
+.fix .mono-text:not(:lang(ar)),
+.fix-editor:not(:lang(ar)),
+.fix-doc:not(:lang(ar)),
+.fix-right:not(:lang(ar)),
+.fix-was:not(:lang(ar)),
+.fix-retype-input:not(:lang(ar)) {
+  font-variant-ligatures: none;
   font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
 }
-.fix-page-head .segmented {
-  padding-bottom: var(--s-1);
-}
-.fix-note-ar {
+.fix-notice {
   margin-bottom: var(--s-5);
   color: var(--sub);
 }
@@ -123,6 +128,33 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
   overflow: hidden;
   transition: border-color var(--dur-fast) ease;
 }
+/* Arabic: Naskh needs more size and line height than the Latin UI face */
+.fix-editor:lang(ar),
+.fix-doc:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: 1.3rem;
+  line-height: 2.1;
+}
+.fix-title:lang(ar),
+.fix-list-title:lang(ar) {
+  font-family: var(--font-arabic);
+}
+.fix-title:lang(ar) {
+  font-size: var(--fs-xl);
+  line-height: 1.5;
+}
+.fix-right:lang(ar),
+.fix-was:lang(ar),
+.fix-retype-input:lang(ar) {
+  font-family: var(--font-arabic);
+}
+.fix-note-head .fix-right:lang(ar) {
+  font-size: 1.3rem;
+}
+.fix-note-text:lang(ar) {
+  font-size: 1.1rem;
+  line-height: 1.9;
+}
 .fix-editor:focus-visible {
   outline: none;
   border-color: var(--caret);
@@ -210,6 +242,11 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
   vertical-align: super;
   white-space: nowrap;
 }
+/* labels stay in the UI face inside Arabic text too */
+.fx-tag,
+.fx-num {
+  font-family: var(--font-ui);
+}
 .fx-tag-ok {
   color: var(--ok);
 }
@@ -237,6 +274,13 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
 /* notes */
 .fix-notes {
   margin-top: var(--s-7);
+}
+.fix-notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
 }
 .fix-notes-title {
   color: var(--sub);

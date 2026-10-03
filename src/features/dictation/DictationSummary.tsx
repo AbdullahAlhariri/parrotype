@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { annotate } from 'rough-notation'
 import { Button, Kbd, Kees, useReducedMotion, type KeesMood } from '@/components/ui'
+import { mascotName } from '@/lib/mascot'
 import { useSettings } from '@/state/settings'
 import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import { tagName, type ExplainIn } from './logic/explain'
@@ -13,6 +14,8 @@ interface Props {
   onAgain: () => void
   /** start a set built around these words; hidden when there is nothing to practise */
   onPractise?: (words: string[]) => void
+  /** the mascot's recorded line is playing */
+  talking?: boolean
 }
 
 const LAND_MS = 600
@@ -40,10 +43,10 @@ function useCountUp(value: number, ms: number) {
 
 /**
  * End of a set, asymmetric like the typing result: the big number and the details on the
- * left, the words to practise on the right with Kees perched on top, repeating the most
+ * left, the words to practise on the right with the parrot perched on top, repeating the most
  * missed word (the correct form, nothing else).
  */
-export function DictationSummary({ lang, summary: s, config, onAgain, onPractise }: Props) {
+export function DictationSummary({ lang, summary: s, config, onAgain, onPractise, talking = false }: Props) {
   const reduced = useReducedMotion()
   const explainIn = useSettings((st) => st.explainIn) as ExplainIn
   const headId = useId()
@@ -69,7 +72,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
     rootRef.current?.focus({ preventScroll: true })
   }, [])
 
-  // a hand-drawn circle around the word Kees repeats: explanation, not decoration
+  // a hand-drawn circle around the word the parrot repeats: explanation, not decoration
   useEffect(() => {
     const el = listRef.current?.querySelector<HTMLElement>('.dict-sum-word')
     if (!el) return
@@ -81,7 +84,8 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
     }
   }, [top, reduced])
 
-  const practiseLabel = words.length === 1 ? 'Practise this word' : `Practise these ${words.length} words`
+  // in pair mode the button brings back the pairs that went wrong
+  const practiseLabel = pairs ? 'Practise these pairs' : words.length === 1 ? 'Practise this word' : `Practise these ${words.length} words`
 
   return (
     <section ref={rootRef} className={`dict-sum ${reduced ? '' : 'is-animated'}`} tabIndex={-1} aria-labelledby={headId}>
@@ -97,7 +101,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
           <p className="dict-sum-sub">
             {pairs ? `${s.targetsRight} of ${s.targets} on the first try` : `${s.correctWords} of ${s.totalWords} words on the first try`}
           </p>
-          <p className="dict-sum-line">{feedbackLine(s, (t) => tagName(t, lang))}</p>
+          <p className="dict-sum-line">{feedbackLine(s, (t) => tagName(t, lang), mascotName(lang))}</p>
           <div className="dict-sum-actions">
             <Button variant="primary" onClick={onAgain}>
               Again
@@ -111,7 +115,13 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
 
         <div className="dict-sum-side">
           <div className="dict-sum-perch">
-            <Kees mood={mood} size={64} bubble={mood === 'repeat' && top ? keesRepeat(top) : undefined} bubbleLang={tag} bubblePlacement="left" />
+            <Kees
+              mood={talking ? 'talk' : mood}
+              size={64}
+              bubble={!talking && mood === 'repeat' && top ? keesRepeat(top) : undefined}
+              bubbleLang={tag}
+              bubblePlacement="left"
+            />
           </div>
           <dl className="dict-sum-details">
             <div>
@@ -162,7 +172,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
               <p className="dict-sum-nest muted small">The tricky ones go to the mistake nest and come back in weak spots.</p>
             </section>
           ) : (
-            <p className="dict-sum-empty">Nothing to practise. Kees listened twice and found nothing.</p>
+            <p className="dict-sum-empty">Nothing to practise. {mascotName(lang)} listened twice and found nothing.</p>
           )}
         </div>
       </div>

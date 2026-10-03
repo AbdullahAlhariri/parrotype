@@ -128,6 +128,21 @@ export const HAMZA_NOUNS = map({
   امريكا: 'أمريكا',
   اوروبا: 'أوروبا',
   المانيا: 'ألمانيا',
+  اسبانيا: 'إسبانيا',
+  ايطاليا: 'إيطاليا',
+  افريقيا: 'أفريقيا',
+  انجليزي: 'إنجليزي',
+  انجليزية: 'إنجليزية',
+  انكليزي: 'إنكليزي',
+  انكليزية: 'إنكليزية',
+  امس: 'أمس',
+  اثناء: 'أثناء',
+  ابدا: 'أبدا',
+  اكيد: 'أكيد',
+  اسماء: 'أسماء',
+  ابناء: 'أبناء',
+  اخر: 'آخر',
+  اخرين: 'آخرين',
 })
 
 /** أن / إن without hamza: correct form depends on the sentence, so only a hint with both options */
@@ -197,6 +212,7 @@ export const ALA_EXPRESSIONS = set(`الفور الأقل الاقل الرغم 
  * With ال the ه can't be the pronoun 'his' (no المدرسه = 'the his teacher'), so those are safe.
  */
 export const HA_FOR_TAA = map({
+  هديه: 'هدية',
   مدرسه: 'مدرسة',
   لغه: 'لغة',
   سنه: 'سنة',
@@ -247,7 +263,7 @@ export const HA_FOR_TAA = map({
  * حياه (حيّاه 'he greeted him'), سنه (سنّه 'his age'), كتابه (his book), صوره، فكره، مكتبه، قصه، جمله...
  */
 export const HA_FOR_TAA_BARE = set(`سياره رساله شركه ساعه لغه مدينه دوله حكومه طاوله غرفه مشكله حديقه صلاه دراسه
-  عربيه هولنديه انجليزيه إنجليزيه فرنسيه ألمانيه اجتماعيه سعوديه جديده مره واحده ثلاثه`)
+  عربيه هولنديه انجليزيه إنجليزيه فرنسيه ألمانيه اجتماعيه سعوديه جديده مره واحده ثلاثه هديه`)
 
 /** past-tense plurals missing the silent alif after waw al-jama'a */
 export const WAW_JAMAA = map({

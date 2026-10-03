@@ -30,7 +30,7 @@ export const sincePresent = regexRule({
   title: 'I live here since 2015 → I have lived',
   category: 'grammar',
   confidence: 'medium',
-  re: /\b(?:(?<s>I|you|we|they)\s+(?<v>live|work|study|know|am|are|teach|play|own|wait|stay|learn)|(?<s3>he|she|it)\s+(?<v3>lives|works|studies|knows|is|teaches|plays|owns|waits|stays|learns))\b(?:\s+[\w']+){0,4}?\s+since\s+(?:\d{4}|last\b|yesterday|january|february|march|april|may|june|july|august|september|october|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|childhood|this\s+morning|I\s+was|we\s+were)/gi,
+  re: /\b(?:(?<s>I|you|we|they)\s+(?<v>live|work|study|know|am|are|teach|play|own|wait|stay|learn)|(?<s3>he|she|it|(?:my|his|her|our|their)\s+(?:son|daughter|mother|father|brother|sister|wife|husband|friend|boss|teacher|child|baby))\s+(?<v3>lives|works|studies|knows|is|teaches|plays|owns|waits|stays|learns))\b(?:\s+[\w']+){0,4}?\s+since\s+(?:\d{4}|last\b|yesterday|january|february|march|april|may|june|july|august|september|october|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|childhood|this\s+morning|I\s+was|we\s+were)/gi,
   target: ['v', 'v3'],
   fix: (f) => (f.g.v ? [`have ${BASE_TO_PARTICIPLE[f.g.v.toLowerCase()]}`] : [`has ${BASE_TO_PARTICIPLE[baseForm(f.g.v3!)]}`]),
   msg: (f, fixes) => ({
@@ -38,7 +38,7 @@ export const sincePresent = regexRule({
     explanation: `Something that started in the past and is still going takes the present perfect: I have lived here since 2015. Dutch uses the present (‘ik woon hier sinds 2015’), so the English version can feel odd at first.`,
     learnMore: LINKS.sincePerfect,
   }),
-  examples: { wrong: 'I live in Utrecht since 2015.', flag: 'live', fix: 'have lived', right: 'I have lived in Utrecht since 2015.', ok: ['I live here since it is cheap.', 'I have known him since 2010.', 'She has worked here since 2019.', 'It is quiet since everyone left.'] },
+  examples: { wrong: 'I live in Utrecht since 2015.', flag: 'live', fix: 'have lived', right: 'I have lived in Utrecht since 2015.', ok: ['My son has been ill since Monday.', 'I live here since it is cheap.', 'I have known him since 2010.', 'She has worked here since 2019.', 'It is quiet since everyone left.'] },
 })
 
 export const perfectPastTime = regexRule({
@@ -169,7 +169,7 @@ export const heDont = regexRule({
   confidence: 'high',
   re: new RegExp(`\\b(?:[Hh]e|[Ss]he)\\s+(?<a>don't|do\\s+not)\\b|(?:${SENT_START}|\\b(?:and|but|because|so|if|when)\\s+)[Ii]t\\s+(?<b>don't|do\\s+not)\\b`, 'g'),
   target: ['a', 'b'],
-  fix: (f) => [/n't$/i.test(f.text) ? "doesn't" : 'does not'],
+  fix: (f) => [/n['’]t$/i.test(f.text) ? "doesn't" : 'does not'],
   msg: { message: `With he, she and it: ${q("doesn't")}`, explanation: `He, she and it take does: he doesn't like coffee, it doesn't matter.`, learnMore: LINKS.doSupport },
   examples: { wrong: "He don't like coffee.", flag: "don't", fix: "doesn't", right: "He doesn't like coffee.", ok: ["They don't like coffee.", 'The things that cause it do not matter.'] },
 })
@@ -186,7 +186,7 @@ export const thirdSingularBase = regexRule({
   title: 'she go → she goes',
   category: 'grammar',
   confidence: 'medium',
-  re: /\b(?<s>he|she)\s+(?:(?:always|never|often|usually|sometimes|also|really|just)\s+)?(?<v>go|have|do|want|like|need|know|make|come|live|work|think|say|get|see|take|play|study|speak|eat|drink|read|write|walk|drive|love|hate|feel|look|seem|try|use|watch|listen|wait|stay|help|run|sleep|teach|learn|understand|believe|remember|forget|leave|buy|pay|call|ask|tell|give)\b/gi,
+  re: /\b(?<s>he|she)\s+(?:(?:always|never|often|usually|sometimes|also|really|just)\s+)?(?<v>go|have|do|want|like|need|know|make|come|live|work|think|say|get|see|take|play|study|speak|eat|drink|write|walk|drive|love|hate|feel|look|seem|try|use|watch|listen|wait|stay|help|run|sleep|teach|learn|understand|believe|remember|forget|leave|buy|pay|call|ask|tell|give)\b/gi,
   notAfter: MODAL_AUX_3SG,
   target: 'v',
   fix: (f) => [thirdPerson(f.g.v!)],
@@ -199,7 +199,7 @@ export const thirdSingularBase = regexRule({
     flag: 'go',
     fix: 'goes',
     right: 'She goes to school every day.',
-    ok: ['Does she go to school?', 'Can he come?', 'Why does he work so late?', 'Let her go.', 'Both his wife and he like it.', "Hasn't she come?", 'I suggested that he work with Mary.', 'I suggested to Bill that he come early.', "Where'd he go?", 'Need he run so fast?', 'Where does he/she work?'],
+    ok: ['He read every word twice.', 'Does she go to school?', 'Can he come?', 'Why does he work so late?', 'Let her go.', 'Both his wife and he like it.', "Hasn't she come?", 'I suggested that he work with Mary.', 'I suggested to Bill that he come early.', "Where'd he go?", 'Need he run so fast?', 'Where does he/she work?'],
   },
 })
 
@@ -232,7 +232,7 @@ export const peopleIs = regexRule({
   title: 'people is → people are',
   category: 'grammar',
   confidence: 'high',
-  re: new RegExp(`${SENT_START}People\\s+(?<v>is|was|has|doesn't|does|isn't|wasn't)\\b`, 'g'),
+  re: new RegExp(`${SENT_START}(?:(?:The|These|Those|Many|Most|Some)\\s+)?[Pp]eople\\s+(?<v>is|was|has|doesn't|does|isn't|wasn't)\\b`, 'g'),
   target: 'v',
   fix: (f) => [PEOPLE_VERB[f.g.v!]],
   msg: (_f, fixes) => ({ message: `${q('people')} is plural: ${q(`people ${fixes[0]}`)}`, explanation: `People is the plural of person, so it takes are, were, have: people are friendly here.` }),
@@ -241,7 +241,7 @@ export const peopleIs = regexRule({
     flag: 'is',
     fix: 'are',
     right: 'People are very friendly here.',
-    ok: ['People are nice.', 'Meeting young people is hard.', 'A crowd of 100 people is large.', 'Finding people is hard.', 'How many people is too many?', 'The worst for most people is pain.'],
+    ok: ['The people are friendly.', 'A people is a nation.', 'People are nice.', 'Meeting young people is hard.', 'A crowd of 100 people is large.', 'Finding people is hard.', 'How many people is too many?', 'The worst for most people is pain.'],
   },
 })
 

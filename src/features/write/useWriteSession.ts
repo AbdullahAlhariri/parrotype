@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Issue, Lang } from '@/types'
 import { useSettings } from '@/state/settings'
 import { findPrompt, randomPrompt, type PromptKind, type WritingPrompt } from '@/content/prompts'
-import { addWordToDictionary, localPersonalWords, preloadChecker, runCheck } from './lib/checker'
+import { addWordToDictionary, personalWords, preloadChecker, runCheck } from './lib/checker'
 import { listDrafts, newDraft, saveDraft, deleteDraft as removeDraft, type Draft, type Recorded } from './lib/drafts'
 import { ParagraphCache, diffRange, planCheck, reId, remapIssues, shiftIssues, splitParagraphs } from './lib/paragraphs'
 import { drawableIssues } from './lib/segments'
@@ -96,7 +96,7 @@ export function useWriteSession(lang: Lang) {
   const filterKnown = useCallback(
     (list: Issue[]) => {
       const ignored = new Set(draftRef.current.ignored)
-      const personal = localPersonalWords(lang)
+      const personal = personalWords(lang)
       return list.filter((i) => !ignored.has(ignoreKey(i)) && !(isSpelling(i) && personal.has(i.text.toLowerCase())))
     },
     [lang],

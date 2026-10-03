@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { LANG_NAMES, LANG_TAGS } from '@/types'
-import { TEXTS, findText, isProofLang, type ProofLang, type ProofText } from '@/content/proofread'
+import { LANG_TAGS, isRtl } from '@/types'
+import { TEXTS, findText, type ProofText } from '@/content/proofread'
 import { useSettings } from '@/state/settings'
 import { navigate, useQuery } from '@/lib/router'
-import { Segmented } from '@/components/ui'
+import { LANG_IN_ENGLISH } from '@/features/gym/round'
+import { useFollowLang } from '@/features/gym/useFollowLang'
 import { FixSession } from './FixSession'
 import { TextList } from './TextList'
 import { nextUp, useFix } from './store'
@@ -11,28 +12,27 @@ import './proofread.css'
 
 const go = (t: ProofText) => navigate(`/fix?text=${encodeURIComponent(t.id)}`)
 
-/** /fix opens the next unfinished text; /fix?text=nl-03 opens that one. */
+/** /fix opens the next unfinished text in the practice language; /fix?text=nl-03 opens that one. */
 export default function ProofreadPage() {
   const query = useQuery()
   const practiceLang = useSettings((s) => s.lang)
-  const setSetting = useSettings((s) => s.set)
   const progress = useFix((s) => s.texts)
   const [listOpen, setListOpen] = useState(false)
 
   const asked = query.get('text')
   const fromQuery = asked ? findText(asked) : undefined
-  // texts follow the practice language (Dutch while that is Arabic); a link to a text wins
-  const lang: ProofLang = fromQuery?.lang ?? (isProofLang(practiceLang) ? practiceLang : 'nl')
+  // texts follow the practice language; a link to a text wins until the header switch is used
+  const lang = fromQuery?.lang ?? practiceLang
   const texts = TEXTS[lang]
-  // the default pick is made once per visit, so finishing a text doesn't swap it out underneath you
-  const [fallbackId] = useState(() => nextUp(texts, progress).id)
-  const text = fromQuery ?? texts.find((t) => t.id === fallbackId) ?? nextUp(texts, progress)
+  // the default pick is made once per language, so finishing a text doesn't swap it out underneath you
+  const [fallback, setFallback] = useState(() => ({ lang, id: nextUp(texts, progress).id }))
+  if (fallback.lang !== lang) setFallback({ lang, id: nextUp(texts, progress).id })
+  const text = fromQuery ?? texts.find((t) => t.id === fallback.id) ?? nextUp(texts, progress)
   const index = texts.indexOf(text)
+  const rtl = isRtl(text.lang)
 
-  const pickLang = (l: ProofLang) => {
-    setSetting('lang', l)
-    go(nextUp(TEXTS[l], useFix.getState().texts))
-  }
+  useFollowLang(fromQuery?.lang, (l) => go(nextUp(TEXTS[l], useFix.getState().texts)))
+
   const step = (d: number) => go(texts[(index + d + texts.length) % texts.length])
 
   return (
@@ -40,22 +40,17 @@ export default function ProofreadPage() {
       <header className="page-head fix-page-head">
         <div>
           <h1 className="page-title">Fix it</h1>
-          <p className="page-lede">Short texts with a few planted mistakes. Find them, fix them, then check. You always end on the corrected text.</p>
+          <p className="page-lede">
+            {texts.length} short {LANG_IN_ENGLISH[lang]} texts with a few planted mistakes. Find them, fix them, then check. You always end on the corrected text.
+          </p>
         </div>
-        <Segmented
-          ariaLabel="Texts in"
-          value={lang}
-          onChange={pickLang}
-          options={(['nl', 'en'] as const).map((l) => ({ value: l, label: LANG_NAMES[l].toLowerCase(), lang: LANG_TAGS[l] }))}
-        />
       </header>
 
-      {practiceLang === 'ar' && !fromQuery && <p className="fix-note-ar">There are no Arabic texts yet, so here is {LANG_NAMES[lang]}.</p>}
-      {asked && !fromQuery && <p className="fix-note-ar">There is no text called {asked}. Here is the next one up.</p>}
+      {asked && !fromQuery && <p className="fix-notice">There is no text called {asked}. Here is the next one up.</p>}
 
       <div className="fix-bar">
         <div className="fix-titles">
-          <h2 className="fix-title" lang={LANG_TAGS[text.lang]}>
+          <h2 className="fix-title" lang={LANG_TAGS[text.lang]} dir={rtl ? 'rtl' : undefined}>
             {text.title}
           </h2>
           <p className="fix-meta">
