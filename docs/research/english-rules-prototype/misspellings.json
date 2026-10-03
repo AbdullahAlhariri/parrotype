@@ -1,0 +1,2007 @@
+[
+ {
+  "word": "absence",
+  "wrong": [
+   {
+    "form": "absense",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "abscence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "acceptable",
+  "wrong": [
+   {
+    "form": "acceptible",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "accidentally",
+  "wrong": [
+   {
+    "form": "accidentaly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "accidently",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "accommodate",
+  "wrong": [
+   {
+    "form": "accomodate",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "acommodate",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "accommodation",
+  "wrong": [
+   {
+    "form": "accomodation",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "achieve",
+  "wrong": [
+   {
+    "form": "acheive",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "acknowledge",
+  "wrong": [
+   {
+    "form": "acknowlege",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "acquaintance",
+  "wrong": [
+   {
+    "form": "acquaintence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "acquire",
+  "wrong": [
+   {
+    "form": "aquire",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "adquire",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "across",
+  "wrong": [
+   {
+    "form": "accross",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "actually",
+  "wrong": [
+   {
+    "form": "actualy",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "address",
+  "wrong": [
+   {
+    "form": "adress",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "advertisement",
+  "wrong": [
+   {
+    "form": "advertisment",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "aggressive",
+  "wrong": [
+   {
+    "form": "agressive",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "almost",
+  "wrong": [
+   {
+    "form": "allmost",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "already",
+  "wrong": [
+   {
+    "form": "allready",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "amateur",
+  "wrong": [
+   {
+    "form": "amatuer",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "apparent",
+  "wrong": [
+   {
+    "form": "apparant",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "apparrent",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "appearance",
+  "wrong": [
+   {
+    "form": "appearence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "argument",
+  "wrong": [
+   {
+    "form": "arguement",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "assassination",
+  "wrong": [
+   {
+    "form": "assasination",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "basically",
+  "wrong": [
+   {
+    "form": "basicly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "basicaly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "beautiful",
+  "wrong": [
+   {
+    "form": "beatiful",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "beautifull",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "because",
+  "wrong": [
+   {
+    "form": "becouse",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "becuase",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "beacuse",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "beginning",
+  "wrong": [
+   {
+    "form": "begining",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "believe",
+  "wrong": [
+   {
+    "form": "beleive",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "belive",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "bicycle",
+  "wrong": [
+   {
+    "form": "bycicle",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "bicicle",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "business",
+  "wrong": [
+   {
+    "form": "buisness",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "bussiness",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "calendar",
+  "wrong": [
+   {
+    "form": "calender",
+    "inCodespell": false,
+    "realWord": true
+   }
+  ]
+ },
+ {
+  "word": "category",
+  "wrong": [
+   {
+    "form": "catagory",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "cemetery",
+  "wrong": [
+   {
+    "form": "cemetary",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "changeable",
+  "wrong": [
+   {
+    "form": "changable",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "children",
+  "wrong": [
+   {
+    "form": "childs",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "childeren",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "colleague",
+  "wrong": [
+   {
+    "form": "collegue",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "column",
+  "wrong": [
+   {
+    "form": "colum",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "coming",
+  "wrong": [
+   {
+    "form": "comming",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "committee",
+  "wrong": [
+   {
+    "form": "commitee",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "comittee",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "completely",
+  "wrong": [
+   {
+    "form": "completly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "conscience",
+  "wrong": [
+   {
+    "form": "concience",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "conscious",
+  "wrong": [
+   {
+    "form": "concious",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "convenient",
+  "wrong": [
+   {
+    "form": "convinient",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "copyright",
+  "wrong": [
+   {
+    "form": "copywrite",
+    "inCodespell": false,
+    "realWord": true
+   }
+  ]
+ },
+ {
+  "word": "curiosity",
+  "wrong": [
+   {
+    "form": "curiousity",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "definitely",
+  "wrong": [
+   {
+    "form": "definately",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "definitly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "definatly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "desperate",
+  "wrong": [
+   {
+    "form": "desparate",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "develop",
+  "wrong": [
+   {
+    "form": "develope",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "difference",
+  "wrong": [
+   {
+    "form": "diffrence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "dilemma",
+  "wrong": [
+   {
+    "form": "dilemna",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "disappear",
+  "wrong": [
+   {
+    "form": "dissapear",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "disappoint",
+  "wrong": [
+   {
+    "form": "dissapoint",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "discipline",
+  "wrong": [
+   {
+    "form": "disipline",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "dumbbell",
+  "wrong": [
+   {
+    "form": "dumbell",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "embarrass",
+  "wrong": [
+   {
+    "form": "embarass",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "embarrassing",
+  "wrong": [
+   {
+    "form": "embarassing",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "environment",
+  "wrong": [
+   {
+    "form": "enviroment",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "enviorment",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "especially",
+  "wrong": [
+   {
+    "form": "especialy",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "exaggerate",
+  "wrong": [
+   {
+    "form": "exagerate",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "excellent",
+  "wrong": [
+   {
+    "form": "excelent",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "exercise",
+  "wrong": [
+   {
+    "form": "excercise",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "exercice",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "existence",
+  "wrong": [
+   {
+    "form": "existance",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "experience",
+  "wrong": [
+   {
+    "form": "experiance",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "familiar",
+  "wrong": [
+   {
+    "form": "familar",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "family",
+  "wrong": [
+   {
+    "form": "familly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "fascinating",
+  "wrong": [
+   {
+    "form": "facinating",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "February",
+  "wrong": [
+   {
+    "form": "Febuary",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "finally",
+  "wrong": [
+   {
+    "form": "finaly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "fluorescent",
+  "wrong": [
+   {
+    "form": "florescent",
+    "inCodespell": false,
+    "realWord": true
+   }
+  ]
+ },
+ {
+  "word": "foreign",
+  "wrong": [
+   {
+    "form": "foriegn",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "forty",
+  "wrong": [
+   {
+    "form": "fourty",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "forward",
+  "wrong": [
+   {
+    "form": "foward",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "friend",
+  "wrong": [
+   {
+    "form": "freind",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "fulfil",
+  "wrong": [
+   {
+    "form": "fullfil",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "future",
+  "wrong": [
+   {
+    "form": "futur",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "government",
+  "wrong": [
+   {
+    "form": "goverment",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "grammar",
+  "wrong": [
+   {
+    "form": "grammer",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "grateful",
+  "wrong": [
+   {
+    "form": "greatful",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "guarantee",
+  "wrong": [
+   {
+    "form": "guarentee",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "guard",
+  "wrong": [
+   {
+    "form": "gaurd",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "happened",
+  "wrong": [
+   {
+    "form": "happend",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "harass",
+  "wrong": [
+   {
+    "form": "harrass",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "height",
+  "wrong": [
+   {
+    "form": "heigth",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "heighth",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "hierarchy",
+  "wrong": [
+   {
+    "form": "heirarchy",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "holiday",
+  "wrong": [
+   {
+    "form": "holliday",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "humorous",
+  "wrong": [
+   {
+    "form": "humourous",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "hygiene",
+  "wrong": [
+   {
+    "form": "hygene",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "ignorance",
+  "wrong": [
+   {
+    "form": "ignorence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "immediately",
+  "wrong": [
+   {
+    "form": "immediatly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "imediately",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "independent",
+  "wrong": [
+   {
+    "form": "independant",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "intelligence",
+  "wrong": [
+   {
+    "form": "inteligence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "interested",
+  "wrong": [
+   {
+    "form": "intrested",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "interessted",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "interesting",
+  "wrong": [
+   {
+    "form": "intresting",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "interessting",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "interrupt",
+  "wrong": [
+   {
+    "form": "interupt",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "irrelevant",
+  "wrong": [
+   {
+    "form": "irrelevent",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "island",
+  "wrong": [
+   {
+    "form": "iland",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "knowledge",
+  "wrong": [
+   {
+    "form": "knowlege",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "language",
+  "wrong": [
+   {
+    "form": "langauge",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "languge",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "library",
+  "wrong": [
+   {
+    "form": "libary",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "license",
+  "wrong": [
+   {
+    "form": "lisence",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "lightning",
+  "wrong": [
+   {
+    "form": "lightening",
+    "inCodespell": false,
+    "realWord": true
+   }
+  ]
+ },
+ {
+  "word": "maintenance",
+  "wrong": [
+   {
+    "form": "maintainance",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "maintenence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "marriage",
+  "wrong": [
+   {
+    "form": "marrige",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "medieval",
+  "wrong": [
+   {
+    "form": "mideval",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "millennium",
+  "wrong": [
+   {
+    "form": "millenium",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "miniature",
+  "wrong": [
+   {
+    "form": "miniture",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "mischievous",
+  "wrong": [
+   {
+    "form": "mischievious",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "misspell",
+  "wrong": [
+   {
+    "form": "mispell",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "necessary",
+  "wrong": [
+   {
+    "form": "neccessary",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "necessery",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "neccesary",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "neighbour",
+  "wrong": [
+   {
+    "form": "neigbour",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "nieghbour",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "noticeable",
+  "wrong": [
+   {
+    "form": "noticable",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "occasion",
+  "wrong": [
+   {
+    "form": "occassion",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "ocasion",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "occasionally",
+  "wrong": [
+   {
+    "form": "occasionaly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "occassionally",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "occurred",
+  "wrong": [
+   {
+    "form": "occured",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "occurrence",
+  "wrong": [
+   {
+    "form": "occurence",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "occurrance",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "official",
+  "wrong": [
+   {
+    "form": "offical",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "opportunity",
+  "wrong": [
+   {
+    "form": "oppurtunity",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "oportunity",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "parallel",
+  "wrong": [
+   {
+    "form": "paralel",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "parrallel",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "parliament",
+  "wrong": [
+   {
+    "form": "parliment",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "pastime",
+  "wrong": [
+   {
+    "form": "pasttime",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "people",
+  "wrong": [
+   {
+    "form": "peaple",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "poeple",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "perseverance",
+  "wrong": [
+   {
+    "form": "perseverence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "persistent",
+  "wrong": [
+   {
+    "form": "persistant",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "pharaoh",
+  "wrong": [
+   {
+    "form": "pharoah",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "piece",
+  "wrong": [
+   {
+    "form": "peice",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "pollution",
+  "wrong": [
+   {
+    "form": "polution",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "possession",
+  "wrong": [
+   {
+    "form": "posession",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "preferred",
+  "wrong": [
+   {
+    "form": "prefered",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "privilege",
+  "wrong": [
+   {
+    "form": "priviledge",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "privelege",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "probably",
+  "wrong": [
+   {
+    "form": "probaly",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "propably",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "professor",
+  "wrong": [
+   {
+    "form": "proffesor",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "pronunciation",
+  "wrong": [
+   {
+    "form": "pronounciation",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "publicly",
+  "wrong": [
+   {
+    "form": "publically",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "questionnaire",
+  "wrong": [
+   {
+    "form": "questionaire",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "really",
+  "wrong": [
+   {
+    "form": "realy",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "receipt",
+  "wrong": [
+   {
+    "form": "reciept",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "receive",
+  "wrong": [
+   {
+    "form": "recieve",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "recommend",
+  "wrong": [
+   {
+    "form": "reccomend",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "recomend",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "referred",
+  "wrong": [
+   {
+    "form": "refered",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "relevant",
+  "wrong": [
+   {
+    "form": "relevent",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "revelant",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "religious",
+  "wrong": [
+   {
+    "form": "religous",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "remember",
+  "wrong": [
+   {
+    "form": "remeber",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "repetition",
+  "wrong": [
+   {
+    "form": "repitition",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "restaurant",
+  "wrong": [
+   {
+    "form": "restaraunt",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "resturant",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "rhythm",
+  "wrong": [
+   {
+    "form": "rythm",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "schedule",
+  "wrong": [
+   {
+    "form": "schedual",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "secretary",
+  "wrong": [
+   {
+    "form": "secratary",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "seize",
+  "wrong": [
+   {
+    "form": "sieze",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "sense",
+  "wrong": [
+   {
+    "form": "sence",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "separate",
+  "wrong": [
+   {
+    "form": "seperate",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "sergeant",
+  "wrong": [
+   {
+    "form": "sargent",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "similar",
+  "wrong": [
+   {
+    "form": "similiar",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "sincerely",
+  "wrong": [
+   {
+    "form": "sincerly",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "speech",
+  "wrong": [
+   {
+    "form": "speach",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "strength",
+  "wrong": [
+   {
+    "form": "strenght",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "success",
+  "wrong": [
+   {
+    "form": "succes",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "sucess",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "successful",
+  "wrong": [
+   {
+    "form": "succesful",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "sucessful",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "successfull",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "supersede",
+  "wrong": [
+   {
+    "form": "supercede",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "surprise",
+  "wrong": [
+   {
+    "form": "suprise",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "tendency",
+  "wrong": [
+   {
+    "form": "tendancy",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "therefore",
+  "wrong": [
+   {
+    "form": "therefor",
+    "inCodespell": false,
+    "realWord": true
+   }
+  ]
+ },
+ {
+  "word": "threshold",
+  "wrong": [
+   {
+    "form": "threshhold",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "tomorrow",
+  "wrong": [
+   {
+    "form": "tommorow",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "tommorrow",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "tongue",
+  "wrong": [
+   {
+    "form": "tounge",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "truly",
+  "wrong": [
+   {
+    "form": "truely",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "twelfth",
+  "wrong": [
+   {
+    "form": "twelth",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "tyranny",
+  "wrong": [
+   {
+    "form": "tyrany",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "until",
+  "wrong": [
+   {
+    "form": "untill",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "unusual",
+  "wrong": [
+   {
+    "form": "unusal",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "vacuum",
+  "wrong": [
+   {
+    "form": "vaccuum",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "vacume",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "vegetable",
+  "wrong": [
+   {
+    "form": "vegatable",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "vegtable",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "vehicle",
+  "wrong": [
+   {
+    "form": "vehical",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "very",
+  "wrong": [
+   {
+    "form": "verry",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "weather",
+  "wrong": [
+   {
+    "form": "wheather",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "waether",
+    "inCodespell": false,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "Wednesday",
+  "wrong": [
+   {
+    "form": "Wensday",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "Wedensday",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "weird",
+  "wrong": [
+   {
+    "form": "wierd",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "which",
+  "wrong": [
+   {
+    "form": "wich",
+    "inCodespell": true,
+    "realWord": false
+   },
+   {
+    "form": "whitch",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "writing",
+  "wrong": [
+   {
+    "form": "writting",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ },
+ {
+  "word": "written",
+  "wrong": [
+   {
+    "form": "writen",
+    "inCodespell": true,
+    "realWord": false
+   }
+  ]
+ }
+]
