@@ -36,7 +36,6 @@ export function FocusDrill({ units }: { units: string[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: 'typing' })
   const [passes, setPasses] = useState(0)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const words = useMemo(() => fixSpelling(generateDrill(lang, targets, DRILL_WORDS, Math.random, { review }), lang), [lang, targets, review, round])
   const config = focusConfig(targets.map((t) => t.unit))
 
