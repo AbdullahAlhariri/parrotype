@@ -3,6 +3,7 @@ import { hashString, seeded } from '@/lib/random'
 import { dayKey } from '@/lib/id'
 import { sentenceToWords, wordList } from '@/engine'
 import { storySentences } from '@/content/stories'
+import { fixWordList } from '@/features/typing/arabicSpelling'
 
 // The daily challenge: one story sentence, then common words, seeded by date and language
 // so every load on the same day gets the same text.
@@ -42,7 +43,7 @@ export function dailyChallenge(lang: Lang, day: string = dayKey()): DailyChallen
   const pool = dailySentencePool(lang)
   const sentence = pool.length ? pool[Math.floor(rand() * pool.length)] : ''
   const head = sentence ? sentenceToWords(sentence) : []
-  const list = wordList(lang, 200).filter((w) => lang !== 'en' || w !== 'i')
+  const list = commonWords(lang)
   const words = [...head]
   while (words.length < TOTAL_WORDS && list.length) {
     let w = list[Math.floor(rand() * list.length)]
@@ -58,7 +59,7 @@ export function dailyChallenge(lang: Lang, day: string = dayKey()): DailyChallen
 /** More words for very fast typists (time mode asks when fewer than 40 are left). Same for everyone on the day. */
 export function dailyMoreWords(lang: Lang, day: string, round: number, count = 60): string[] {
   const rand = seeded(dailySeed(day, lang) + round * 7919)
-  const list = wordList(lang, 200).filter((w) => lang !== 'en' || w !== 'i')
+  const list = commonWords(lang)
   const out: string[] = []
   while (out.length < count && list.length) {
     const w = list[Math.floor(rand() * list.length)]
@@ -66,6 +67,9 @@ export function dailyMoreWords(lang: Lang, day: string, round: number, count = 6
   }
   return out
 }
+
+/** The 200 most common words, spelled right, without English 'i' (it only exists as 'I'). */
+const commonWords = (lang: Lang) => fixWordList(wordList(lang, 200), lang).filter((w) => lang !== 'en' || w !== 'i')
 
 export const dailyConfig = (day: string) => `daily ${day}`
 

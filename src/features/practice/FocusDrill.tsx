@@ -9,6 +9,7 @@ import { Kbd } from '@/components/ui'
 import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
+import { fixSpelling } from '@/features/typing/arabicSpelling'
 import { DRILL_WORDS, GATE, gateNote, passesGate, unitsToWeaknesses } from './drill'
 import { focusConfig } from './plan'
 import { repairHref } from './repair'
@@ -35,7 +36,8 @@ export function FocusDrill({ units }: { units: string[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: 'typing' })
   const [passes, setPasses] = useState(0)
 
-  const words = useMemo(() => generateDrill(lang, targets, DRILL_WORDS, Math.random, { review }), [lang, targets, review, round])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const words = useMemo(() => fixSpelling(generateDrill(lang, targets, DRILL_WORDS, Math.random, { review }), lang), [lang, targets, review, round])
   const config = focusConfig(targets.map((t) => t.unit))
 
   const again = () => {

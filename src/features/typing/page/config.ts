@@ -1,6 +1,7 @@
 import type { Lang } from '@/types'
 import { generateWords, sentenceToWords } from '@/engine'
 import { pickQuote, type Quote, type QuoteLength } from '@/content/quotes'
+import { fixSpelling } from '../arabicSpelling'
 
 export type TestMode = 'time' | 'words' | 'quote'
 export type TimeOption = 15 | 30 | 60 | 120
@@ -104,13 +105,13 @@ export function newRun(c: TypingConfig, lang: Lang, rand: () => number = Math.ra
     return { id: runId, words: sentenceToWords(quote.text), quote }
   }
   const count = c.mode === 'time' ? 100 : c.words
-  const words = generateWords(lang, { count, list: c.list, punctuation: c.punctuation, numbers: c.numbers, rand })
+  const words = fixSpelling(generateWords(lang, { count, list: c.list, punctuation: c.punctuation, numbers: c.numbers, rand }), lang)
   return { id: runId, words, timeLimitMs: c.mode === 'time' ? c.time * 1000 : undefined }
 }
 
 /** More words for time mode. */
 export const moreWords = (c: TypingConfig, lang: Lang, rand: () => number = Math.random) =>
-  generateWords(lang, { count: 50, list: c.list, punctuation: c.punctuation, numbers: c.numbers, rand })
+  fixSpelling(generateWords(lang, { count: 50, list: c.list, punctuation: c.punctuation, numbers: c.numbers, rand }), lang)
 
 /** The same words again (result screen: "Same text again"). */
 export const repeatRun = (r: Run): Run => ({ ...r, id: ++runId })

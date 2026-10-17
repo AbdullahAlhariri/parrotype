@@ -8,6 +8,7 @@ import { Button, Kbd } from '@/components/ui'
 import { TypingSurface } from '@/features/typing/TypingSurface'
 import { ResultView } from '@/features/typing/ResultView'
 import { recordTypingRun } from '@/features/typing/recordRun'
+import { fixWordList } from '@/features/typing/arabicSpelling'
 import { buildContextLine, buildRepairLine, mostMissed, repairHref, repairTally, type RepairTally } from './repair'
 import { SubHead, useEnterKey } from './parts'
 import { mascotName } from '@/lib/mascot'
@@ -28,7 +29,7 @@ export function WordRepair({ words: given }: { words?: string[] }) {
   const dir = isRtl(lang) ? 'rtl' : undefined
 
   const line = useMemo(
-    () => (stage === 'line' ? buildRepairLine(targets) : buildContextLine(targets, wordList(lang, 120))),
+    () => (stage === 'line' ? buildRepairLine(targets) : buildContextLine(targets, fixWordList(wordList(lang, 120), lang))),
     // a new round reshuffles the line
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stage, round, targets, lang],
