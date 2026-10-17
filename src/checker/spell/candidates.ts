@@ -26,6 +26,7 @@ export type CandidateKind =
   | 'ta-marbuta' // مدرسه -> مدرسة
   | 'alif-maqsura' // حتي -> حتى
   | 'final-alif' // مرحبى -> مرحبا
+  | 'la-split' // لايمكن -> لا يمكن
   | 'split' // eachother -> each other
   | 'join' // koffie-automaat -> koffieautomaat
   | 'case' // nederlands -> Nederlands

@@ -44,7 +44,7 @@ const KIND_BONUS: Partial<Record<CandidateKind, number>> = {
   trema: -0.3, accent: -0.25, 'trema-drop': -0.25, 'tussen-n': -0.4, 'tussen-n-drop': -0.4, kofschip: -0.3,
   dt: -0.3, 'ei-ij': -0.25, 'au-ou': -0.2, ending: -0.3, apostrophe: -0.3, 'apostrophe-drop': -0.25,
   'ie-ei': -0.2, hamza: -0.3, 'hamza-drop': -0.3, 'hamza-seat': -0.25, 'ta-marbuta': -0.25, 'alif-maqsura': -0.25,
-  'final-alif': -0.2, join: -0.2, case: -0.1,
+  'final-alif': -0.2, 'la-split': -0.5, join: -0.2, case: -0.1,
 }
 
 /** Rare Hunspell compounds and splits this far behind the best candidate are noise (ontwikkellong). */
@@ -88,6 +88,11 @@ export function rankSuggestions(word: string, ctx: RankContext, limit = 8): Rank
   if (hit) offer({ word: hit.right, kind: 'map' }, 0, hit.why, hit.note)
 
   for (const c of generateCandidates(lower, lang)) if (validMulti(c.word)) offer(c)
+  // لا glued to the next word (لايمكن, لازال): a classic slip, and Ayaspell reads لأيمكن as a word
+  if (lang === 'ar' && lower.startsWith('لا') && [...lower].length >= 5) {
+    const rest = lower.slice(2)
+    if (isKnown(rest) && (rankOf(rest) ?? Infinity) < 20_000) offer({ word: `لا ${rest}`, kind: 'la-split' })
+  }
   // capital letters: nederlands -> Nederlands, ijsland/Ijsland -> IJsland
   if (shape === 'lower' || shape === 'capital') {
     const cap = capitalize(lower, lang)

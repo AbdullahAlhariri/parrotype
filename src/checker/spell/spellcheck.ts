@@ -57,7 +57,9 @@ const AR_PREFIX = /^(?:[وف]?(?:[بلك]?ال|لل|[بلك])|[وف])/
 /** fixes that only change a mark or a letter's shape: a capitalised word with one of these is no name */
 const MARK_KINDS: ReadonlySet<string> = new Set(['map', 'case', 'trema', 'accent', 'trema-drop'])
 /** the Arabic rewrites that target this user's real mistakes (hamza, ة/ه, ى/ي) */
-const AR_TARGETED: ReadonlySet<string> = new Set(['map', 'hamza', 'hamza-drop', 'hamza-seat', 'ta-marbuta', 'alif-maqsura', 'final-alif'])
+const AR_TARGETED: ReadonlySet<string> = new Set([
+  'map', 'hamza', 'hamza-drop', 'hamza-seat', 'ta-marbuta', 'alif-maqsura', 'final-alif', 'la-split',
+])
 
 /**
  * Arabic words have no capitals, so a name or loanword the dictionary lacks (أوتريخت, روتردام) looks
@@ -277,12 +279,14 @@ export function checkSpelling(
    * A targeted Arabic rewrite that is sure. The frequency list holds the misspellings people make
    * (انا, هذة, المياة), but always below the right form (أنا, هذه, المياه). So when the typed word is in
    * the list, its rewrite must be at least as common. A real word Ayaspell lacks fails that test: جبنة,
-   * تمريرة, حفيدة would become "his cheese" (جبنه), الأهرامات takes a hamza seat nobody writes, and
-   * كابتن is no tanween typed as a noon.
+   * تمريرة, حفيدة would become "his cheese" (جبنه), الأهرامات takes a hamza seat nobody writes, كابتن is
+   * no tanween typed as a noon, and باور (a name) gets no hamza after ب.
    */
   function strongArabic(w: string, r: RankedSuggestion): boolean {
     if (!AR_TARGETED.has(r.kind)) return false
-    if (r.kind === 'map') return true
+    if (r.kind === 'map' || r.kind === 'la-split' || r.kind === 'hamza-drop') return true
+    // a hamza on the first letter (اسطنبول -> إسطنبول) is the classic slip; after a prefix (باور -> بأور) a guess
+    if (r.kind === 'hamza' && /^[أإآ]/.test(r.word)) return true
     const own = arabicRank(w)
     if (own === undefined) return true
     const fix = arabicRank(r.word)

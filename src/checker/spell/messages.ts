@@ -15,6 +15,7 @@ const NO_CAPITAL: Copy = { en: 'No capital letter here', nl: 'Hier geen hoofdlet
 const OTHER_CAPITALS: Copy = { en: 'Check the capitals', nl: 'Let op de hoofdletters' }
 const IJ_CAPITAL: Copy = { en: 'IJ takes two capitals', nl: 'IJ krijgt twee hoofdletters' }
 const HYPHEN_JOIN: Copy = { en: 'Written as one word', nl: 'Schrijf je aan elkaar' }
+const TWO_WORDS: Copy = { en: 'Two words, written apart', nl: 'Twee woorden, los geschreven', ar: 'كلمتان منفصلتان' }
 
 const EXPLAIN: Partial<Record<CandidateKind, Copy>> = {
   trema: {
@@ -89,7 +90,11 @@ const EXPLAIN: Partial<Record<CandidateKind, Copy>> = {
     en: 'Check the last letter: alif (ا) and alif maqsura (ى) are written differently.',
     ar: 'انتبه للحرف الأخير: الألف (ا) والألف المقصورة (ى) تُكتبان بشكل مختلف.',
   },
-  split: { en: 'These are two separate words.', nl: 'Dit zijn twee losse woorden.' },
+  split: { en: 'These are two separate words.', nl: 'Dit zijn twee losse woorden.', ar: 'هاتان كلمتان منفصلتان.' },
+  'la-split': {
+    en: 'لا is a word of its own, so it takes a space after it: لا يمكن، لا بأس، لا زال.',
+    ar: '«لا» كلمة مستقلة، فاترك مسافة بعدها: لا يمكن، لا بأس، لا زال.',
+  },
   join: { en: 'Written as one word, without a hyphen.', nl: 'Dit schrijf je aan elkaar, zonder streepje.' },
 }
 
@@ -133,6 +138,7 @@ export function spellCopy(
     else if (more < 0 && capitals(best.word) === 0) head = NO_CAPITAL // Maandag
     else head = OTHER_CAPITALS // iphone -> iPhone, youtube -> YouTube
   } else if (best?.kind === 'join') head = HYPHEN_JOIN
+  else if (best?.kind === 'la-split') head = TWO_WORDS
 
   let why: Copy | undefined
   if (best?.kind === 'map') why = best.note ? { en: best.note } : best.why ? WHY[best.why] : undefined
