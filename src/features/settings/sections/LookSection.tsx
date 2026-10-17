@@ -6,6 +6,7 @@ import type { KeesMood } from '@/components/kees'
 import { Row, Section } from '../Row'
 import { ThemePicker } from './ThemePicker'
 import { FontPicker } from './FontPicker'
+import { useMascotName } from '@/lib/mascot'
 
 const CARETS: { value: Settings['caretStyle']; label: string }[] = [
   { value: 'line', label: 'line' },
@@ -23,6 +24,7 @@ export function LookSection() {
   const s = useSettings()
   const kees = useUiPrefs((u) => u.kees)
   const setKees = useUiPrefs((u) => u.setKees)
+  const name = useMascotName()
   const [keesMood, setKeesMood] = useState<KeesMood>('idle')
 
   // a little hello when he is switched back to lively
@@ -73,16 +75,16 @@ export function LookSection() {
           checked={s.focusMode}
           onChange={(v) => s.set('focusMode', v)}
           label="Focus mode"
-          hint="Header, footer and Kees fade out on your first keystroke. Move the mouse to bring them back."
+          hint={`Header, footer and ${name} fade out on your first keystroke. Move the mouse to bring them back.`}
         />
       </div>
-      <Row label="Kees" hint={KEES_HINT[kees]}>
+      <Row label={name} hint={KEES_HINT[kees]}>
         {() => (
           <div className="kees-control">
             <span className="kees-preview">{kees === 'hidden' ? null : <Kees mood={keesMood} size={56} />}</span>
             <Segmented<KeesLevel>
               variant="boxed"
-              ariaLabel="How lively Kees is"
+              ariaLabel={`How lively ${name} is`}
               value={kees}
               onChange={setKees}
               options={[

@@ -2,9 +2,11 @@ import { Link, usePath } from '@/lib/router'
 import { Kees } from '@/components/kees/Kees'
 import { Button } from '@/components/ui/Button'
 import { openCommandPalette } from './paletteStore'
+import { useMascotName } from '@/lib/mascot'
 
 export function NotFound() {
   const path = usePath()
+  const name = useMascotName()
   return (
     <section className="not-found" aria-labelledby="nf-title">
       <Kees mood="curious" size={150} />
@@ -14,7 +16,7 @@ export function NotFound() {
         </p>
         <h1 id="nf-title">This page flew off.</h1>
         <p>
-          Nothing lives at <code>{path}</code>. Kees looked twice.
+          Nothing lives at <code>{path}</code>. {name} looked twice.
         </p>
         <div className="not-found-actions">
           <Link to="/" className="btn btn-primary">

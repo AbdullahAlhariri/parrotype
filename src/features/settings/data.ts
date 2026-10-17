@@ -156,7 +156,7 @@ export function resetAndReload() {
   const store = safeStorage()
   if (!store) return false
   clearData(store)
-  flashAfterReload('Everything is deleted. Kees kept nothing.')
+  flashAfterReload('Everything is deleted. The parrot kept nothing.')
   location.reload()
   return true
 }

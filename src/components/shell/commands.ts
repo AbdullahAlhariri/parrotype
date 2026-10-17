@@ -6,6 +6,7 @@ import { THEME_CHOICES, resolveTheme, getTheme, AUTO_THEME_ID } from '@/styles/t
 import { TYPING_FONTS } from '@/styles/fonts'
 import type { KeesLevel, TypingFontChoice } from '@/styles/fontStore'
 import { exportAll } from '@/features/settings/data'
+import { mascotName } from '@/lib/mascot'
 
 /** One row in the command palette. Monkeytype "single list" style: group › label. */
 export interface Command {
@@ -137,10 +138,11 @@ export function buildCommands(ctx: CommandContext): Command[] {
     }
   }
 
+  const name = mascotName(s.lang)
   const keesLevels: [KeesLevel, string, string][] = [
-    ['lively', 'blinks, fidgets, reacts', 'Kees is lively again'],
-    ['quiet', 'blinks only', 'Kees will keep still'],
-    ['hidden', 'off screen', 'Kees is off his perch'],
+    ['lively', 'blinks, fidgets, reacts', `${name} is lively again`],
+    ['quiet', 'blinks only', `${name} will keep still`],
+    ['hidden', 'off screen', `${name} is off his perch`],
   ]
   for (const [level, hint, confirm] of keesLevels) {
     out.push({

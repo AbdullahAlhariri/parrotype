@@ -45,7 +45,7 @@ const CREDITS: { what: string; who: ReactNode; licence: string }[] = [
   { what: 'Spell-check engine', who: 'hunspell-wasm, Hunspell compiled for the browser', licence: 'MPL 1.1' },
   { what: 'Typing font', who: 'Recursive by Arrow Type', licence: 'SIL OFL 1.1' },
   { what: 'Wordmark and big numbers', who: 'Caprasimo by Phaedra Charles and Flavia Zimbardi', licence: 'SIL OFL 1.1' },
-  { what: 'Kees’s handwriting', who: 'Shantell Sans by Shantell Martin and Arrow Type', licence: 'SIL OFL 1.1' },
+  { what: 'The parrot’s handwriting', who: 'Shantell Sans by Shantell Martin and Arrow Type', licence: 'SIL OFL 1.1' },
   { what: 'Arabic text', who: 'Noto Naskh Arabic by Google', licence: 'SIL OFL 1.1' },
   { what: 'Other typing fonts', who: 'Atkinson Hyperlegible Mono by the Braille Institute, IBM Plex Mono by IBM', licence: 'SIL OFL 1.1' },
   {
@@ -116,7 +116,7 @@ export default function AboutPage() {
           </dd>
           <dt>Only the right spelling, repeated</dt>
           <dd>
-            Looking at a misspelling makes it stick, so Kees never repeats your mistake. He repeats the correct word instead: <span lang="nl" className="about-nowrap">wordt. wordt. wordt.</span>
+            Looking at a misspelling makes it stick, so the parrot never repeats your mistake. He repeats the correct word instead: <span lang="nl" className="about-nowrap">wordt. wordt. wordt.</span>
           </dd>
         </dl>
       </section>
@@ -194,11 +194,16 @@ export default function AboutPage() {
       </section>
 
       <section className="about-section about-kea" aria-labelledby="about-kea">
-        <h2 id="about-kea">Kees</h2>
+        <h2 id="about-kea">Kees, Monty and Fustuq</h2>
         <p className="about-text">
-          Kees is a kea. Kea live in the mountains of New Zealand’s South Island and are the world’s only alpine parrots. They are curious, clever and famous for
-          taking apart car wipers. His name is Dutch and sounds almost like his species. The monocle is because someone here has to look wise. His olive wings hide a
-          bright orange underside, and you will only see it when you set a personal best.
+          The parrot is a kea. Kea live in the mountains of New Zealand’s South Island and are the world’s only alpine parrots. They are curious, clever and famous for
+          taking apart car wipers. The monocle is because someone here has to look wise. His olive wings hide a bright orange underside, and you will only see it when
+          you set a personal best.
+        </p>
+        <p className="about-text">
+          He goes by a different name in each language. In Dutch he is Kees, a common Dutch name that sounds almost like his species. In English he is Monty, after the
+          monocle. In Arabic he is <span lang="ar" dir="rtl">فستق</span> (Fustuq, pistachio), a classic name for a green bird. Switch the language at the top right and he
+          answers to the new one, in his own recorded voice.
         </p>
       </section>
     </article>

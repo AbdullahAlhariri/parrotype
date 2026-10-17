@@ -5,6 +5,7 @@ import { MODE_LABELS, historyScale, historySeries, nearestIndex, sessionConfig, 
 import { pct, shortDate, when } from './format'
 import { SectionHead } from './parts'
 import { useWidth } from './useWidth'
+import { useMascotName } from '@/lib/mascot'
 
 /** Accuracy the drills aim for (typing-pedagogy.md: 97% keystroke accuracy). */
 const TARGET = 97
@@ -16,6 +17,7 @@ type Range = 50 | 200 | 0
 const runLabel = (s: SessionRecord) => [MODE_LABELS[s.mode] ?? s.mode, sessionConfig(s)].filter(Boolean).join(', ')
 
 export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; filter: LangFilter }) {
+  const mascot = useMascotName()
   const [metric, setMetric] = useState<HistoryMetric>('accuracy')
   const [range, setRange] = useState<Range>(200)
   const [hover, setHover] = useState<number | null>(null)
@@ -194,7 +196,7 @@ export function HistoryChart({ sessions, filter }: { sessions: SessionRecord[]; 
           </div>
         )}
       </div>
-      {n === 1 && <p className="st-note">One run so far. Kees needs two to draw a line.</p>}
+      {n === 1 && <p className="st-note">One run so far. {mascot} needs two to draw a line.</p>}
     </section>
   )
 }

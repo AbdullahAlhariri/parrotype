@@ -31,6 +31,7 @@ import { MistakeKinds } from './MistakeKinds'
 import { NestProgress } from './NestProgress'
 import { SessionTable } from './SessionTable'
 import './stats.css'
+import { useMascotName } from '@/lib/mascot'
 
 const FILTER_OPTIONS: { value: LangFilter; label: string; title: string }[] = [
   { value: 'all', label: 'all', title: 'All languages' },
@@ -41,6 +42,7 @@ const FILTER_OPTIONS: { value: LangFilter; label: string; title: string }[] = [
 
 /** The user's mirror: accuracy first, then where the mistakes come from. */
 export default function StatsPage() {
+  const mascot = useMascotName()
   const settingsLang = useSettings((s) => s.lang)
   const query = useQuery()
   const q = query.get('lang')
@@ -110,7 +112,7 @@ export default function StatsPage() {
       {nothingAtAll ? (
         <div className="st-empty">
           <Parrot mood="idle" size={96} />
-          <p>No runs yet. Kees is on his perch, waiting.</p>
+          <p>No runs yet. {mascot} is on his perch, waiting.</p>
           <Link to="/" className="btn btn-primary">
             Start typing
           </Link>
@@ -118,7 +120,7 @@ export default function StatsPage() {
       ) : nothingHere ? (
         <div className="st-empty">
           <Parrot mood="idle" size={80} />
-          <p>{filter === 'all' ? 'Nothing here yet.' : `No ${LANG_ADJ[filter]} runs yet. Kees is on his perch, waiting.`}</p>
+          <p>{filter === 'all' ? 'Nothing here yet.' : `No ${LANG_ADJ[filter]} runs yet. ${mascot} is on his perch, waiting.`}</p>
           {otherLangs.length > 0 && (
             <p className="st-empty-sub">You do have {otherLangs.map((o) => `${plural(o.count, 'session')} in ${LANG_ADJ[o.lang]}`).join(' and ')}.</p>
           )}

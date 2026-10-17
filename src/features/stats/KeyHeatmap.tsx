@@ -5,6 +5,7 @@ import { MIN_KEY_SAMPLES, heatShare, keyHeat, layoutForFilter, type KeyHeat, typ
 import { pct, plural } from './format'
 import { SectionHead } from './parts'
 import { useRovingGrid } from './roving'
+import { useMascotName } from '@/lib/mascot'
 
 const STEPS = [0, 0.25, 0.5, 0.75, 1]
 
@@ -21,6 +22,7 @@ function describe(k: KeyDef, h: KeyHeat | undefined): string {
 
 /** The physical keyboard, each key shaded from --surface to --error by how often it was missed. */
 export function KeyHeatmap({ keys, filter, note }: { keys: Record<string, KeyStat>; filter: LangFilter; note?: string }) {
+  const mascot = useMascotName()
   const layout = LAYOUTS[layoutForFilter(filter)]
   const heat = useMemo(() => keyHeat(keys, layout.id), [keys, layout.id])
   const rtl = layout.dir === 'rtl'
@@ -142,7 +144,7 @@ export function KeyHeatmap({ keys, filter, note }: { keys: Record<string, KeySta
             </div>
           )}
         </div>
-        {!hasData && <p className="st-kb-empty">Not enough keystrokes yet. Kees needs about {MIN_KEY_SAMPLES} presses per key, so a few runs and this fills in.</p>}
+        {!hasData && <p className="st-kb-empty">Not enough keystrokes yet. {mascot} needs about {MIN_KEY_SAMPLES} presses per key, so a few runs and this fills in.</p>}
       </div>
       <div className="st-heat-legend" aria-hidden="true">
         <span className="tabular">0%</span>

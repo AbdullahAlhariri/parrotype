@@ -3,10 +3,12 @@ import { useSettings } from '@/state/settings'
 import { practiseSet, practiseWordsHref, wrongVersions, type LangFilter, type MissedWord } from './aggregate'
 import { plural } from './format'
 import { LANG_ADJ, LangTag, Practice, PracticeLink, SectionHead, TypedDiff } from './parts'
+import { useMascotName } from '@/lib/mascot'
 
 const SHOW = 10
 
 export function MissedWords({ words, filter }: { words: MissedWord[]; filter: LangFilter }) {
+  const mascot = useMascotName()
   const top = words.slice(0, SHOW)
   const current = useSettings((s) => s.lang)
   const set = practiseSet(top, filter === 'all' ? current : filter)
@@ -63,7 +65,7 @@ export function MissedWords({ words, filter }: { words: MissedWord[]; filter: La
           </PracticeLink>
         </>
       ) : (
-        <p className="st-empty-line">No problem words yet. Do a few runs and Kees will start a list.</p>
+        <p className="st-empty-line">No problem words yet. Do a few runs and {mascot} will start a list.</p>
       )}
     </section>
   )

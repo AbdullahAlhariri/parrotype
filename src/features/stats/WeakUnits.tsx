@@ -5,6 +5,7 @@ import { useSettings } from '@/state/settings'
 import { MIN_KEY_SAMPLES, drillHref, drillUnits, practiceLangFor, weakUnits, type LangFilter } from './aggregate'
 import { pct } from './format'
 import { Practice, PracticeLink, SectionHead } from './parts'
+import { useMascotName } from '@/lib/mascot'
 
 /** "d", "d and ij", "d, ij and ei", each unit isolated so Arabic letters keep their order */
 function UnitList({ units, lang }: { units: string[]; lang: Lang }) {
@@ -54,6 +55,7 @@ function UnitTable({ items, lang, unit, count }: { items: Weakness[]; lang: Lang
 
 /** Weakest keys and letter pairs from weaknesses(), with a link that drills them. */
 export function WeakUnits({ keys, bigrams, filter }: { keys: Record<string, KeyStat>; bigrams: Record<string, KeyStat>; filter: LangFilter }) {
+  const mascot = useMascotName()
   const w = useMemo(() => weakUnits(keys, bigrams, filter), [keys, bigrams, filter])
   const current = useSettings((s) => s.lang)
   const lang = practiceLangFor(filter, current)
@@ -77,8 +79,8 @@ export function WeakUnits({ keys, bigrams, filter }: { keys: Record<string, KeyS
       {empty ? (
         <p className="st-empty-line">
           {anyData
-            ? 'No misses worth mentioning. Kees checked twice.'
-            : `Not enough keystrokes yet. Kees needs about ${MIN_KEY_SAMPLES} presses per key before he points a claw.`}
+            ? `No misses worth mentioning. ${mascot} checked twice.`
+            : `Not enough keystrokes yet. ${mascot} needs about ${MIN_KEY_SAMPLES} presses per key before he points a claw.`}
         </p>
       ) : (
         <>
