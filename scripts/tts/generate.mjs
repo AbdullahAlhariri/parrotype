@@ -173,7 +173,7 @@ export function normalize(text, lang) {
 }
 
 // Names a transcriber may legitimately spell differently ("Kees" sounds like "Keith" or "case" to English ears).
-const NAME_VARIANTS = { kees: ['keith', 'keys', 'case', 'kase', 'kiss', 'cees', 'kays', 'كيس'] }
+const NAME_VARIANTS = { kees: ['keith', 'keys', 'case', 'kase', 'kiss', 'cees', 'kays', 'كيس'], sara: ['sarah'] }
 const canonical = (w) => Object.keys(NAME_VARIANTS).find((n) => n === w || NAME_VARIANTS[n].includes(w)) ?? w
 
 // Audio cannot show spelling: words that sound the same compare equal (word/wordt, its/it's...).
@@ -184,9 +184,24 @@ function soundAlike(w, lang) {
   return w
 }
 
+// Numbers: the transcript may spell "2015" as "twenty fifteen"; both collapse to one '#' token.
+const NUMBER_WORDS = new Set(`zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen
+seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million oh
+nul een twee drie vier vijf zes zeven acht negen tien elf twaalf dertien veertien vijftien zestien zeventien
+achttien negentien twintig dertig veertig vijftig zestig zeventig tachtig negentig honderd duizend miljoen tweeduizend`.split(/\s+/))
+function collapseNumbers(tokens) {
+  const out = []
+  for (const t of tokens) {
+    const isNum = /^\d+$/.test(t) || NUMBER_WORDS.has(t) || /^(\w+)(en|ën)(twintig|dertig|veertig|vijftig|zestig|zeventig|tachtig|negentig)$/.test(t)
+    if (isNum && out[out.length - 1] === '#') continue
+    out.push(isNum ? '#' : t)
+  }
+  return out
+}
+
 export function wordErrors(expected, actual, lang) {
-  const a = normalize(expected, lang).map(canonical).map((w) => soundAlike(w, lang))
-  const b = normalize(actual, lang).map(canonical).map((w) => soundAlike(w, lang))
+  const a = collapseNumbers(normalize(expected, lang).map(canonical).map((w) => soundAlike(w, lang)))
+  const b = collapseNumbers(normalize(actual, lang).map(canonical).map((w) => soundAlike(w, lang)))
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
   for (let j = 1; j <= b.length; j++) d[0][j] = j
   for (let i = 1; i <= a.length; i++)
