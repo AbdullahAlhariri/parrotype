@@ -89,9 +89,10 @@ export function rankSuggestions(word: string, ctx: RankContext, limit = 8): Rank
 
   for (const c of generateCandidates(lower, lang)) if (validMulti(c.word)) offer(c)
   // لا glued to the next word (لايمكن, لازال): a classic slip, and Ayaspell reads لأيمكن as a word
-  if (lang === 'ar' && lower.startsWith('لا') && [...lower].length >= 5) {
+  if (lang === 'ar' && lower.startsWith('لا') && [...lower].length >= 4) {
     const rest = lower.slice(2)
-    if (isKnown(rest) && (rankOf(rest) ?? Infinity) < 20_000) offer({ word: `لا ${rest}`, kind: 'la-split' })
+    const r = rankOf(rest) ?? Infinity
+    if (isKnown(rest) && r < ([...rest].length === 2 ? 5000 : 20_000)) offer({ word: `لا ${rest}`, kind: 'la-split' })
   }
   // capital letters: nederlands -> Nederlands, ijsland/Ijsland -> IJsland
   if (shape === 'lower' || shape === 'capital') {
