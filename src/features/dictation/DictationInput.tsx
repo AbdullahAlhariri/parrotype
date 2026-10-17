@@ -8,6 +8,8 @@ interface Props {
   onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void
   lang: Lang
   placeholder: string
+  /** the placeholder is in the practice language (else English, in the UI font) */
+  placeholderLocal?: boolean
   readOnly?: boolean
   /** after a wrong check: aria-invalid and a different hairline */
   invalid?: boolean
@@ -27,7 +29,7 @@ const fit = (t: HTMLTextAreaElement | null) => {
  * The answer field: one logical line that grows downwards, in the typing font, with every
  * browser "help" (spellcheck, autocorrect, autocapitalise) off. Newlines never get in.
  */
-export function DictationInput({ ref, value, onChange, onKeyDown, lang, placeholder, readOnly, invalid, describedBy, label, hidden }: Props) {
+export function DictationInput({ ref, value, onChange, onKeyDown, lang, placeholder, placeholderLocal, readOnly, invalid, describedBy, label, hidden }: Props) {
   useLayoutEffect(() => fit(ref.current), [ref, value, lang, hidden])
   useLayoutEffect(() => {
     const onResize = () => fit(ref.current)
@@ -46,6 +48,7 @@ export function DictationInput({ ref, value, onChange, onKeyDown, lang, placehol
       lang={LANG_TAGS[lang]}
       dir={isRtl(lang) ? 'rtl' : 'ltr'}
       placeholder={placeholder}
+      data-ph={placeholderLocal ? 'local' : undefined}
       readOnly={readOnly}
       aria-label={label}
       aria-invalid={invalid || undefined}

@@ -184,12 +184,13 @@ export function segments(text: ProofText, grade: ProofGrade): Segment[] {
   return out
 }
 
-/** The sentence around an offset, for the mistake nest. */
+/** The sentence around an offset, for the mistake nest. Knows the Arabic question mark too. */
 export function sentenceAt(source: string, offset: number): string {
   const before = source.slice(0, offset)
-  const start = Math.max(before.lastIndexOf('. '), before.lastIndexOf('? '), before.lastIndexOf('! '), before.lastIndexOf('\n'))
+  let start = -1
+  for (const m of before.matchAll(/[.?!؟](?=\s)|\n/g)) start = m.index + m[0].length
   const rest = source.slice(offset)
-  const m = /[.?!](?=\s|$)|\n/.exec(rest)
+  const m = /[.?!؟](?=\s|$)|\n/.exec(rest)
   const end = m ? offset + m.index + (m[0] === '\n' ? 0 : 1) : source.length
-  return source.slice(start < 0 ? 0 : start + 1, end).trim()
+  return source.slice(start < 0 ? 0 : start, end).trim()
 }

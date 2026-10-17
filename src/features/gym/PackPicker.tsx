@@ -1,5 +1,5 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import { LANG_NAMES, LANG_TAGS, isRtl } from '@/types'
+import { LANG_TAGS, isRtl } from '@/types'
 import { packsFor, type DrillPack } from '@/content/drills'
 import { useSettings } from '@/state/settings'
 import { mascotName } from '@/lib/mascot'
@@ -72,7 +72,7 @@ export function PackPicker({ missing }: { missing?: string }) {
         </div>
       )}
 
-      <ol className="gym-packs" aria-label={`Packs in ${LANG_NAMES[lang]}`} onKeyDown={onListKey}>
+      <ol className="gym-packs" aria-label={`${LANG_IN_ENGLISH[lang]} packs`} onKeyDown={onListKey}>
         {packs.map((p) => (
           <li key={p.id}>
             <PackRow pack={p} progress={progress[p.id]} />

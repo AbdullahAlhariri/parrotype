@@ -7,6 +7,7 @@ import { listDrafts, newDraft, saveDraft, deleteDraft as removeDraft, type Draft
 import { ParagraphCache, diffRange, planCheck, reId, remapIssues, shiftIssues, splitParagraphs } from './lib/paragraphs'
 import { drawableIssues } from './lib/segments'
 import { isSpelling } from './lib/report'
+import { addFixed, fixedFromReview, fixedFromSuggestion, materializeFixed, remapFixed, type FixedIssue } from './lib/fixed'
 import { readPref, writePref } from './lib/prefs'
 
 export type FeedbackMode = 'done' | 'live'
@@ -30,6 +31,13 @@ const byOffset = (a: Issue, b: Issue) => a.offset - b.offset || a.length - b.len
 /** A newer check, a draft switch or a language switch replaced this check: not an error, just ignore it. */
 export const STALE = 'stale' as const
 type CheckOutcome = Issue[] | null | typeof STALE
+
+/** What Finish hands to the report: the final text, what is still wrong in it, and what was fixed on the way. */
+export interface FinishResult {
+  text: string
+  issues: Issue[]
+  fixed: FixedIssue[]
+}
 
 function startDraft(lang: Lang, kind: PromptKind | 'all'): { draft: Draft; resumed: boolean } {
   const last = listDrafts(lang)[0]
@@ -61,6 +69,8 @@ export function useWriteSession(lang: Lang) {
   const cacheRef = useRef(new ParagraphCache())
   const checkedRef = useRef<string | null>(null)
   const reviewKeysRef = useRef<Issue[]>([])
+  /** the text when self-review started (the review's issues point into it) */
+  const reviewTextRef = useRef('')
   /** ids of flagged words the user edited during self-review (a Set, so StrictMode's double updaters count once) */
   const editedInReviewRef = useRef(new Set<string>())
   draftRef.current = draft
@@ -155,7 +165,13 @@ export function useWriteSession(lang: Lang) {
     const gap = now - lastInputRef.current
     lastInputRef.current = now
     setResumed(false)
-    setDraft((d) => ({ ...d, text: next, updatedAt: now, activeMs: d.activeMs + (gap < IDLE_GAP_MS ? gap : 0) }))
+    setDraft((d) => ({
+      ...d,
+      text: next,
+      updatedAt: now,
+      activeMs: d.activeMs + (gap < IDLE_GAP_MS ? gap : 0),
+      ...(d.fixed?.length ? { fixed: remapFixed(d.fixed, prev, next) } : {}),
+    }))
     setIssues((cur) => {
       if (!cur.length) return cur
       const r = remapIssues(cur, prev, next)
@@ -199,6 +215,7 @@ export function useWriteSession(lang: Lang) {
       return true
     }
     reviewKeysRef.current = res
+    reviewTextRef.current = text
     editedInReviewRef.current = new Set()
     setFound(null)
     setReviewEndsAt(Date.now() + REVIEW_MS)
@@ -217,13 +234,10 @@ export function useWriteSession(lang: Lang) {
       if (res === STALE) return
       next = res ?? next
       setIssues(next)
-      // A mistake counts as found when the user edited it and the fix it wanted is no longer asked for.
-      const before = new Map<string, number>()
-      for (const i of reviewKeysRef.current) before.set(fixKey(i), (before.get(fixKey(i)) ?? 0) + 1)
-      for (const i of next) if (before.has(fixKey(i))) before.set(fixKey(i), before.get(fixKey(i))! - 1)
-      let n = 0
-      for (const v of before.values()) n += Math.max(0, v)
-      setFound({ found: Math.min(n, edited), total: reviewKeysRef.current.length })
+      const found = foundInReview(reviewKeysRef.current, next, editedInReviewRef.current)
+      setFound({ found: found.length, total: reviewKeysRef.current.length })
+      // found yourself is still a mistake you made: it goes in the report and the stats too
+      if (found.length) setDraft((d) => ({ ...d, fixed: addFixed(d.fixed, fixedFromReview(found, reviewTextRef.current, d.recorded?.keys)) }))
     }
     setPhase('revealed')
   }, [check])
@@ -261,6 +275,11 @@ export function useWriteSession(lang: Lang) {
 
   /* ---------------- issue actions ---------------- */
 
+  /** A fix from an underline: `before` is the text just before `rep` replaced the issue. */
+  const noteFixed = useCallback((issue: Issue, rep: string, before: string) => {
+    setDraft((d) => ({ ...d, fixed: addFixed(d.fixed, [fixedFromSuggestion(issue, rep, before, d.recorded?.keys)]) }))
+  }, [])
+
   const ignore = useCallback((issue: Issue) => {
     const key = ignoreKey(issue)
     setDraft((d) => (d.ignored.includes(key) ? d : { ...d, ignored: [...d.ignored, key] }))
@@ -284,7 +303,7 @@ export function useWriteSession(lang: Lang) {
    * Final full check for the report. Resolves null (and goes back to where it was) when the checker
    * failed, STALE when the user moved on to another draft or language meanwhile.
    */
-  const finish = useCallback(async (): Promise<CheckOutcome> => {
+  const finish = useCallback(async (): Promise<FinishResult | null | typeof STALE> => {
     const text = textRef.current
     if (!text.trim()) return STALE
     const before = phaseRef.current
@@ -298,7 +317,9 @@ export function useWriteSession(lang: Lang) {
     }
     setIssues(res)
     setPhase('report')
-    return res
+    // the check moved its results onto whatever the text is now
+    const final = textRef.current
+    return { text: final, issues: res, fixed: materializeFixed(final, draftRef.current.fixed, res) }
   }, [check])
 
   const markFinished = useCallback((recorded: Recorded) => {
@@ -415,6 +436,7 @@ export function useWriteSession(lang: Lang) {
     recheckAt,
     ignore,
     addToDictionary,
+    noteFixed,
     finish,
     markFinished,
     keepWriting,
@@ -425,3 +447,20 @@ export function useWriteSession(lang: Lang) {
 }
 
 export type WriteSession = ReturnType<typeof useWriteSession>
+
+/**
+ * Self-review: which of the review's issues the writer fixed before the reveal. An issue counts
+ * when its word was edited and the fix it wanted is asked for fewer times than before.
+ */
+export function foundInReview(reviewed: readonly Issue[], after: readonly Issue[], edited: ReadonlySet<string>): Issue[] {
+  const left = new Map<string, number>()
+  for (const i of after) left.set(fixKey(i), (left.get(fixKey(i)) ?? 0) + 1)
+  const groups = new Map<string, Issue[]>()
+  for (const i of reviewed) groups.set(fixKey(i), [...(groups.get(fixKey(i)) ?? []), i])
+  const out: Issue[] = []
+  for (const [key, list] of groups) {
+    const gone = Math.max(0, list.length - (left.get(key) ?? 0))
+    out.push(...list.filter((i) => edited.has(i.id)).slice(0, gone))
+  }
+  return out.sort(byOffset)
+}

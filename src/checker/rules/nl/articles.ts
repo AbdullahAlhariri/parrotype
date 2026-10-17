@@ -67,6 +67,7 @@ function nounAfter(ctx: RuleContext, d: number, allowAdj: boolean): number {
 /** "de huis- en tuinman", "het auto- en fietsverkeer": the noun is the first half of a shared compound */
 const truncatedCompound = (ctx: RuleContext, n: number) => /^-/.test(ctx.text.slice(ctx.words[n].end))
 
+const ORDINALS = set('eerste tweede derde vierde vijfde laatste volgende vorige hele')
 const NUMBER_WORDS = set('één een twee drie vier vijf zes zeven acht negen tien elf twaalf honderd')
 /** "de nummer één van de wereld": a person ranked by number takes de */
 const rankedNumber = (ctx: RuleContext, n: number) => {
@@ -89,8 +90,16 @@ export const deHet: Rule = {
     const out: RuleHit[] = []
     ctx.words.forEach((w, i) => {
       if (w.lower !== 'de' || (!isLowercase(w) && !isSentenceStart(ctx, i))) return
-      const n = next(ctx, i)
+      let n = next(ctx, i)
       if (n < 0) return
+      // "de eerste rapport", "de nieuwe huis": one inflected adjective or ordinal in between (listed nouns only)
+      let viaAdj = false
+      if (ADJ_BASE.has(lw(ctx, n)) || ORDINALS.has(lw(ctx, n))) {
+        const m = next(ctx, n)
+        if (m < 0 || !isHetNoun(lw(ctx, m))) return
+        n = m
+        viaAdj = true
+      }
       const noun = lw(ctx, n)
       const kind = hetNounKind(noun)
       if (!kind || !nounOk(ctx, n) || rankedNumber(ctx, n)) return
@@ -107,7 +116,7 @@ export const deHet: Rule = {
             explanation: why.en,
             explanationLocal: why.nl,
           },
-          kind === 'list' ? 'high' : 'medium',
+          kind === 'list' && !viaAdj ? 'high' : 'medium',
         ),
       )
     })

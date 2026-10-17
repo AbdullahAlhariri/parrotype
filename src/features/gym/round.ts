@@ -12,7 +12,8 @@ export const LANG_IN_ENGLISH: Record<Lang, string> = { nl: 'Dutch', en: 'English
 /** Stable key for an item, so progress survives reordering the content. */
 export const itemKey = (item: DrillItem) => hashString(item.sentence).toString(36)
 
-const INVISIBLE = /[​-‏‪-‮⁦-⁩؜﻿]/g
+/** Zero-width and direction marks that an IME or a paste can slip into an answer. */
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\u061C\uFEFF]/g
 
 export function normalizeAnswer(s: string, lang: Lang): string {
   const out = s.normalize('NFC').replace(INVISIBLE, '').replace(/[‘’ʼ`´]/g, "'").replace(/\s+/g, ' ').trim()
@@ -24,6 +25,13 @@ export function isRight(item: DrillItem, typed: string, lang: Lang): boolean {
   const t = normalizeAnswer(typed, lang).toLocaleLowerCase()
   if (!t) return false
   return [item.answer, ...(item.accept ?? [])].some((a) => normalizeAnswer(a, lang).toLocaleLowerCase() === t)
+}
+
+/** While retyping: is what has been typed so far the start of a right answer? */
+export function onTrack(item: DrillItem, typed: string, lang: Lang): boolean {
+  const t = normalizeAnswer(typed, lang).toLocaleLowerCase()
+  if (!t) return true
+  return [item.answer, ...(item.accept ?? [])].some((a) => normalizeAnswer(a, lang).toLocaleLowerCase().startsWith(t))
 }
 
 /** The right form to show in the sentence once answered: the accepted spelling the user typed, capitalised like the answer. */

@@ -4,6 +4,7 @@ import { LANG_TAGS, isRtl } from '@/types'
 import { CATEGORY_LABEL, CATEGORY_ORDER } from './lib/report'
 import { markKind } from './lib/segments'
 import { formatDuration } from './lib/text'
+import { Mixed } from './Mixed'
 
 interface Props {
   issues: Issue[]
@@ -64,7 +65,7 @@ export function IssueList({ issues, revealed, live, activeId, onJump, explainIn,
         ) : !revealed ? (
           note && <div className="il-note">{note}</div>
         ) : issues.length === 0 ? (
-          <p className="il-note">{live ? 'Nothing to correct so far.' : `Nothing to correct. ${mascot} read it twice and found nothing.`}</p>
+          <p className="il-note">{live ? 'Nothing to correct so far.' : `${mascot} found nothing to correct.`}</p>
         ) : (
           groups.map((g) => <Group key={g.category} category={g.category} items={g.items} activeId={activeId} onJump={onJump} explainIn={explainIn} />)
         )}
@@ -119,7 +120,7 @@ function Group({ category, items, activeId, onJump, explainIn }: { category: Iss
                   )}
                 </span>
                 <span className="il-msg" lang={local ? LANG_TAGS[i.lang] : 'en'} dir={local && rtl ? 'rtl' : undefined}>
-                  {msg}
+                  {local ? msg : <Mixed text={msg ?? ''} />}
                 </span>
               </button>
             </li>

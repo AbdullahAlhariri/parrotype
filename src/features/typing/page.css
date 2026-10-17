@@ -87,6 +87,12 @@ body[data-typing]:not([data-focus-mode='off']) .tp-config:focus-within {
 .tp.is-running .tp-tip {
   opacity: 0;
 }
+/* the same advice in the practice language, on its own line (explanations set to Dutch/Arabic) */
+.tp-tip-local {
+  display: block;
+  margin-top: var(--s-2);
+  color: var(--text);
+}
 
 /* ------------------------------------------------------------------ */
 /* result extras                                                       */

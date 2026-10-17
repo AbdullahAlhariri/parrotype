@@ -41,8 +41,19 @@ export const EN_VARIETY_PAIRS: ReadonlyArray<readonly [us: string, uk: string]> 
 
 /** American form -> British form */
 export const US_TO_UK: ReadonlyMap<string, string> = new Map(pairs)
+/**
+ * British-only forms whose American counterpart is also British in another sense (practice is the British
+ * noun, license the British verb). Only the British -> American direction is safe, so they are flagged in
+ * American English but never the other way round.
+ */
+const UK_ONLY = `practice/practise practiced/practised practicing/practising practices/practises license/licence
+licenses/licences learned/learnt spelled/spelt dreamed/dreamt spoiled/spoilt ocher/ochre`
+  .trim()
+  .split(/\s+/)
+  .map((p) => p.split('/') as [string, string])
+
 /** British form -> American form */
-export const UK_TO_US: ReadonlyMap<string, string> = new Map(pairs.map(([us, uk]) => [uk, us]))
+export const UK_TO_US: ReadonlyMap<string, string> = new Map([...pairs, ...UK_ONLY].map(([us, uk]) => [uk, us]))
 
 /**
  * Stems that take -ize in American and -ise in British spelling (organize/organise). Oxford spelling

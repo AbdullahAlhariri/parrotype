@@ -4,6 +4,7 @@ import { LANG_TAGS, isRtl } from '@/types'
 import { Kbd } from '@/components/ui'
 import { MARK_LABEL, markKind } from './lib/segments'
 import { isSpelling } from './lib/report'
+import { Mixed } from './Mixed'
 
 export interface IssuePopoverHandle {
   focusFirst: () => void
@@ -134,7 +135,7 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
       </div>
 
       <p className="ip-msg" lang={localMsg ? LANG_TAGS[issue.lang] : 'en'} dir={localMsg ? textDir : undefined}>
-        {message}
+        {localMsg ? message : <Mixed text={message ?? ''} />}
       </p>
 
       {reps.length > 0 ? (
@@ -159,7 +160,7 @@ export const IssuePopover = forwardRef<IssuePopoverHandle, Props>(function Issue
           </button>
           <div id={ruleId} hidden={!ruleOpen} className="ip-rule-body">
             <p lang={localWhy ? LANG_TAGS[issue.lang] : 'en'} dir={localWhy ? textDir : undefined}>
-              {explanation}
+              {localWhy ? explanation : <Mixed text={explanation} />}
             </p>
             {issue.learnMore && (
               <a href={issue.learnMore} target="_blank" rel="noreferrer noopener">

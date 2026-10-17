@@ -18,6 +18,8 @@ export interface SpellCheckOptions {
   suggestBudgetMs?: number
   /** max suggestions per issue */
   maxSuggestions?: number
+  /** frequency list of the language loanwords come from (English, for Dutch text) */
+  loanFreq?: FreqRanks
 }
 
 /**
@@ -69,10 +71,38 @@ function arabicConfidence(best: RankedSuggestion, common: boolean): Issue['confi
   return 'low'
 }
 
+/** Dutch rewrites that point at a real Dutch mistake: when one fits, an English-looking word is no loan */
+const NL_TARGETED: ReadonlySet<string> = new Set([
+  'map', 'trema', 'accent', 'trema-drop', 'tussen-n', 'tussen-n-drop', 'kofschip', 'dt', 'ei-ij', 'au-ou', 'ending',
+  'apostrophe', 'apostrophe-drop', 'join', 'case',
+])
+
+/** the same letter three times or more: chat stretching */
+const STRETCHED = /(\p{L})\1{2,}/u
+/** the stretched word with each run cut to the length the fix has */
+const collapse = (w: string, fix: string) => {
+  const one = w.replace(/(\p{L})\1{2,}/gu, '$1')
+  const two = w.replace(/(\p{L})\1{2,}/gu, '$1$1')
+  return fix.toLowerCase() === two ? two : one
+}
+
+/**
+ * Words after which an Arabic text names a person, street, shop or place (السيدة يانسن، شارع موريتس،
+ * متجر ألبرت هاين): up to two words after the trigger are not looked up.
+ */
+const AR_NAME_TRIGGER = new RegExp(
+  `(?:^|[\\s،؛(«"])[وفبل]?(?:ال)?(?:سيد|سيدة|آنسة|أستاذ|أستاذة|دكتور|دكتورة|شارع|ساحة|حي|ميدان|مدينة|قرية|متجر|محل|مطعم|فندق|شركة|بنك|جامعة|مستشفى|نادي|فريق|عائلة|نهر|جسر|محطة|متحف|ألبرت)(?:\\s+[\\u0621-\\u064A]+)?\\s+$`,
+  'u',
+)
+
 const isCapitalised = (w: string) => {
   const shape = caseShape(w)
   return shape === 'capital' || shape === 'upper'
 }
+/** English I (I'm, I'll) is a capital in every sentence: "Wehn I came" is no name */
+const ENGLISH_I = /^I(?:['’](?:m|ll|ve|d))?$/
+/** a capitalised word that may be part of a name next to it */
+const nameLike = (w: string) => isCapitalised(w) && !ENGLISH_I.test(w)
 const HAS_DIGIT = /\p{N}/u
 const LETTER = /\p{L}/u
 
@@ -169,8 +199,8 @@ export function checkSpelling(
       const ps = pieces(tok, wi === 0, lang, isKnown)
       if (ps === 'ok') return
       // a capitalised neighbour (not the sentence's first word) makes a capitalised word part of a name
-      const nameNext = wi + 1 < words.length && isCapitalised(words[wi + 1].text)
-      const namePrev = wi > 1 && isCapitalised(words[wi - 1].text)
+      const nameNext = wi + 1 < words.length && nameLike(words[wi + 1].text)
+      const namePrev = wi > 1 && nameLike(words[wi - 1].text)
       for (const p of ps) {
         const issue = checkPiece(p, ps.length > 1, nameNext || namePrev)
         if (issue) issues.push(issue)
@@ -206,6 +236,26 @@ export function checkSpelling(
   function arabicObjectForm(w: string): boolean {
     const m = /^(.{2,}و)(ه|ها|هم|هما|هن|ك|كم|كما|ني|نا)$/.exec(w)
     return !!m && (isKnown(`${m[1]}ا`) || isKnown(`${m[1]}ن`))
+  }
+
+  /**
+   * Rank in the loan language's frequency list when an unknown lowercase Dutch word is an English word
+   * (4+ letters), no targeted Dutch fix applies and no common Dutch word is one slip away ("were" is
+   * still a typo of "weer").
+   */
+  function loanRank(lookup: string, shape: string, ranked: RankedSuggestion[]): number | undefined {
+    if (lang !== 'nl' || !opts.loanFreq || shape !== 'lower' || [...lookup].length < 4) return undefined
+    const r = opts.loanFreq.get(lookup.toLowerCase())
+    if (r === undefined || r >= 25_000) return undefined
+    if (ranked.some((s) => NL_TARGETED.has(s.kind) && s.dist <= 1)) return undefined
+    if (ranked.some((s) => s.dist <= 1 && (freq?.get(s.word.toLowerCase()) ?? Infinity) < 10_000)) return undefined
+    return r
+  }
+
+  /** after شارع، السيد، مدينة... the next word or two are a name the dictionary cannot know */
+  function arabicName(start: number): boolean {
+    const before = text.slice(Math.max(0, start - 40), start)
+    return AR_NAME_TRIGGER.test(before)
   }
 
   /** frequency rank of an Arabic word, with or without its proclitics */
@@ -251,8 +301,10 @@ export function checkSpelling(
       if (!best || !isKnown(best.word.toLowerCase())) return null
       if (!p.initial && !(best.score < 0.75 || ([...w].length >= 8 && best.dist <= 1))) return null
       if (!p.initial && knownCompound(w)) return null // Lauriergracht, Keizersgracht
-      // a capitalised neighbour (Sifan Hassan) or a fix two letters away (Mehmet -> Meet): a name
-      if (!MARK_KINDS.has(best.kind) && (inName || best.dist >= 1.5)) return null
+      // a capitalised neighbour (Sifan Hassan) or a fix two letters away (Mehmet -> Meet): a name.
+      // A swapped or dropped letter in an everyday word still wins over a neighbour (Tomorow Sarah).
+      const slip = best.dist <= 0.75 && (freq?.get(best.word.toLowerCase()) ?? Infinity) < 3000
+      if (!MARK_KINDS.has(best.kind) && ((inName && !slip) || best.dist >= 1.5)) return null
     }
     if (isPart && !ranked.length && shape !== 'lower') return null
     // Arabic has no capitals to spot names and loanwords by, so the frequency list stands in: a word
@@ -264,12 +316,20 @@ export function checkSpelling(
       if (fix === undefined || own <= fix) return null
     }
 
+    // an everyday English word in Dutch text (meeting, slides, next) with no Dutch word close by: a loan
+    const loan = loanRank(lookup, shape, ranked)
+    if (loan !== undefined && loan < 10_000) return null
+    // a name after شارع / السيدة / متجر: no article on it, and no hamza or ة/ى fix that would make it a word
+    if (lang === 'ar' && !/^[وفبل]?ال/.test(lookup) && !ranked.some((r) => AR_TARGETED.has(r.kind)) && arabicName(p.start)) return null
+
     const replacements = ranked.slice(0, max).map((r) => apostropheLike(text, w, r.word))
     const copy = spellCopy(w, best, lang)
     // a capitalised word a whole letter away from its fix may still be a name we do not know (Priya)
     const unsure = shape === 'capital' && best && best.kind !== 'map' && !caseFix && best.dist >= 1
     let confidence: Issue['confidence'] = !replacements.length ? 'low' : unsure ? 'medium' : 'high'
     if (lang === 'ar' && best) confidence = arabicConfidence(best, commonArabic(best.word))
+    // a rarer English loan, or chat stretching (sooo, zóóó): a hint, not a mistake
+    if (loan !== undefined || (best && STRETCHED.test(lookup) && best.word.toLowerCase() === collapse(lookup.toLowerCase(), best.word))) confidence = 'low'
     return {
       id: `spell@${p.start}:${w.length}`,
       ruleId: 'spell',

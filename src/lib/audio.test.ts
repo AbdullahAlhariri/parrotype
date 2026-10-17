@@ -197,6 +197,13 @@ describe('helpers', () => {
     expect(audio.sampleClip('nl', 'nobody')).toBeNull()
   })
 
+  it('samples a full sentence before a minimal-pair line', async () => {
+    const a = await fresh({ ...MANIFEST, clips: { nl: { 'word-wordt-1': ['juf'], 'word-wordt-2': ['juf'], 'nl-k09': ['juf'] } } })
+    expect(a.sampleClip('nl', 'juf')).toBe('nl-k09')
+    const b = await fresh({ ...MANIFEST, clips: { nl: { 'word-wordt-1': ['juf'] } } })
+    expect(b.sampleClip('nl', 'juf')).toBe('word-wordt-1')
+  })
+
   it('gives the mascot his Latin-script name in English copy', () => {
     const [fustuq, huda] = audio.recordedVoices('ar')
     expect(audio.personaName('ar', fustuq)).toBe('Fustuq')

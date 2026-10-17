@@ -91,7 +91,8 @@ export function PractiseWords({ items, fixed, lang, onPractice, animate, delay =
             <li key={t.name}>
               <span className="tr-tip-name">{t.name}.</span>{' '}
               {local && t.tipLocal ? (
-                <span lang={tag} dir={isRtl(lang) ? 'rtl' : undefined}>
+                // an Arabic tip gets its own block: inline after the English name it wraps backwards
+                <span className={isRtl(lang) ? 'tr-tip-rtl' : undefined} lang={tag} dir={isRtl(lang) ? 'rtl' : undefined}>
                   {t.tipLocal}
                 </span>
               ) : (

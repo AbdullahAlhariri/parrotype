@@ -86,6 +86,8 @@ export class CheckerCore {
     const id = dictIdFor(lang, p.variant)
     const d = await this.dictWithin(id, p.dictWaitMs ?? LOAD_TIMEOUT_MS)
     const freq = d ? await this.freq(lang) : undefined
+    // Dutch is written with English words in it (meeting, slides, next level): the English list spots them
+    const loanFreq = d && lang === 'nl' ? await this.freq('en') : undefined
     if (p.shouldStop?.()) return { issues: [], spell: false }
     const personal = this.syncPersonal(d, p.personalWords)
 
@@ -104,6 +106,7 @@ export class CheckerCore {
       personal,
       misspellings: misspellingsFor(lang),
       cache: d.suggestions,
+      loanFreq,
     })
     return { issues: combineLocal(rules, spell), spell: true }
   }

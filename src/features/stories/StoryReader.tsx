@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, navigate } from '@/lib/router'
 import { isRtl, LANG_TAGS, type TypingResult } from '@/types'
 import { sentenceToWords } from '@/engine'
@@ -10,6 +10,8 @@ import { recordTypingRun } from '@/features/typing/recordRun'
 import { useEnterKey } from '@/features/practice/parts'
 import { repairHref } from '@/features/practice/repair'
 import { mascotName } from '@/lib/mascot'
+import { playReaction } from '@/lib/audio'
+import { useReducedMotion } from '@/components/kees'
 import { completedRead, storyAverages, useStoryProgress, wordCount } from './progress'
 
 type Phase = { kind: 'typing' } | { kind: 'result'; result: TypingResult; isPb: boolean; completed: boolean; nextPage: number } | { kind: 'end' }
@@ -97,9 +99,12 @@ export function StoryReader({ story }: { story: Story }) {
             isPb={phase.isPb}
             onAgain={again}
             onPractice={(ws) => navigate(repairHref(ws))}
+            quietAgain
+            // the last page keeps the mascot quiet: the end screen has his "all done" line
+            reaction={phase.completed ? false : undefined}
           >
             <div className="story-next">
-              <Button variant="subtle" size="lg" onClick={proceed}>
+              <Button variant="primary" size="lg" onClick={proceed}>
                 {phase.completed ? 'Finish the story' : phase.nextPage === page + 1 ? 'Next page' : `Go to page ${phase.nextPage + 1}`}
               </Button>
               <span className="muted small" aria-hidden="true">
@@ -160,6 +165,18 @@ function StoryEnd({ story, onAgain }: { story: Story; onAgain: () => void }) {
   const nextStory = after.find((s) => !(useStoryProgress.getState().progress[s.id]?.reads ?? 0)) ?? after[0]
   const reads = progress?.reads ?? 1
   const name = mascotName(story.lang)
+  const reduced = useReducedMotion()
+  const said = useRef(false)
+
+  // a whole story is a rare moment: the mascot's "all done" line, once, as the end screen lands
+  useEffect(() => {
+    if (said.current) return
+    const t = window.setTimeout(() => {
+      said.current = true
+      playReaction(story.lang, 'done')
+    }, reduced ? 150 : 400)
+    return () => window.clearTimeout(t)
+  }, [story.lang, reduced])
 
   return (
     <section className="story-end" aria-labelledby="story-end-title">
@@ -181,7 +198,9 @@ function StoryEnd({ story, onAgain }: { story: Story; onAgain: () => void }) {
         <div className="story-end-actions">
           {nextStory && nextStory.id !== story.id && (
             <Button variant="primary" size="lg" autoFocus onClick={() => navigate(`/stories?s=${encodeURIComponent(nextStory.id)}`)}>
-              Next story: <span lang={LANG_TAGS[nextStory.lang]}>{nextStory.title}</span>
+              <span>
+                Next story: <bdi lang={LANG_TAGS[nextStory.lang]}>{nextStory.title}</bdi>
+              </span>
             </Button>
           )}
           <Button onClick={onAgain}>Read it again</Button>

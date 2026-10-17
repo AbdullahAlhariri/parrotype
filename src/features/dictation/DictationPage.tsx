@@ -160,8 +160,10 @@ export default function DictationPage() {
   const changeConfig = (c: DictationConfig) => {
     setConfig(c)
     saveConfig(lang, c)
-    // switching only how the sentence is given keeps the current set
-    if (c.playback !== config.playback && c.mode === config.mode && c.level === config.level && c.length === config.length && c.focus === config.focus && c.pairs === config.pairs) return
+    // switching to memory keeps the current set; switching to listen picks a new one, because
+    // a set to listen to favours the sentences that have a recording
+    const onlyPlayback = c.mode === config.mode && c.level === config.level && c.length === config.length && c.focus === config.focus && c.pairs === config.pairs
+    if (onlyPlayback && c.playback === 'memory') return
     start(c)
   }
 
@@ -181,13 +183,21 @@ export default function DictationPage() {
     }
   }
 
+  // pair mode: the pairs where the other word was typed (the button only shows when there are some)
+  const missedPairs = useMemo(
+    () =>
+      finished && session?.config.mode === 'pairs'
+        ? [...new Set(finished.results.filter((r) => r.first.targetOk === false && r.item.pairId).map((r) => r.item.pairId!))]
+        : [],
+    [finished, session],
+  )
+
   const practise = (words: string[]) => {
     if (!finished || !session) return
     if (session.config.mode === 'pairs') {
-      const missed = [...new Set(finished.results.filter((r) => r.first.targetOk === false).map((r) => r.item.pairId!))]
-      const ids = missed.length ? missed : session.config.pairs
+      if (!missedPairs.length) return
       const prefer = session.config.playback === 'listen' ? (id: string) => hasClip(lang, id) : undefined
-      start({ ...session.config, pairs: ids }, { items: selectPairItems(PAIRS[lang], ids, session.config.length, Math.random, prefer), autoStart: true })
+      start({ ...session.config, pairs: missedPairs }, { items: selectPairItems(PAIRS[lang], missedPairs, session.config.length, Math.random, prefer), autoStart: true })
       return
     }
     const seen = new Set(finished.results.map((r) => r.item.id))
@@ -212,7 +222,8 @@ export default function DictationPage() {
           summary={finished.summary}
           config={finished.label}
           onAgain={() => start(session.config, { autoStart: true })}
-          onPractise={practise}
+          onPractise={session.config.mode === 'pairs' && !missedPairs.length ? undefined : practise}
+          practiseLabel={session.config.mode !== 'pairs' ? undefined : missedPairs.length === 1 ? 'Practise this pair' : `Practise these ${missedPairs.length} pairs`}
           talking={mascotTalks}
         />
       ) : session.items.length ? (

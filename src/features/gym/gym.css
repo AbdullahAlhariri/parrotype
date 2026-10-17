@@ -1,11 +1,26 @@
 /* Grammar gym: pack list, rule card, the round, the summary.
    The sentence is the hero; everything else is quiet text in --sub. Panels are square. */
 
-/* Recursive's Dutch locl draws i+j as one glyph (ĳ). One glyph per keystroke, so turn it off.
-   Arabic keeps its shaping features. */
+/* Recursive's Dutch locl draws i+j as one glyph (ĳ), in the sans and the mono. Here every ij is
+   two keys, in the sentence and in the hints, so the whole page goes without it (the property
+   inherits). Arabic keeps its shaping features. */
+.gym {
+  font-feature-settings: 'locl' 0;
+}
 .gym .mono-text:not(:lang(ar)),
 .gym .gym-ex:not(:lang(ar)) {
   font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
+}
+.gym :lang(ar) {
+  font-feature-settings: normal;
+}
+/* Naskh sits much smaller than Recursive at the same size: Arabic inside English copy (blurbs,
+   hints, "you typed") is set up a step so a single letter like ؤ stays readable */
+.gym bdi:lang(ar),
+.gym-typed s:lang(ar),
+.gym-summary-actions .mono-text:lang(ar) {
+  font-size: 1.22em;
+  line-height: 1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -14,9 +29,6 @@
 
 .gym-head {
   flex-wrap: wrap;
-}
-.gym-head .segmented {
-  padding-bottom: var(--s-1);
 }
 .gym-missing {
   margin-bottom: var(--s-5);
@@ -184,6 +196,8 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
   margin-top: var(--s-4);
 }
 .gym-rule-text[dir='rtl'] {
+  /* fill the card: a capped RTL block would hug the left edge of the LTR page */
+  max-width: none;
   font-size: 1.2rem;
   line-height: 1.9;
 }
@@ -352,6 +366,11 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
   color: transparent;
   border-bottom-color: var(--main);
 }
+/* Arabic retype that no longer matches the start of the answer */
+.gym-gap.is-off .gym-gap-input {
+  color: var(--error);
+  border-bottom-color: var(--error);
+}
 .gym-gap-mirror {
   position: absolute;
   inset: 0 0 2px;
@@ -444,7 +463,9 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
   color: var(--text);
 }
 .gym-hint[dir='rtl'] {
-  font-size: 1.1rem;
+  /* an Arabic hint hugs the start of the column like the sentence above it, lines still RTL */
+  width: fit-content;
+  font-size: 1.25rem;
   line-height: 1.8;
 }
 .gym-instr {
@@ -455,6 +476,19 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
 .gym-instr b {
   color: var(--main);
   font-weight: 500;
+}
+/* in Arabic the gap shows the answer only until you type (letters join, so there is no overlay):
+   this line carries it instead, at the size of the sentence */
+.gym-instr b:lang(ar) {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  vertical-align: -0.12em;
+}
+/* the bubble's Shantell Sans has no Arabic: Naskh, a size up */
+.gym-kees .kees-bubble:lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: calc(var(--bubble-size, 16px) * 1.3);
+  line-height: 1.5;
 }
 
 .gym-round-foot {
@@ -541,6 +575,9 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
   max-width: 40rem;
 }
 .gym-revisit-hint[dir='rtl'] {
+  /* full width, so it lines up with the right-aligned Arabic sentences under it */
+  max-width: none;
+  font-size: 1.15rem;
   line-height: 1.8;
 }
 .gym-revisit-items {
@@ -575,6 +612,14 @@ body[data-typing]:not([data-focus-mode='off']) .gym-fade:not(:focus-within) {
 /* ------------------------------------------------------------------ */
 /* small screens                                                       */
 /* ------------------------------------------------------------------ */
+
+/* phones: no physical keys to hint at; the keyboard's own done key submits the gap */
+@media (hover: none) and (pointer: coarse) {
+  .btn .gym-kbd-on-primary,
+  .gym-keyhint {
+    display: none;
+  }
+}
 
 @media (max-width: 760px) {
   .gym-summary {

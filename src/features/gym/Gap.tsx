@@ -1,7 +1,7 @@
 import type { CSSProperties, Ref } from 'react'
 import { LANG_TAGS, isRtl, type Lang } from '@/types'
 import type { DrillItem } from '@/content/drills'
-import { gapWidth } from './round'
+import { gapWidth, onTrack } from './round'
 
 export type GapMode = 'ask' | 'pick' | 'retype' | 'done'
 
@@ -30,8 +30,10 @@ export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, labe
   const ghost = mode === 'retype' ? item.answer : ''
   const width = Math.max(gapWidth(item, value), ghost.length + 1)
   const style = { '--gap-w': `${width}ch` } as CSSProperties
-  // Arabic letters join, so a per-letter overlay would break them apart: use a placeholder there
+  // Arabic letters join, so a per-letter overlay would break them apart: use a placeholder there,
+  // and colour the whole word as soon as it stops matching the start of the answer
   const overlay = mode === 'retype' && !rtl
+  const off = mode === 'retype' && rtl && !onTrack(item, value, lang)
 
   // answered: the word joins the sentence as plain text, at its own width
   if (mode === 'done') {
@@ -48,7 +50,7 @@ export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, labe
   }
 
   return (
-    <span className={`gym-gap is-${mode}${overlay ? ' has-overlay' : ''}`} style={style}>
+    <span className={`gym-gap is-${mode}${overlay ? ' has-overlay' : ''}${off ? ' is-off' : ''}`} style={style}>
       {overlay && (
         <span className="gym-gap-mirror" aria-hidden="true">
           {mirror(ghost, value).map((c, i) => (
@@ -71,6 +73,7 @@ export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, labe
         }}
         placeholder={mode === 'retype' && rtl ? ghost : undefined}
         aria-label={label}
+        aria-invalid={off || undefined}
         lang={LANG_TAGS[lang]}
         dir={rtl ? 'rtl' : 'ltr'}
         spellCheck={false}

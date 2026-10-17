@@ -71,8 +71,9 @@ export function feedbackLine(r: TypingResult, items: PractiseItem[]): string {
   if (r.accuracy < 85 && r.rawWpm >= 45) return `Fast hands, loose letters. Try about ${Math.max(5, Math.round((r.rawWpm * 0.9) / 5) * 5)} wpm next time.`
   if (r.accuracy < 75) return 'Rough run. Your best runs often come right after a slow one.'
   if (r.accuracy >= 97 && r.wpm < 30) return 'Slow and spotless. Speed comes later; accuracy was the hard part.'
+  // swapped letters on one hand and on two hands are one habit, so they count together
   const counts = new Map<string, number>()
-  for (const it of items) counts.set(it.name, (counts.get(it.name) ?? 0) + 1)
+  for (const it of items) counts.set(bareName(it.name), (counts.get(bareName(it.name)) ?? 0) + 1)
   const top = [...counts].sort((a, b) => b[1] - a[1])[0]
   if (top && top[1] >= 2 && items.length >= 2) return `${top[0]}: ${top[1]} of your ${items.length} mistakes.`
   if (r.consistency >= 80) return `Steady rhythm: ${Math.round(r.consistency)}% consistency.`
@@ -107,8 +108,11 @@ export function tipGroups(items: PractiseItem[], max = 2): TipGroup[] {
     .map(({ names, ...g }) => ({ ...g, name: names.size > 1 ? commonName([...names]) : g.name }))
 }
 
+/** "Swapped letters (one hand)" -> "Swapped letters" */
+const bareName = (name: string) => name.replace(/\s*\(.*\)$/, '')
+
 /** "Swapped letters (one hand)" + "Swapped letters (two hands)" -> "Swapped letters" */
 function commonName(names: string[]): string {
-  const bare = names.map((n) => n.replace(/\s*\(.*\)$/, ''))
+  const bare = names.map(bareName)
   return bare.every((b) => b === bare[0]) ? bare[0] : names[0]
 }

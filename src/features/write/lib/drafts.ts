@@ -1,5 +1,6 @@
 import type { Lang } from '@/types'
 import { uid } from '@/lib/id'
+import type { FixedEntry } from './fixed'
 
 export const DRAFTS_KEY = 'parrotype.drafts'
 export const MAX_DRAFTS = 10
@@ -19,6 +20,8 @@ export interface Draft {
   finished?: boolean
   /** what is already in the stats, so finishing again only adds what is new */
   recorded?: Recorded
+  /** mistakes fixed before Finish (from the underlines or in self-review): they still count */
+  fixed?: FixedEntry[]
 }
 
 export interface Recorded {

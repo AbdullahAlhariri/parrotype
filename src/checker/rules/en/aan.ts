@@ -38,8 +38,10 @@ export function expectedArticle(raw: string, isWord: (w: string) => boolean = (w
   // judge acronyms on the first part only: a REST-API, an FBI-style raid
   const letters = word.split('-')[0].replace(/[^A-Za-z]/g, '')
   const allCaps = letters.length >= 2 && letters === letters.toUpperCase()
+  // mixed-case initialisms (MSc, PhD, BSc) are said letter by letter too
   const acronym =
-    allCaps && !WORD_ACRONYMS.has(letters) && (INITIALISMS.has(letters) || !/[AEIOUY]/.test(letters) || !isWord(letters.toLowerCase()))
+    INITIALISMS.has(letters) ||
+    (allCaps && !WORD_ACRONYMS.has(letters) && (!/[AEIOUY]/.test(letters) || !isWord(letters.toLowerCase())))
   if (acronym || (letters.length === 1 && /^[A-Z]$/.test(word))) return VOWEL_SOUND_LETTERS.has(letters[0]) ? 'an' : 'a'
   if (AN_PREFIX.test(head)) return 'an'
   if (A_PREFIX.test(head)) return 'a'
@@ -65,7 +67,7 @@ export const aAn: EnRule = {
     flag: 'a',
     fix: 'an',
     right: 'It took an hour.',
-    ok: ['She is a university student.', 'A European city.', 'Vitamin A is good.', 'Plan A is fine.', 'He has an MBA.', 'A one-way ticket.', 'A historic day.', 'An historic day.', 'I woke at 7 a.m. today.', 'An 18-year-old won.', 'A UFO landed.', 'A useful tip.', 'An honest man.'],
+    ok: ['She is a university student.', 'A European city.', 'Vitamin A is good.', 'Plan A is fine.', 'He has an MBA.', 'She is an MSc student.', 'He has a PhD.', 'A one-way ticket.', 'A historic day.', 'An historic day.', 'I woke at 7 a.m. today.', 'An 18-year-old won.', 'A UFO landed.', 'A useful tip.', 'An honest man.'],
   },
   check(ctx: RuleContext) {
     const { text } = prepare(ctx)

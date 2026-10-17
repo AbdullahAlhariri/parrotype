@@ -45,6 +45,12 @@ function repeatWords(s: ItemState): string[] {
 
 const LANG_EN: Record<Lang, string> = { nl: 'Dutch', en: 'English', ar: 'Arabic' }
 
+const PLACEHOLDER: Record<Lang, { heard: string; saw: string; retype: string }> = {
+  en: { heard: 'Type what you heard', saw: 'Type what you saw', retype: 'Type it correctly once' },
+  nl: { heard: 'Typ wat je hoort', saw: 'Typ wat je zag', retype: 'Typ de zin één keer goed' },
+  ar: { heard: 'اكتب ما تسمعه', saw: 'اكتب ما رأيته', retype: 'اكتب الجملة صحيحةً مرة واحدة' },
+}
+
 /** Who reads, for the line under the buttons and the parrot's accessible name. */
 function speakerName(lang: Lang, src: VoiceSource): string {
   if (src.kind === 'clip') return personaName(lang, src.persona)
@@ -65,6 +71,8 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   const pending = useRef<{ slow: boolean; words: boolean } | null>(null)
   const aborter = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  /** the last sentence is done and the results went to onFinish */
+  const over = useRef(false)
   const item = items[index]
   const last = index === items.length - 1
   const sayText = item ? (item.say ?? item.text) : ''
@@ -144,10 +152,18 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
     for (const it of items.slice(index, index + 2)) preload(it.clip)
   }, [index, items, memory, preload])
 
-  const onFlashHidden = useCallback(() => {
-    setFlashKey(null)
-    focusInput()
-  }, [])
+  const onFlashHidden = useCallback(() => setFlashKey(null), [])
+
+  // the field is display:none while the sentence flashes in its place: focus it once it is back
+  // (after the commit, a timeout can come too early and leave focus on the body)
+  const flashed = useRef(false)
+  useEffect(() => {
+    if (flashKey !== null) flashed.current = true
+    else if (flashed.current) {
+      flashed.current = false
+      inputRef.current?.focus({ preventScroll: true })
+    }
+  }, [flashKey])
 
   /* ---------------- checking ---------------- */
 
@@ -184,6 +200,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
     aborter.current?.abort()
     aborter.current = null
     if (last) {
+      over.current = true
       onFinish(results.current)
       return
     }
@@ -277,8 +294,10 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
     }
   }, [])
 
+  // leaving mid-sentence (new set, new setup) silences the voice; after the last sentence the
+  // summary may already be playing the mascot's line, which is not ours to stop
   const stopVoice = voice.stop
-  useEffect(() => () => stopVoice(), [stopVoice])
+  useEffect(() => () => void (over.current || stopVoice()), [stopVoice])
 
   if (!item) return null
 
@@ -309,13 +328,10 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   const describedBy = 'dict-keys'
   const canWords = voice.canWords && !showsText && (listens >= 2 || st.attempts > 0)
 
-  const placeholder = !started || flashing
-    ? ''
-    : st.phase === 'retype'
-      ? 'Type it correctly once'
-      : showsText
-        ? 'Type what you saw'
-        : 'Type what you heard'
+  // with explanations in the practice language the answer field speaks it too (and Arabic is not an English line in a right-to-left field)
+  const phLocal = explainIn === 'local' && lang !== 'en'
+  const ph = phLocal ? PLACEHOLDER[lang] : PLACEHOLDER.en
+  const placeholder = !started || flashing ? '' : st.phase === 'retype' ? ph.retype : showsText ? ph.saw : ph.heard
 
   return (
     <section className="dict-run" aria-label={`Sentence ${index + 1} of ${items.length}`}>
@@ -365,7 +381,7 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
                 </p>
               ) : voice.greeting && voice.current ? (
                 <p className="dict-speaker" data-speaking>
-                  <SpeakerName lang={lang} src={voice.current} /> says hello. <Kbd>space</Kbd> skips it.
+                  <SpeakerName lang={lang} src={voice.current} /> says hello
                 </p>
               ) : speaker ? (
                 <p className="dict-speaker" data-speaking={voice.speaking || undefined}>
@@ -408,13 +424,14 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         onKeyDown={onKeyDown}
         lang={lang}
         placeholder={placeholder}
+        placeholderLocal={phLocal}
         readOnly={flashing || st.phase === 'done'}
         invalid={st.phase === 'feedback'}
         describedBy={describedBy}
         label={st.phase === 'retype' ? 'Type the sentence correctly' : 'Your answer'}
       />
       <div className="dict-under">
-        <KeyHints id={describedBy} st={st} started={started} empty={!text} memory={showsText} last={last} canWords={canWords} />
+        <KeyHints id={describedBy} st={st} started={started} empty={!text} memory={showsText} last={last} canWords={canWords} greeting={voice.greeting} />
         {/* first stop after the field, so tab then enter starts a new set (as the footer says) */}
         <button type="button" className="dict-restart link-btn" onClick={onNewSet} title="New set (tab, then enter)">
           <Icon name="restart" size={16} />
@@ -441,11 +458,24 @@ function SpeakerName({ lang, src }: { lang: Lang; src: VoiceSource }) {
   )
 }
 
-function KeyHints({ id, st, started, empty, memory, last, canWords }: { id: string; st: ItemState; started: boolean; empty: boolean; memory: boolean; last: boolean; canWords: boolean }) {
+interface KeyHintsProps {
+  id: string
+  st: ItemState
+  started: boolean
+  empty: boolean
+  memory: boolean
+  last: boolean
+  canWords: boolean
+  /** the mascot's hello is playing: space skips to the sentence */
+  greeting: boolean
+}
+
+function KeyHints({ id, st, started, empty, memory, last, canWords, greeting }: KeyHintsProps) {
   let hints: [ReactNode, string][]
   const space = <Kbd>space</Kbd>
   const enter = <Kbd>enter</Kbd>
   if (!started) hints = [[space, memory ? 'show the sentence' : 'hear the sentence']]
+  else if (greeting && empty) hints = [[space, 'skip the hello']]
   else if (st.phase === 'done') hints = [[enter, last ? 'see how it went' : 'next sentence']]
   else if (st.phase === 'feedback') hints = [[enter, 'check again'], [<><Kbd>ctrl</Kbd> {space}</>, memory ? 'show it again' : 'hear it again']]
   else if (!empty) hints = [[enter, 'check'], [<><Kbd>ctrl</Kbd> {space}</>, memory ? 'show it again' : 'hear it again']]

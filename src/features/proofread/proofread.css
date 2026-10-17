@@ -5,8 +5,14 @@
   flex-wrap: wrap;
 }
 /* Recursive's Dutch locl draws i+j as one ĳ glyph, in the sans as well as the mono. In text you
-   edit letter by letter that reads as one key, so Latin text here gets no locl and no ligatures.
-   Arabic keeps its shaping. */
+   edit letter by letter that reads as one key, so Latin text here gets no locl and no ligatures,
+   and the rest of the page (notes, labels) inherits no locl. Arabic keeps its shaping. */
+.fix {
+  font-feature-settings: 'locl' 0;
+}
+.fix :lang(ar) {
+  font-feature-settings: normal;
+}
 .fix .mono-text:not(:lang(ar)),
 .fix-editor:not(:lang(ar)),
 .fix-doc:not(:lang(ar)),
@@ -151,6 +157,14 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
 .fix-note-head .fix-right:lang(ar) {
   font-size: 1.3rem;
 }
+/* Naskh sits much smaller than the Latin UI face: Arabic inside English lines goes up a step */
+.fix bdi:lang(ar),
+.fix-was:lang(ar),
+.fix-new-list .fix-right:lang(ar),
+.fix-drill .mono-text:lang(ar) {
+  font-size: 1.22em;
+  line-height: 1;
+}
 .fix-note-text:lang(ar) {
   font-size: 1.1rem;
   line-height: 1.9;
@@ -246,6 +260,12 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
 .fx-tag,
 .fx-num {
   font-family: var(--font-ui);
+}
+/* the tag is its own LTR island, so its inline-start is the left even in Arabic: put the gap on
+   the side that touches the word, or a following ، or . drifts away from it */
+[dir='rtl'] .fx-tag {
+  margin-inline-start: 0;
+  margin-right: 0.2em;
 }
 .fx-tag-ok {
   color: var(--ok);
@@ -361,6 +381,13 @@ body[data-typing]:not([data-focus-mode='off']) .fix-nav:not(:focus-within) {
 @keyframes fix-in {
   from {
     opacity: 0;
+  }
+}
+
+/* phones: no ctrl or enter key to hint at */
+@media (hover: none) and (pointer: coarse) {
+  .btn .fix-kbd-on-primary {
+    display: none;
   }
 }
 

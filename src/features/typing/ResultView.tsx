@@ -29,6 +29,8 @@ export interface ResultViewProps {
    * flawless run, a rough one); a ReactionId plays that line instead, false keeps quiet.
    */
   reaction?: ReactionId | false
+  /** the page offers a bigger next step under `children` (next page, next stage): "Again" steps back to a quiet button */
+  quietAgain?: boolean
 }
 
 /** language names inside the English chrome (the native name next to digits reorders in Arabic) */
@@ -43,7 +45,7 @@ const REPEAT_AFTER_MS = 1500
  * left, the chart with Kees perched on its top edge, the details and the words to practise
  * on the right. Focus lands on the section, so Tab then Enter is "Again".
  */
-export function ResultView({ result, title, configLabel, isPb = false, onAgain, onPractice, children, reaction }: ResultViewProps) {
+export function ResultView({ result, title, configLabel, isPb = false, onAgain, onPractice, children, reaction, quietAgain = false }: ResultViewProps) {
   const reduced = useReducedMotion()
   const headId = useId()
   const rootRef = useRef<HTMLElement>(null)
@@ -122,7 +124,7 @@ export function ResultView({ result, title, configLabel, isPb = false, onAgain, 
           )}
           <p className="tr-feedback">{feedback}</p>
           <div className="tr-actions">
-            <Button variant="primary" onClick={onAgain}>
+            <Button variant={quietAgain ? 'subtle' : 'primary'} onClick={onAgain}>
               Again
             </Button>
             <span className="tr-hint" aria-hidden="true">

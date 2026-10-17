@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import type { Lang } from '@/types'
 import { useStats } from '@/state/stats'
+import { Mixed } from './Mixed'
 
 interface Props {
   lang: Lang
@@ -66,7 +67,7 @@ export function ReviewNote({ lang }: Props) {
             <span key={r.ruleId}>
               {i > 0 && ' and '}
               <bdi className="wp-form" dir="ltr">
-                {r.title}
+                <Mixed text={r.title} />
               </bdi> <span className="tabular">({r.count}x)</span>
             </span>
           ))}

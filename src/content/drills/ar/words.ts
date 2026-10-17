@@ -56,8 +56,8 @@ export const lamShamsiyya = definePack({
   title: 'الشمس / الليل',
   blurb: 'The ل of ال is always written, even when you do not hear it.',
   rule: {
-    en: 'The article ال is written the same way before every letter. Before the moon letters you hear the ل: القمر، الكتاب. Before the sun letters (ت ث د ذ ر ز س ش ص ض ط ظ ل ن) it melts into the next letter, which you hear twice: الشمس is said ash-shams. Write the ل anyway. A noun that starts with ل keeps both: الليل، اللغة، الليمون.\n\nThe relative pronouns الذي، التي، الذين take a single ل; only the duals اللذان and اللتان have two. After the preposition لـ the alif of ال drops: للطلاب. The trick: cover the ال with a finger. What is left must be the whole word: الشمس → شمس.',
-    local: 'تكتب «ال» التعريف دائما بالطريقة نفسها. قبل الحروف القمرية تنطق اللام: القمر، الكتاب. وقبل الحروف الشمسية (ت ث د ذ ر ز س ش ص ض ط ظ ل ن) تدغم اللام في الحرف الذي بعدها فينطق مشددا: في الشمس نسمع شينا مشددة ولا نسمع اللام. ومع ذلك تكتب اللام. والاسم الذي يبدأ بلام يحتفظ باللامين: الليل، اللغة، الليمون.\n\nأما الأسماء الموصولة الذي والتي والذين فتكتب بلام واحدة، ولا تكتب بلامين إلا في المثنى: اللذان واللتان. وبعد اللام الجارة تحذف ألف «ال»: للطلاب. الحيلة: احجب «ال» بإصبعك، فيجب أن يبقى الاسم كاملا: الشمس ← شمس.',
+    en: 'The article ال is written the same way before every letter. Before the moon letters you hear the ل: القمر، الكتاب. Before the sun letters (ت ث د ذ ر ز س ش ص ض ط ظ ل ن) it melts into the next letter, which you hear twice: الشمس is said ash-shams. Write the ل anyway. A noun that starts with ل keeps both: الليل، اللغة، الليمون.\n\nThe relative pronouns الذي، التي، الذين take a single ل; only the duals اللذان and اللتان have two. After the preposition لـ the alif of ال drops: للطلاب. Before a noun that starts with ل one more ل goes, so three never stand in a row: للحم. The trick: cover the ال with a finger. What is left must be the whole word: الشمس → شمس.',
+    local: 'تكتب «ال» التعريف دائما بالطريقة نفسها. قبل الحروف القمرية تنطق اللام: القمر، الكتاب. وقبل الحروف الشمسية (ت ث د ذ ر ز س ش ص ض ط ظ ل ن) تدغم اللام في الحرف الذي بعدها فينطق مشددا: في الشمس نسمع شينا مشددة ولا نسمع اللام. ومع ذلك تكتب اللام. والاسم الذي يبدأ بلام يحتفظ باللامين: الليل، اللغة، الليمون.\n\nأما الأسماء الموصولة الذي والتي والذين فتكتب بلام واحدة، ولا تكتب بلامين إلا في المثنى: اللذان واللتان. وبعد اللام الجارة تحذف ألف «ال»: للطلاب، وإذا بدأ الاسم بلام حذفت لام «ال» أيضا فلا تجتمع ثلاث لامات: للحم. الحيلة: احجب «ال» بإصبعك، فيجب أن يبقى الاسم كاملا: الشمس ← شمس.',
   },
   hints: {
     sun: { en: 'A sun letter: you do not hear the ل, but you write it.', local: 'حرف شمسي: اللام لا تنطق لكنها تكتب.' },
@@ -65,6 +65,7 @@ export const lamShamsiyya = definePack({
     rel: { en: 'الذي، التي، الذين are written with one ل.', local: 'الذي والتي والذين تكتب بلام واحدة.' },
     dual: { en: 'The duals اللذان and اللتان are written with two.', local: 'المثنى اللذان واللتان يكتب بلامين.' },
     li: { en: 'After لـ the alif of ال drops: لـ + الطلاب = للطلاب.', local: 'بعد اللام الجارة تحذف ألف «ال»: لـ + الطلاب = للطلاب.' },
+    lili: { en: 'لـ + اللحم: the alif drops, and three ل in a row become two: للحم.', local: 'لـ + اللحم: تحذف الألف، ولا تجتمع ثلاث لامات فتبقى اثنتان: للحم.' },
   },
   items: [
     ['تشرق {{الشمس|اشمس}} في الصباح.', 'sun'],
@@ -75,7 +76,7 @@ export const lamShamsiyya = definePack({
     ['هذا هو الكتاب {{الذي|اللذي}} أبحث عنه.', 'rel'],
     ['المدينة {{التي|اللتي}} أحبها هي القاهرة.', 'rel'],
     ['شكرا {{للطلاب|لالطلاب}} على مشاركتهم.', 'li'],
-    ['أضف قليلا من الملح {{للحم|لللحم|لالحم}}.', 'li'],
+    ['أضف قليلا من الملح {{للحم|لللحم|لالحم}}.', 'lili'],
     ['{{الطقس|اطقس}} جميل اليوم.', 'sun'],
     ['اشتريت {{الزيت|ازيت}} والسكر من السوق.', 'sun'],
     ['جلسنا في {{الظل|اظل}} حتى العصر.', 'sun'],

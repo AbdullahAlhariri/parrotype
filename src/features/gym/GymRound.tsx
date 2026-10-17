@@ -255,20 +255,20 @@ export function GymRound({ pack, items, choose, onFinish, onRestart }: Props) {
       <div className="gym-round-foot">
         <span className="gym-keys">
           {picking && (
-            <>
+            <span className="gym-keyhint">
               <Kbd>1</Kbd> <Kbd>2</Kbd> {options.length > 2 && <Kbd>3</Kbd>} pick
-            </>
+            </span>
           )}
           {!picking && phase === 'ask' && (
-            <>
+            <span className="gym-keyhint">
               <Kbd>enter</Kbd> check
-            </>
+            </span>
           )}
           {phase === 'wrong' && 'type the word above to go on'}
           {(phase === 'right' || phase === 'fixed') && (
-            <>
+            <span className="gym-keyhint">
               <Kbd>enter</Kbd> next
-            </>
+            </span>
           )}
         </span>
         <button type="button" className="icon-btn gym-restart" onClick={onRestart} aria-label="Restart the round" title="Restart the round">

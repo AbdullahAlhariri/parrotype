@@ -3,6 +3,7 @@ import { useStats } from '@/state/stats'
 import type { Recorded } from './drafts'
 import { isMistake, isSpelling, type TitleFor } from './report'
 import { excerpt } from './text'
+import { srcOf } from './fixed'
 
 /** Extra writing after a finish only becomes its own session when it is at least this long. */
 const MIN_EXTRA_MS = 30_000
@@ -45,8 +46,10 @@ export function recordWriteSession({ lang, text, issues, activeMs, config, title
       // plain dictionary misses are words, not rules; misspelling-map rules count as both
       if (i.source !== 'rules') continue
     }
-    const { start, end } = excerpt(text, i.offset, i.offset + i.length, 60)
-    stats.addRuleHit(lang, i.ruleId, titleFor(i), text.slice(start, end).trim())
+    // a fixed mistake points into its own sentence, as written
+    const src = srcOf(i, text)
+    const { start, end } = excerpt(src, i.offset, i.offset + i.length, 60)
+    stats.addRuleHit(lang, i.ruleId, titleFor(i), src.slice(start, end).trim())
   }
   return plan.recorded
 }

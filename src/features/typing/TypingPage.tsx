@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import type { TypingResult } from '@/types'
+import { LANG_TAGS, isRtl, type TypingResult } from '@/types'
 import { useSettings } from '@/state/settings'
 import { useStats } from '@/state/stats'
 import { navigate } from '@/lib/router'
@@ -8,7 +8,7 @@ import { ResultView } from './ResultView'
 import { recordTypingRun } from './recordRun'
 import { ConfigBar } from './page/ConfigBar'
 import { configLabel, loadConfig, moreWords, newRun, repeatRun, saveConfig, type Run, type TypingConfig } from './page/config'
-import { pickTip } from './page/tips'
+import { pickLocalTip, pickTip } from './page/tips'
 import './page.css'
 
 interface Done {
@@ -22,6 +22,7 @@ interface Done {
 export default function TypingPage() {
   const lang = useSettings((s) => s.lang)
   const stopOnError = useSettings((s) => s.stopOnError)
+  const explainLocal = useSettings((s) => s.explainIn === 'local')
   const misses = useStats((s) => s.words[lang])
 
   const [config, setConfig] = useState<TypingConfig>(loadConfig)
@@ -66,6 +67,7 @@ export default function TypingPage() {
 
   const needMore = useMemo(() => (config.mode === 'time' ? () => moreWords(config, lang) : undefined), [config, lang])
   const tip = useMemo(() => pickTip(lang, tipN, misses), [lang, tipN, misses])
+  const localTip = useMemo(() => (explainLocal ? pickLocalTip(lang, tipN, misses) : undefined), [explainLocal, lang, tipN, misses])
 
   if (done) {
     const q = done.run.quote
@@ -117,6 +119,11 @@ export default function TypingPage() {
       />
       <p className="tp-tip" aria-live="off">
         {tip}
+        {localTip && (
+          <span className="tp-tip-local" lang={LANG_TAGS[lang]} dir={isRtl(lang) ? 'rtl' : undefined}>
+            {localTip}
+          </span>
+        )}
       </p>
     </div>
   )

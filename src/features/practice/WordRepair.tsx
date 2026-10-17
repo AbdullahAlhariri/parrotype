@@ -93,6 +93,7 @@ export function WordRepair({ words: given }: { words?: string[] }) {
           isPb={phase.isPb}
           onAgain={() => start(stage)}
           onPractice={(ws) => navigate(repairHref(ws))}
+          quietAgain
         >
           <RepairSummary tally={phase.tally} stage={stage} lang={tag} dir={dir} onContext={() => start('context')} onRestart={() => start('line')} />
         </ResultView>
@@ -138,7 +139,7 @@ function RepairSummary({ tally, stage, lang, dir, onContext, onRestart }: Summar
       <div className="repair-next">
         {stage === 'line' ? (
           <>
-            <Button variant="subtle" size="lg" onClick={onContext}>
+            <Button variant="primary" size="lg" onClick={onContext}>
               Now in context
             </Button>
             <span className="repair-enter muted small" aria-hidden="true">

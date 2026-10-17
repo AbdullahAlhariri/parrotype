@@ -40,6 +40,9 @@ describe('gym links', () => {
     expect(gymPackFor('ar.interdental')?.id).toBe('ar.dhal-zay')
     expect(gymPackFor('ar.inshallah')?.id).toBe('ar.common')
     expect(gymPackFor('gym.ar.lam-shamsiyya')?.id).toBe('ar.lam-shamsiyya')
+    expect(gymPackFor('ar.alladhina')?.id).toBe('ar.lam-shamsiyya')
+    expect(gymPackFor('ar.alif-after-hamza')?.id).toBe('ar.tanween')
+    expect(gymPackFor('ar.masuul')?.id).toBe('ar.hamza-mid')
   })
 
   it('leaves rules the gym cannot drill alone', () => {

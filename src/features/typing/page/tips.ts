@@ -27,7 +27,7 @@ const BY_LANG: Record<Lang, string[]> = {
     'On US-International, " then e gives ë. Handy for ideeën and België.',
     'één means one, een means a. The accents are only there to tell them apart.',
     'Diminutives are always het-words: het huisje, het meisje.',
-    "Past tense with 't kofschip: werkte, maar woonde.",
+    "Past tense with 't kofschip: werkte, but woonde.",
   ],
   en: [
     'i before e, except after c, unless the word is weird. English is like that.',
@@ -49,13 +49,19 @@ const BY_LANG: Record<Lang, string[]> = {
 /** Unicode isolate, so an Arabic word inside an English sentence keeps the numbers after it in place. */
 const iso = (s: string) => `\u2068${s}\u2069`
 
-/** A tip for run number `n`. Every third tip is personal when there is history to use. */
-export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissStat> = {}): string {
+/** The personal word for run `n` (every third run, when there is history), else undefined. */
+function personalMiss(n: number, misses: Record<string, WordMissStat>): WordMissStat | undefined {
+  if (n % 3 !== 2) return undefined
   const top = Object.values(misses)
     .filter((m) => m.count >= 2)
     .sort((a, b) => b.count - a.count || b.lastAt - a.lastAt)
-  if (top.length && n % 3 === 2) {
-    const m = top[(n / 3) % top.length | 0]
+  return top.length ? top[Math.floor(n / 3) % top.length] : undefined
+}
+
+/** A tip for run number `n`. Every third tip is personal when there is history to use. */
+export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissStat> = {}): string {
+  const m = personalMiss(n, misses)
+  if (m) {
     if (m.kind && n % 2 === 0) {
       const name = typoName(m.kind, lang).en.toLowerCase()
       return `Your most frequent slip in "${iso(m.word)}" is ${name}. ${tipFor(m.kind, lang).en}`
@@ -68,4 +74,14 @@ export function pickTip(lang: Lang, n: number, misses: Record<string, WordMissSt
   }
   const pool = [...BY_LANG[lang], ...GENERAL]
   return pool[n % pool.length]
+}
+
+/**
+ * The advice of pickTip in the practice language (explanations set to 'local'), when the tip
+ * for run `n` is the personal one about a typo type and that advice has a Dutch or Arabic version.
+ */
+export function pickLocalTip(lang: Lang, n: number, misses: Record<string, WordMissStat> = {}): string | undefined {
+  if (lang === 'en') return undefined
+  const m = personalMiss(n, misses)
+  return m?.kind && n % 2 === 0 ? tipFor(m.kind, lang).local : undefined
 }

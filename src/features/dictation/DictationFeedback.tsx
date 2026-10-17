@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { Segmented } from '@/components/ui'
 import { useSettings } from '@/state/settings'
 import { LANG_TAGS, isRtl, type Issue, type Lang } from '@/types'
 import { expectedGlyphs, typedGlyphs, type Glyph, type Grade, type GradedToken, type HintLevel } from './logic/grade'
-import { explainTokens, type ExplainIn } from './logic/explain'
+import { explainTokens, groupExplanations, type ExplainIn } from './logic/explain'
 import type { DictationItem } from './logic/items'
 import type { ItemState } from './logic/ladder'
 import { nextHintLabel } from './logic/ladder'
@@ -109,7 +109,7 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
   const lang = item.lang
   const explainIn = useSettings((s) => s.explainIn) as ExplainIn
   const setSetting = useSettings((s) => s.set)
-  const rows = explainTokens(grade, issues, lang, explainIn)
+  const rows = groupExplanations(explainTokens(grade, issues, lang, explainIn))
   const wantLocal = explainIn === 'local' && lang !== 'en'
   const noteLocal = wantLocal && !!item.note?.local
   const note = item.note ? (noteLocal ? item.note.local : item.note.en) : undefined
@@ -139,17 +139,24 @@ function RuleList({ grade, issues, item, solved }: { grade: Grade; issues: Issue
           {rows.map((r) => (
             <li key={r.key} className="dict-rule">
               <span className="dict-rule-word mono-text" lang={LANG_TAGS[lang]} dir={isRtl(lang) ? 'rtl' : 'ltr'}>
-                {solved && r.token.status !== 'extra' ? <Glyphs glyphs={expectedGlyphs(r.token)} /> : <TypedToken t={r.token} level={2} />}
+                {r.tokens.map((t, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && ' '}
+                    {solved && t.status !== 'extra' ? <Glyphs glyphs={expectedGlyphs(t)} /> : <TypedToken t={t} level={2} />}
+                  </Fragment>
+                ))}
               </span>
               <span className="dict-rule-name" {...attrs(r.nameLocal)}>
                 {r.name}
+                {r.tokens.length > 1 && <span className="dict-rule-count tabular"> {r.tokens.length}x</span>}
               </span>
               <div className="dict-rule-body">
                 {/* before the answer only the general rule; after it, what exactly went wrong */}
                 {r.rule && <p {...attrs(r.ruleLocal)}>{r.rule}</p>}
-                {solved && r.detail && (
+                {/* the classifier's details are English only, so they stay out of a local explanation */}
+                {solved && !wantLocal && r.details.length > 0 && (
                   <p className="muted small" lang="en" dir="ltr">
-                    {r.detail}
+                    {r.details.join('; ')}
                   </p>
                 )}
                 {solved &&

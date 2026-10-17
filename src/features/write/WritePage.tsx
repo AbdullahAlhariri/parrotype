@@ -17,7 +17,7 @@ import { WriteReport } from './WriteReport'
 import { STALE, useWriteSession, type FeedbackMode } from './useWriteSession'
 import { ruleTitles, useCheckerStatus } from './lib/checker'
 import { MARK_LABEL, markKind, stepIssue } from './lib/segments'
-import { defaultTitle, summarize, type TitleFor, type WriteSummary } from './lib/report'
+import { defaultTitle, isMistake, summarize, type TitleFor, type WriteSummary } from './lib/report'
 import { recordWriteSession } from './lib/record'
 import { countChars, countWords } from './lib/text'
 import { draftWhen } from './lib/drafts'
@@ -50,6 +50,8 @@ interface ReportData {
   text: string
   issues: Issue[]
   summary: WriteSummary
+  /** the first Finish of this draft (the mascot only reacts once per text) */
+  first: boolean
 }
 
 export default function WritePage() {
@@ -177,6 +179,12 @@ export default function WritePage() {
     }
   }, [s.phase])
 
+  // Self-review and the reveal are not typing: the side note, the list and the buttons come back
+  // (focus mode only lifts on mouse moves otherwise, which keyboard users never make).
+  useEffect(() => {
+    if (s.phase === 'review' || (s.phase === 'revealed' && s.mode === 'done')) setTyping(false)
+  }, [s.phase]) // on phase changes only
+
   // Self-review countdown.
   useEffect(() => {
     if (s.phase !== 'review') return
@@ -251,6 +259,8 @@ export default function WritePage() {
       requestAnimationFrame(() => ta.setSelectionRange(offset + rep.length, offset + rep.length))
     }
     applyingRef.current = false
+    // a mistake fixed from its underline still goes in the report and the stats
+    if (isMistake(i)) s.noteFixed(i, rep, before)
     setActiveId(undefined)
     setAnnounce(rep ? `Changed to ${rep}.` : 'Removed.')
     void s.recheckAt(offset)
@@ -281,22 +291,24 @@ export default function WritePage() {
     setActiveId(undefined)
     stopSpeaking()
     setSpeaking(false)
-    const text = s.text
     const titlesLoading = ruleTitles(lang)
-    const final = await s.finish()
-    if (final === STALE) return
-    if (!final) {
+    const out = await s.finish()
+    if (out === STALE) return
+    if (!out) {
       if (!useCheckerStatus.getState().unavailable) toast(`${mascot} could not read your text this time. Try again in a moment; your text is saved.`, 'bad')
       return
     }
     const titles = await titlesLoading
     const titleFor: TitleFor = (i) => titles.get(i.ruleId) ?? defaultTitle(i)
-    const summary = summarize(text, final, titleFor)
-    setReport({ text, issues: final, summary })
+    // what is left in the text, then what was fixed on the way: both are mistakes you made
+    const { text } = out
+    const issues = [...out.issues, ...out.fixed]
+    const summary = summarize(text, issues, titleFor)
+    setReport({ text, issues, summary, first: !s.draft.recorded })
     const recorded = recordWriteSession({
       lang,
       text,
-      issues: final,
+      issues,
       activeMs: s.draft.activeMs,
       config: s.prompt ? kindLabel(s.prompt.kind) : 'free writing',
       titleFor,
@@ -309,6 +321,7 @@ export default function WritePage() {
 
   const doReview = async () => {
     setActiveId(undefined)
+    setTyping(false)
     const ok = await s.review()
     if (!ok && !useCheckerStatus.getState().unavailable) toast(`${mascot} could not read your text this time. Try again in a moment; your text is saved.`, 'bad')
   }
@@ -391,6 +404,7 @@ export default function WritePage() {
           text={report.text}
           issues={report.issues}
           summary={report.summary}
+          react={report.first}
           words={countWords(report.text)}
           activeMs={s.draft.activeMs}
           prompt={s.prompt}
@@ -433,9 +447,11 @@ export default function WritePage() {
 
   const ltLine = (() => {
     if (!ltOn) return undefined
-    if (!online || status.lt === 'offline') return { text: 'Grammar check is offline right now. Spelling still works and your text is saved.', warn: true }
-    if (status.lt === 'limited') return { text: 'The grammar service is rate-limited. Try again in a minute; your text stays here.', warn: true }
-    if (status.lt === 'blocked') return { text: 'Grammar check is offline right now. Spelling still works and your text is saved.', detail: status.ltMessage, warn: true }
+    // only the second opinion is missing: the local spelling and grammar checks still run
+    const away = `LanguageTool is out of reach right now, so this is ${mascot}’s own check only.`
+    if (!online || status.lt === 'offline') return { text: away, warn: true }
+    if (status.lt === 'limited') return { text: `LanguageTool is busy (too many requests). Try again in a minute; ${mascot}’s own check still ran.`, warn: true }
+    if (status.lt === 'blocked') return { text: away, detail: status.ltMessage, warn: true }
     if (status.lt === 'checking') return { text: 'Asking LanguageTool for a second opinion.', warn: false }
     if (status.lt === 'ok') return { text: 'LanguageTool checked it too.', warn: false }
     return { text: `LanguageTool joins in when you press ${s.mode === 'done' ? 'Review' : 'Finish'}.`, warn: false }

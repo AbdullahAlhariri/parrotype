@@ -222,6 +222,12 @@
 .repair-word {
   font-size: var(--fs-md);
 }
+/* Arabic words keep their right-to-left order but stay at the start of the English column,
+   next to the heading and the button, instead of drifting to the far edge */
+.repair-words[dir='rtl'],
+.repair-targets[dir='rtl'] {
+  justify-content: flex-end;
+}
 .repair-count {
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -429,6 +435,10 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
 .nest-input.is-word {
   max-width: 28rem;
 }
+/* Naskh needs less extra leading inside a one-line field than base.css gives Arabic text */
+.nest-input.mono-text[dir='rtl'] {
+  line-height: 1.5;
+}
 .nest-input:focus-visible {
   outline: 2px solid var(--caret);
   outline-offset: 1px;
@@ -458,6 +468,8 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
   font-weight: 600;
 }
 .nest-hint {
+  /* hugs its text, so an Arabic hint sits next to the rule instead of at the far end of the measure */
+  width: fit-content;
   max-width: 38rem;
   padding-left: var(--s-4);
   border-left: 2px solid var(--border);
@@ -618,9 +630,4 @@ body[data-typing]:not([data-focus-mode='off']) .daily.is-typing > .daily-head:fo
   .nest-card {
     animation: none;
   }
-}
-
-/* Practice words are typed letter by letter: Recursive's Dutch 'locl' would draw i+j as one ĳ */
-.practice .mono-text:not(:lang(ar)) {
-  font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
 }

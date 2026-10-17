@@ -8,7 +8,7 @@ import type { Lang } from '@/types'
 const words = (s: string): string[] => s.trim().split(/\s+/)
 
 const NL = words(`
-  ff idd btw lol thx mvg grtz omg
+  ff idd btw lol thx mvg grtz omg next
   trekke neme kome moge zegge geve leve
   kea kees monty fustuq
   uitwaaien

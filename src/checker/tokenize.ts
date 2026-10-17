@@ -175,6 +175,8 @@ function endsSentence(tokens: Token[], k: number): boolean {
   if (t.text === '.' && prev?.isWord && prev.end === t.start) {
     if (ABBREVIATIONS.has(prev.lower)) return END_ABBREVIATIONS.has(prev.lower) && startsUpper(next)
     if (/^\p{Lu}$/u.test(prev.text)) return false // initial: J. de Vries
+    // a list number: "1. templated fonts 2. hero mix", "stap 3. daarna" (a small number, a lowercase word next)
+    if (/^\d{1,2}$/.test(prev.text) && startsLower(next) && !/\d[.,]\d*$/.test(tokens[k - 2]?.text ?? '')) return false
   }
   if (t.text.includes('…') || t.text.includes('..')) return !next || startsUpper(next)
   if (closed && next?.isWord && startsLower(next)) return false // "Kom je?" vroeg hij.

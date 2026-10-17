@@ -85,11 +85,13 @@ const RULE_TO_PACK: [RegExp, string][] = [
   [/^ar\.(taa-marbuta|ha-for-taa)/, 'ar.taa'],
   [/^ar\.(alif-maqsura|ya-for-maqsura|maqsura-for-ya|ala-ali$)/, 'ar.alif-maqsura'],
   [/^ar\.(waw-jamaa|extra-alif)/, 'ar.waw-jamaa'],
-  [/^ar\.tanween-/, 'ar.tanween'],
+  [/^ar\.(tanween-|alif-after-hamza$)/, 'ar.tanween'],
   [/^ar\.hidden-alif$/, 'ar.hidden-alif'],
+  [/^ar\.alladhina$/, 'ar.lam-shamsiyya'],
   [/^ar\.dad-dha$/, 'ar.dad-dha'],
   [/^ar\.interdental$/, 'ar.dhal-zay'],
-  [/^ar\.(inshallah|mashallah|bi-idhn|masuul)$/, 'ar.common'],
+  [/^ar\.masuul$/, 'ar.hamza-mid'],
+  [/^ar\.(inshallah|mashallah|bi-idhn)$/, 'ar.common'],
 ]
 
 /** The gym pack for a rule id, or null when the gym has nothing for it (punctuation, word order...). */

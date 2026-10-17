@@ -258,7 +258,7 @@ body[data-typing]:not([data-focus-mode='off']) .dict-voice:not(:focus-within) {
   color: var(--sub);
   opacity: 1;
 }
-.dict-input[dir='rtl']::placeholder {
+.dict-input[dir='rtl']:not([data-ph='local'])::placeholder {
   font-family: var(--font-ui);
   font-size: 0.8em;
 }
@@ -501,8 +501,12 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
 }
 .dict-rule-word {
   grid-area: word;
+  max-width: 16rem;
   font-size: var(--fs-md);
   line-height: 1.5;
+}
+.dict-rule-word[dir='rtl'] {
+  line-height: 1.8;
 }
 .dict-rule-name {
   grid-area: name;
@@ -521,6 +525,9 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   color: var(--sub);
   font-size: var(--fs-sm);
 }
+.dict-rule-count {
+  font-weight: 480;
+}
 .dict-note {
   max-width: 66ch;
   font-size: var(--fs-sm);
@@ -530,14 +537,24 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   color: var(--sub);
   font-weight: 620;
 }
+/* Naskh reads small next to the Latin UI font: a step up, and room for the marks */
 .dict-rule-body [dir='rtl'],
 .dict-rule-name[dir='rtl'],
 .dict-note[dir='rtl'] {
   font-family: var(--font-arabic);
+  font-size: 1.08em;
   line-height: 1.9;
 }
 .dict-rule-name[dir='rtl'] {
   font-size: var(--fs-sm);
+}
+.dict-rule-check[dir='rtl'],
+.dict-note[dir='rtl'] {
+  font-size: calc(var(--fs-sm) * 1.08);
+}
+/* an Arabic note in the (left-to-right) panel sits on the right, where it starts */
+.dict-note[dir='rtl'] {
+  justify-self: end;
 }
 
 .dict-empty {
@@ -634,9 +651,9 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   font-size: var(--fs-xs);
   font-weight: 420;
 }
-.dict-sum-dd-text {
-  font-size: var(--fs-sm) !important;
-  font-weight: 480 !important;
+.dict-sum-details .dict-sum-dd-text {
+  font-size: var(--fs-sm);
+  font-weight: 480;
 }
 
 .dict-sum-words h3 {
@@ -655,7 +672,8 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--s-1) var(--s-3);
+  /* wide enough to keep the typed word clear of the hand-drawn circle */
+  gap: var(--s-1) var(--s-5);
 }
 .dict-sum-word {
   font-size: var(--fs-lg);
@@ -669,6 +687,10 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   flex-basis: 100%;
   color: var(--sub);
   font-size: var(--fs-xs);
+}
+.dict-sum-tag :lang(ar) {
+  font-family: var(--font-arabic);
+  font-size: var(--fs-sm);
 }
 .dict-sum-nest {
   margin-top: var(--s-6);

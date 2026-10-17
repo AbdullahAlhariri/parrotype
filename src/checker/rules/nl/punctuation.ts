@@ -20,7 +20,8 @@ export const spaceBefore: Rule = {
     for (const m of ctx.text.matchAll(re)) {
       const start = m.index ?? 0
       const mark = m[1]
-      if (inSkipZone(ctx, start + m[0].length - 1)) continue
+      // "zie https://example.nl , dan ...": the space keeps the comma out of the link
+      if (inSkipZone(ctx, start + m[0].length - 1) || inSkipZone(ctx, start - 1)) continue
       out.push(
         hitSpan(start, start + m[0].length, [mark], {
           message: `No space before ‘${mark}’`,

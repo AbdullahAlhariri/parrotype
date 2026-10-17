@@ -22,6 +22,13 @@ export default function DailyPage() {
   const [day] = useState(() => dayKey())
   const [attempt, setAttempt] = useState(0)
   const [phase, setPhase] = useState<Phase>({ kind: 'typing' })
+  const [phaseLang, setPhaseLang] = useState(lang)
+
+  // a new practice language (header switch) opens that language's challenge, not the old result
+  if (phaseLang !== lang) {
+    setPhaseLang(lang)
+    setPhase({ kind: 'typing' })
+  }
 
   const challenge = useMemo(() => dailyChallenge(lang, day), [lang, day])
   const moreRound = useRef(0)
@@ -41,7 +48,9 @@ export default function DailyPage() {
     const before = best?.wpm
     const streakBefore = currentStreak(useStats.getState().days)
     const { isPb } = recordTypingRun(result, 'daily', dailyConfig(day))
-    const streakUp = currentStreak(useStats.getState().days) > streakBefore
+    // the recorded line says "another day in a row", so a first day does not count
+    const streakAfter = currentStreak(useStats.getState().days)
+    const streakUp = streakAfter > streakBefore && streakAfter >= 2
     setPhase({ kind: 'result', result, isPb, before, streakUp })
   }
 

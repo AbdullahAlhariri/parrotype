@@ -103,6 +103,8 @@ export const generatedCompound: Rule = {
       const y = lw(ctx, b)
       if (!isKnownNoun(x) || !isKnownNoun(y) || ALLOWED_PAIRS.has(x) || SPLIT_COMPOUNDS.has(`${x} ${y}`)) return
       if (freeAfter(ctx, b) || isCapitalized(ctx.words[b])) return
+      // "een kopje thee", "zette de auto weg", "krijgt de klas bezoek", "geef de baby melk": two phrases
+      if (MEASURE.has(x) || !(isDeNoun(y) || isHetNoun(y) || COUNT_NOUNS.has(y)) || BARE_OK.has(y) || twoObjectVerbIn(ctx, i)) return
       const cands = vowelsClash(x, y) ? [`${x}-${y}`] : [x + y, `${x}s${y}`]
       const right = cands.find((c) => known(ctx, c))
       if (!right) return
@@ -140,9 +142,7 @@ export const splitNounCompound: Rule = {
       const y = lw(ctx, b)
       if (!(isDeNoun(x) || isHetNoun(x) || COUNT_NOUNS.has(x)) || ALLOWED_PAIRS.has(x) || SPLIT_COMPOUNDS.has(`${x} ${y}`)) return
       if (!(COUNT_NOUNS.has(y) && !BARE_OK.has(y)) && y !== 'pijn') return
-      if (freeAfter(ctx, b)) return
-      const c = clauseOf(ctx, i)
-      for (let k = c ? c.from : 0; k <= (c ? c.to : ctx.words.length - 1); k++) if (TWO_OBJECT_VERBS.has(lw(ctx, k))) return
+      if (freeAfter(ctx, b) || MEASURE.has(x) || twoObjectVerbIn(ctx, i)) return
       const right = (vowelsClash(x, y) ? [`${x}-${y}`] : [x + y, `${x}s${y}`]).find((cand) => known(ctx, cand))
       if (!right) return
       out.push(hitWords(ctx, i, b, [fix(t, right)], splitMsg(fix(t, right))))
@@ -150,6 +150,17 @@ export const splitNounCompound: Rule = {
     return out
   },
 }
+
+/** a verb that takes two objects in the clause of word i */
+function twoObjectVerbIn(ctx: Parameters<Rule['check']>[0], i: number): boolean {
+  const c = clauseOf(ctx, i)
+  for (let k = c ? c.from : 0; k <= (c ? c.to : ctx.words.length - 1); k++) if (TWO_OBJECT_VERBS.has(lw(ctx, k))) return true
+  return false
+}
+
+/** measure words: "een kopje thee", "een glas water" */
+const MEASURE = set(`kopje kop glas glaasje fles flesje kilo pond liter stuk stukje pak pakje zak zakje doos bord schaal beetje
+  emmer week dag maand jaar uur kwartier avond ochtend middag nacht weekend minuut`)
 
 /** countable nouns that still appear bare as objects ("werk zoeken", "bezoek krijgen") */
 const BARE_OK = set('werk huiswerk bezoek familie mail e-mail les feest koffie thee school bed')

@@ -4,7 +4,7 @@ import type { Issue, Lang } from '@/types'
 import type { Grade } from './grade'
 import type { DictationItem } from './items'
 import { practiseWords, type SessionSummary } from './summary'
-import { relevantIssues, type ExplainIn } from './explain'
+import { labelTip, relevantIssues, type ExplainIn } from './explain'
 
 /**
  * Mistakes that only make sense in their sentence (d/t, de/het, then/than...) go to the
@@ -38,7 +38,7 @@ export function recordFirstCheck(item: DictationItem, grade: Grade, explainIn: E
     if (w.token.label?.tag && SENTENCE_TAGS.has(w.token.label.tag)) continue
     // a finger slip earns a nest place only once it keeps happening on the same word
     if (w.token.label?.nature === 'motor' && (counts[w.word.toLowerCase()]?.count ?? 0) < 3) continue
-    const tip = w.token.label ? ((explainIn === 'local' ? w.token.label.tip.local : undefined) ?? w.token.label.tip.en) : undefined
+    const tip = w.token.label ? labelTip(w.token.label, lang, explainIn) : undefined
     nest.add({ lang, kind: 'word', target: w.word, wrong: [w.typed], hint: tip })
   }
 }

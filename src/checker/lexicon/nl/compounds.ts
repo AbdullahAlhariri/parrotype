@@ -11,7 +11,9 @@ const SPLIT = `zieken huis|ziekenhuis kaas soufflé|kaassoufflé account manager
   sinaasappel sap|sinaasappelsap kinder opvang|kinderopvang bus halte|bushalte trein station|treinstation
   fietsen stalling|fietsenstalling salaris verhoging|salarisverhoging eind examen|eindexamen
   zomer vakantie|zomervakantie kerst vakantie|kerstvakantie boeken kast|boekenkast huis werk|huiswerk
-  rij bewijs|rijbewijs`
+  rij bewijs|rijbewijs koeken pan|koekenpan kies pijn|kiespijn poeder suiker|poedersuiker project plan|projectplan
+  vergader ruimte|vergaderruimte vergader zaal|vergaderzaal klantenservice medewerker|klantenservicemedewerker
+  pannenkoeken restaurant|pannenkoekenrestaurant fiets pad|fietspad parkeer plaats|parkeerplaats`
 
 /** "zieken huis" -> "ziekenhuis" (keys are the lowercase two-word form) */
 export const SPLIT_COMPOUNDS: ReadonlyMap<string, string> = new Map(

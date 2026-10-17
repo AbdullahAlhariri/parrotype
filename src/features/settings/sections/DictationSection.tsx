@@ -90,11 +90,15 @@ function usePlayer(rate: number): Player {
     playing,
     hearClip(key, lang, persona) {
       if (!begin(key)) return
-      const id = sampleClip(lang, persona)
-      if (!id) return end(key)
-      const pb: Playback = playClip({ lang, sentenceId: id, persona })
-      stopRef.current = pb.stop
-      pb.ended.then(() => end(key))
+      // a file that fails to load is skipped by sampleClip next time, so try another sentence
+      const go = (tries: number) => {
+        const id = sampleClip(lang, persona)
+        if (!id) return end(key)
+        const pb: Playback = playClip({ lang, sentenceId: id, persona })
+        stopRef.current = pb.stop
+        pb.outcome.then((o) => (o === 'error' && tries < 3 ? go(tries + 1) : end(key)))
+      }
+      go(1)
     },
     hearBrowser(key, lang, voiceName) {
       if (!begin(key)) return
@@ -287,7 +291,7 @@ export function DictationSection() {
     <Section
       id="dictation"
       title="Dictation"
-      intro="Recorded voices read the sentences in parrot says. Pick one per language, or let them take turns. Your browser's own voice fills in where there is no recording."
+      intro="Recorded voices read the dictation sentences. Pick one per language, or let them take turns. Your browser's own voice fills in where there is no recording."
     >
       <div className="voice-langs">
         {order.map((lang) => (

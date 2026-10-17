@@ -64,7 +64,8 @@ export function RulePanel({ pack, withExamples = false, id }: { pack: DrillPack;
       </div>
       <RuleText text={rule.text} lang={rule.lang} exampleLang={pack.lang} />
       {withExamples && (
-        <ul className="gym-examples" aria-label="Examples">
+        // examples line up with the rule above them: right-aligned under an Arabic explanation
+        <ul className="gym-examples" aria-label="Examples" dir={isRtl(rule.lang) ? 'rtl' : undefined}>
           {examples(pack.items).map((it) => (
             <li key={it.sentence}>
               <Example item={it} lang={pack.lang} />

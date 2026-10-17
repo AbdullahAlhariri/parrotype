@@ -98,7 +98,7 @@ export const genericThe = regexRule({
   confidence: 'low',
   strictOnly: true,
   re: new RegExp(
-    `${SENT_START}(?<w>The\\s+(?<n>life|love|money|happiness|education|health|nature|society|history|science|technology|religion|freedom|success|friendship|music|art|sport|knowledge|marriage|honesty|patience|war|peace|poverty))\\s+(?:is|are|was|can|has|makes|gives|teaches)\\b(?![^.!?]*\\b(?:of|that|which|in\\s+(?:this|that|my|our|the))\\b)`,
+    `${SENT_START}(?<w>The\\s+(?<n>life|love|money|happiness|education|health|nature|society|history|science|technology|religion|freedom|success|friendship|knowledge|marriage|honesty|patience|war|peace|poverty))\\s+(?:is|are|was|can|has|makes|gives|teaches)\\b(?![^.!?]*\\b(?:of|that|which|in\\s+(?:this|that|my|our|the))\\b)`,
     'g',
   ),
   target: 'w',

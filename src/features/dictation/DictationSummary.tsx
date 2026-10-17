@@ -16,6 +16,8 @@ interface Props {
   onPractise?: (words: string[]) => void
   /** the mascot's recorded line is playing */
   talking?: boolean
+  /** a button label that replaces the word count, e.g. for the pairs that went wrong */
+  practiseLabel?: string
 }
 
 const LAND_MS = 600
@@ -41,12 +43,26 @@ function useCountUp(value: number, ms: number) {
   return n
 }
 
+/** The kind of mistake under a word, in the practice language when explanations are set to it. */
+function WordTag({ tag, count, lang, explainIn }: { tag?: string; count: number; lang: Lang; explainIn: ExplainIn }) {
+  const name = tag ? tagName(tag, lang, explainIn) : ''
+  const local = !!tag && explainIn === 'local' && lang !== 'en' && name !== tagName(tag, lang, 'en')
+  return (
+    <span className="dict-sum-tag">
+      <span lang={local ? LANG_TAGS[lang] : undefined} dir={local && isRtl(lang) ? 'rtl' : undefined}>
+        {name}
+      </span>
+      {count > 1 && <span className="tabular"> {count}x</span>}
+    </span>
+  )
+}
+
 /**
  * End of a set, asymmetric like the typing result: the big number and the details on the
  * left, the words to practise on the right with the parrot perched on top, repeating the most
  * missed word (the correct form, nothing else).
  */
-export function DictationSummary({ lang, summary: s, config, onAgain, onPractise, talking = false }: Props) {
+export function DictationSummary({ lang, summary: s, config, onAgain, onPractise, talking = false, practiseLabel }: Props) {
   const reduced = useReducedMotion()
   const explainIn = useSettings((st) => st.explainIn) as ExplainIn
   const headId = useId()
@@ -84,8 +100,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
     }
   }, [top, reduced])
 
-  // in pair mode the button brings back the pairs that went wrong
-  const practiseLabel = pairs ? 'Practise these pairs' : words.length === 1 ? 'Practise this word' : `Practise these ${words.length} words`
+  const label = practiseLabel ?? (words.length === 1 ? 'Practise this word' : `Practise these ${words.length} words`)
 
   return (
     <section ref={rootRef} className={`dict-sum ${reduced ? '' : 'is-animated'}`} tabIndex={-1} aria-labelledby={headId}>
@@ -106,7 +121,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
             <Button variant="primary" onClick={onAgain}>
               Again
             </Button>
-            {onPractise && words.length > 0 && <Button onClick={() => onPractise(words.map((w) => w.word))}>{practiseLabel}</Button>}
+            {onPractise && (practiseLabel || words.length > 0) && <Button onClick={() => onPractise(words.map((w) => w.word))}>{label}</Button>}
           </div>
           <p className="dict-sum-hint" aria-hidden="true">
             <Kbd>tab</Kbd> then <Kbd>enter</Kbd>
@@ -162,10 +177,7 @@ export function DictationSummary({ lang, summary: s, config, onAgain, onPractise
                         {w.typed[0]}
                       </s>
                     )}
-                    <span className="dict-sum-tag">
-                      {w.tag ? tagName(w.tag, lang, explainIn) : w.kind ? tagName(w.kind, lang, explainIn) : ''}
-                      {w.count > 1 && <span className="tabular"> {w.count}x</span>}
-                    </span>
+                    <WordTag tag={w.tag ?? w.kind} count={w.count} lang={lang} explainIn={explainIn} />
                   </li>
                 ))}
               </ul>

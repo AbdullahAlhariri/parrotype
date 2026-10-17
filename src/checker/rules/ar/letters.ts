@@ -522,6 +522,70 @@ export const tanweenExtraAlif: ArRule = arRule(
       ),
 )
 
+/** verbs whose dual past ends in اءا: جاءا (the two came) is right */
+const DUAL_AA = new Set(['جاءا', 'شاءا', 'ساءا', 'باءا', 'فاءا', 'ناءا'])
+
+export const alifAfterHamza: ArRule = arRule(
+  {
+    id: 'ar.alif-after-hamza',
+    title: 'مساءً (no alif after اء)',
+    category: 'spelling',
+    confidence: 'medium',
+    examples: {
+      flag: [
+        ['تبدأ الحفلة في الساعة الرابعة مساءا', 'مساءا', 'مساءً'],
+        ['شربت ماءا باردا', 'ماءا', 'ماءً'],
+      ],
+      ok: ['تبدأ الحفلة في الساعة الرابعة مساءً.', 'جاءا معا إلى الحفلة.', 'مساء الخير.', 'سماء صافية.'],
+    },
+  },
+  (ctx) =>
+    ctx.words
+      .filter((t) => isArabic(t) && /اءا$/.test(bare(t.text)) && !DUAL_AA.has(bare(t.text).replace(/^[وف]/, '')))
+      .map((t) => {
+        const fix = `${bare(t.text).slice(0, -1)}\u064B`
+        return tokenHit(t, [fix], {
+          message: `No alif after ${q('اء')}: ${q(fix)}`,
+          messageLocal: `لا تُكتب ألف بعد الهمزة المسبوقة بألف: ${qa(fix)}.`,
+          explanation: `After a hamza that follows an alif (مساء، ماء، سماء), the accusative ending is a tanween alone, with no extra alif: مساءً، ماءً.`,
+          explanationLocal: `بعد الهمزة المسبوقة بألف (مساء، ماء، سماء) يُكتب تنوين النصب وحده بلا ألف: مساءً، ماءً.`,
+        })
+      }),
+)
+
+export const alladhina: ArRule = arRule(
+  {
+    id: 'ar.alladhina',
+    title: 'الذين (plural) / اللذين (two)',
+    category: 'spelling',
+    confidence: 'medium',
+    examples: {
+      flag: [['أظهرت دراسة أن اللذين يقرؤون كل ليلة ينامون أسرع', 'اللذين', 'الذين']],
+      ok: ['الطلاب الذين يقرؤون كثيرا ينجحون.', 'رأيت الولدين اللذين لعبا في الحديقة.', 'هذان هما اللذان يدرسان معي.'],
+    },
+  },
+  (ctx) => {
+    const out: RuleHit[] = []
+    ctx.words.forEach((t, i) => {
+      const w = bare(t.text)
+      if (w !== 'اللذين' && w !== 'واللذين') return
+      const n = i + 1 < ctx.words.length ? bare(ctx.words[i + 1].text) : ''
+      // a plural verb after it (يقرؤون، كتبوا) shows a plural meaning; a dual verb (لعبا، يدرسان) keeps اللذين
+      if (!/^[يت][\u0621-\u064A]{2,}ون$|^[\u0621-\u064A]{3,}وا$/.test(n)) return
+      const fix = w.startsWith('و') ? 'والذين' : 'الذين'
+      out.push(
+        tokenHit(t, [fix], {
+          message: `For more than two, ${q('الذين')} with one lam`,
+          messageLocal: `للجمع: ${qa('الذين')} بلام واحدة؛ أما «اللذين» فللمثنى.`,
+          explanation: `الذين (who, plural) has one lam. اللذان / اللذين with two lams is the dual: ‘the two who’. A plural verb after it (يقرؤون) shows the plural is meant.`,
+          explanationLocal: `«الذين» اسم موصول للجمع ويُكتب بلام واحدة، و«اللذان/اللذين» للمثنى بلامين. والفعل بعده بصيغة الجمع (يقرؤون) يدل على أن المقصود الجمع.`,
+        }),
+      )
+    })
+    return out
+  },
+)
+
 /* ------------------------------------------------------------------ */
 /* Keyboard: Persian letters, repeated letters                         */
 /* ------------------------------------------------------------------ */
@@ -625,6 +689,8 @@ export const letterRules: ArRule[] = [
   interdental,
   tanweenMissingAlif,
   tanweenExtraAlif,
+  alifAfterHamza,
+  alladhina,
   persianLetters,
   elongation,
 ]

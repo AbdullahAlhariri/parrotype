@@ -103,6 +103,8 @@ export const langCap = regexRule({
   title: 'languages and nationalities get a capital',
   category: 'capitalization',
   confidence: 'high',
+  // not inside identifiers like google-10000-english
+  notAfter: /-$/,
   re: /\b(?:english|dutch|arabic|french(?!\s+(?:fr(?:y|ies)|toast|doors?|windows?|press|kiss|horn|braids?)\b)|german|spanish|italian|portuguese|russian|chinese|japanese|korean|hindi|urdu|persian|farsi|hebrew|greek|swedish|danish|flemish|frisian|moroccan|egyptian|syrian|iraqi|saudi|lebanese|palestinian|tunisian|algerian|somali|american|british|european|african|asian|belgian|islam|muslim|christian|ramadan|christmas|easter)\b/g,
   fix: (f) => [cap(f.text)],
   msg: (_f, fixes) => ({

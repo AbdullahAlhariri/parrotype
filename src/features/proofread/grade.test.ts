@@ -110,4 +110,13 @@ describe('gradeProofread details', () => {
     expect(sentenceAt(s, 0)).toBe('Eerste zin.')
     expect(sentenceAt('Hoi,\nDit is een regel.\nGroet', 8)).toBe('Dit is een regel.')
   })
+
+  it('splits Arabic sentences on ؟ as well', () => {
+    const s = 'كيف حالك؟ انا بخير والحمد لله. وصلت أمس.'
+    expect(sentenceAt(s, s.indexOf('انا'))).toBe('انا بخير والحمد لله.')
+    expect(sentenceAt(s, 2)).toBe('كيف حالك؟')
+    const ar = findText('ar-01')!
+    const m = ar.mistakes[0]
+    expect(sentenceAt(ar.corrected, m.fixAt)).toBe('أنا بخير والحمد لله.')
+  })
 })

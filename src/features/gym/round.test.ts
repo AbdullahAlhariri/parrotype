@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { seeded } from '@/lib/random'
 import { findPack, type DrillItem } from '@/content/drills'
-import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, pickRound, reactionForRound, settledForm } from './round'
+import { chooseOptions, explain, formatClock, gapWidth, isRight, itemKey, mastery, normalizeAnswer, onTrack, pickRound, reactionForRound, settledForm } from './round'
 import { useGym } from './store'
 
 const item = (sentence: string, answer: string, alternatives: string[] = [], accept?: string[]): DrillItem => ({ sentence, answer, alternatives, accept })
@@ -29,6 +29,18 @@ describe('answers', () => {
     expect(settledForm(it1, 'zij', 'nl')).toBe('Zij')
     expect(settledForm(it1, 'ze', 'nl')).toBe('Ze')
     expect(settledForm(item('Ik {{word}} moe.', 'word', ['wordt']), 'WORD', 'nl')).toBe('word')
+  })
+
+  it('knows while retyping whether the letters so far still lead to the answer', () => {
+    const ar = item('هل أنت {{مسؤول}} عن هذا القسم؟', 'مسؤول', ['مسئول'])
+    expect(onTrack(ar, '', 'ar')).toBe(true)
+    expect(onTrack(ar, 'مسؤ', 'ar')).toBe(true)
+    expect(onTrack(ar, 'مسُؤ', 'ar')).toBe(true)
+    expect(onTrack(ar, 'مسئ', 'ar')).toBe(false)
+    const split = item('سأزورك {{إن شاء}} الله.', 'إن شاء', ['إنشاء'])
+    expect(onTrack(split, 'إن ', 'ar')).toBe(true)
+    expect(onTrack(split, 'إنش', 'ar')).toBe(false)
+    expect(onTrack(item('{{Zij/ze|Hun}} komen.', 'Zij', ['Hun'], ['ze']), 'z', 'nl')).toBe(true)
   })
 
   it('keeps the hamza when checking Arabic', () => {

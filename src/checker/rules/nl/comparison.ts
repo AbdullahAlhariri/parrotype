@@ -29,10 +29,15 @@ const CMP_PRONOUNS = set('ik jij hij zij wij we jullie ze u mij jou hem haar ons
 const CMP_DETERMINERS = set("mijn m'n jouw je zijn z'n haar onze ons hun uw de het die dat deze dit vorig vorige")
 
 /** "ouder als ik.", "groter als zijn vader.", "beter als vorig jaar.": nothing but the compared thing follows */
+/** "beter als ontbijt dan als lunch": the comparison's dan comes later, so this als means 'as' */
+function danLater(ctx: RuleContext, als: number): boolean {
+  for (let k = als + 1; k < ctx.words.length && sameSentence(ctx, als, k); k++) if (lw(ctx, k) === 'dan') return true
+  return false
+}
+
 function plainComparison(ctx: RuleContext, als: number): boolean {
   const c = clauseOf(ctx, als)
   const end = c ? c.to : ctx.words.length - 1
-  for (let k = als + 1; k < ctx.words.length && sameSentence(ctx, als, k); k++) if (lw(ctx, k) === 'dan') return false
   const a = next(ctx, als)
   if (a < 0 || a > end) return false
   if (CMP_PRONOUNS.has(lw(ctx, a))) return a === end
@@ -56,7 +61,7 @@ export const groterAls: Rule = {
       const cmp = lw(ctx, c)
       if (!COMPARE_WORDS.has(cmp) || NOT_COMPARISON.has(cmp)) return
       if (cmp === 'meer' && lw(ctx, i + 1) === 'een') return // "meer als een broer" = more like a brother
-      if (conditionalAfter(ctx, i)) return
+      if (conditionalAfter(ctx, i) || danLater(ctx, i)) return
       // In normal mode only the sure cases: a pronoun or "my brother" closing the comparison. "Beter als
       // ontbijt" (as breakfast) and "bekender als zanger dan als acteur" use als in another sense.
       if (ctx.strictness !== 'strict' && !plainComparison(ctx, i)) return

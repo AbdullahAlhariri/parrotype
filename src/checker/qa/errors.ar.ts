@@ -71,7 +71,7 @@ export const ERRORS_AR: Labelled[] = [
   ['alif-maqsura', 'أرقام {الطوارىء=>الطوارئ} مهمة.'],
   ['alif-maqsura', 'ذهبت {إلىالسوق=>إلى السوق} مع أختي.'],
   ['alif-maqsura', 'المدينة {التى=>التي} أسكن فيها جميلة.'],
-  ['alif-maqsura', 'اشتريت كتابا {اخر=>آخر} من المكتبة.', 'آخر needs a madda: not in the lists yet'],
+  ['hamza', 'اشتريت كتابا {اخر=>آخر} من المكتبة.'],
   // hidden alif
   ['hidden-alif', '{هاذا=>هذا} الكتاب جميل.'],
   ['hidden-alif', '{لاكن=>لكن} الجو بارد.'],
@@ -124,7 +124,7 @@ export const ERRORS_AR: Labelled[] = [
   ['keyboard', 'الفيلم {جمييييل=>جميل} جدا.'],
   // typos in common words (Ayaspell)
   ['spelling', 'ذهبت إلى {المدسة=>المدرسة} صباحا.'],
-  ['spelling', 'أحب {القرءاة=>القراءة} كثيرا.', 'two letters moved: too far for a confident fix'],
+  ['spelling', 'أحب {القرءاة=>القراءة} كثيرا.'],
   ['spelling', 'اشتريت {خبزز=>خبز} من السوق.'],
   ['spelling', 'هذا {الكتبا=>الكتاب} مفيد.'],
   ['spelling', 'سافرت إلى {هولاندا=>هولندا} قبل سنتين.'],

@@ -4,7 +4,7 @@ import type { Lang, TypingResult } from '@/types'
 import { AGAIN_COOLDOWN_MS, isFlawless, isRough, reactionFor, resetAgainSlot, takeAgainSlot } from './result/reaction'
 import { feedbackLine, practiseItems, tipGroups, type PractiseItem } from './result/feedback'
 import { isLtrChar } from './surface/measure'
-import { pickTip } from './page/tips'
+import { pickLocalTip, pickTip } from './page/tips'
 
 function run(words: string[], text: string, lang: Lang = 'nl'): TypingResult {
   const s = new TypingSession(words, { lang })
@@ -72,6 +72,29 @@ describe('result copy per language', () => {
     const groups = tipGroups([item('huis', 'Swapped letters (one hand)'), item('kat', 'Swapped letters (two hands)'), item('mat', 'Swapped letters (one hand)')])
     expect(groups).toHaveLength(1)
     expect(groups[0]).toMatchObject({ name: 'Swapped letters', n: 3, tip: tip.en })
+  })
+
+  it('counts swapped letters on one hand and on two hands as one habit in the feedback line', () => {
+    const tip = { en: 'Two letters overtook each other.' }
+    const item = (expected: string, name: string): PractiseItem => ({
+      expected,
+      typed: expected,
+      name,
+      label: { kind: 'transposition', nature: 'motor', tip } as unknown as PractiseItem['label'],
+    })
+    const items = [item('huis', 'Swapped letters (one hand)'), item('kat', 'Swapped letters (two hands)'), item('mat', 'Swapped letters (two hands)'), item('op', 'Neighbour key')]
+    const r = { ...run(TEN, TEN.join(' ')), accuracy: 90, consistency: 50 }
+    r.words = r.words.map((w, i) => (i < 4 ? { ...w, correct: false } : w))
+    expect(feedbackLine(r, items)).toBe('Swapped letters: 3 of your 4 mistakes.')
+  })
+
+  it('gives the personal tip in the practice language when explanations are local', () => {
+    const misses = { 'مدرسة': { word: 'مدرسة', count: 3, lastAt: 1, typed: ['مدسرة'], kind: 'transposition' as const } }
+    // run 2 is personal (every third) and even, so it is the tip about the typo type
+    expect(pickTip('ar', 2, misses)).toMatch(/^Your most frequent slip/)
+    expect(pickLocalTip('ar', 2, misses)).toMatch(/[\u0600-\u06FF]/)
+    expect(pickLocalTip('ar', 0, misses)).toBeUndefined()
+    expect(pickLocalTip('en', 2, { their: { word: 'their', count: 3, lastAt: 1, typed: ['thier'], kind: 'transposition' } })).toBeUndefined()
   })
 
   it('keeps real typo groups apart', () => {

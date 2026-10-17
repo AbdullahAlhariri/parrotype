@@ -8,7 +8,9 @@ import { playReaction } from '@/lib/audio'
 import { useNest } from '@/state/nest'
 import { kindLabel, type WritingPrompt } from '@/content/prompts'
 import { CATEGORY_LABEL, nestItemsFrom, type RuleLine, type WriteSummary } from './lib/report'
+import { srcOf } from './lib/fixed'
 import { excerpt, formatDuration } from './lib/text'
+import { Mixed } from './Mixed'
 
 interface Props {
   lang: Lang
@@ -22,12 +24,14 @@ interface Props {
   explainIn: 'en' | 'local'
   onKeepWriting: () => void
   onNew: () => void
+  /** play the mascot's recorded line when it fits (once per text, not again after Keep writing) */
+  react?: boolean
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** After "Finish": what went wrong, which rules fired, which words to practise, and the nest. */
-export function WriteReport({ lang, text, issues, summary, words, activeMs, prompt, found, explainIn, onKeepWriting, onNew }: Props) {
+export function WriteReport({ lang, text, issues, summary, words, activeMs, prompt, found, explainIn, onKeepWriting, onNew, react = true }: Props) {
   const nestItems = useMemo(() => nestItemsFrom(text, issues, lang, explainIn), [text, issues, lang, explainIn])
   const [added, setAdded] = useState(false)
   const rtl = isRtl(lang)
@@ -40,12 +44,12 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
 
   // A recorded line for the rare moments: a clean text of some length, or reaching the prompt's length.
   const target = prompt?.words
-  const reaction = clean && words >= 30 ? 'perfect' : target && words >= target ? 'done' : null
+  const reaction = !react ? null : clean && words >= 30 ? 'perfect' : target && words >= target ? 'done' : null
   useEffect(() => {
     if (!reaction) return
     const t = window.setTimeout(() => playReaction(lang, reaction), reduced ? 150 : 500)
     return () => window.clearTimeout(t)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- once per report
+  }, []) // once per report
 
   // A hand-drawn circle around the word to practise first. Explains, never decorates.
   useEffect(() => {
@@ -74,6 +78,10 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
   }
 
   const lengthNote = target ? (words >= target ? `${words} of about ${target} words. Done.` : `${words} of about ${target} words.`) : `${plural(words, 'word')}.`
+  // mistakes fixed on the way still count above; say what happened to them
+  const fixedNote = summary.fixedFromMarks ? ` You fixed ${summary.fixedFromMarks} straight from the underline${summary.fixedFromMarks === 1 ? '' : 's'}.` : ''
+  const leftNote =
+    summary.left === summary.mistakes ? '' : summary.left === 0 ? ' Nothing left to fix.' : ` ${summary.left} still in the text.`
   const repeat = summary.repeat
   // single words are said three times ("wordt. wordt. wordt."); a phrase once, so the bubble stays one line
   const bubble = repeat ? (/\s/.test(repeat) ? [`${repeat}.`] : [`${repeat}.`, `${repeat}.`, `${repeat}.`]) : undefined
@@ -106,6 +114,8 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
           {lengthNote}
           {prompt ? ` Prompt: ${kindLabel(prompt.kind)}.` : ''}
           {found && found.total > 0 ? ` You found ${found.found} of ${found.total} yourself before the reveal.` : ''}
+          {fixedNote}
+          {leftNote}
         </p>
 
         {!clean && (
@@ -200,7 +210,7 @@ export function WriteReport({ lang, text, issues, summary, words, activeMs, prom
 }
 
 function cleanHeadline(hints: number, mascot: string) {
-  if (!hints) return `Nothing to correct. ${mascot} read it twice and found nothing.`
+  if (!hints) return `Nothing to correct. ${mascot} read it twice to be sure.`
   return hints === 1 ? 'No mistakes. One style hint, take it or leave it.' : `No mistakes. ${hints} style hints, take them or leave them.`
 }
 
@@ -218,7 +228,9 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
   const reduced = useReducedMotion()
   const ex = rule.example
   const rep = ex.replacements[0]
-  const { start, end } = excerpt(text, ex.offset, ex.offset + ex.length, 120)
+  // a mistake fixed on the way points into its own sentence, as it was written
+  const src = srcOf(ex, text)
+  const { start, end } = excerpt(src, ex.offset, ex.offset + ex.length, 120)
   const local = explainIn === 'local'
   const localWhy = local && !!ex.explanationLocal
   const localMsg = local && !!ex.messageLocal
@@ -229,18 +241,21 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
   return (
     <li className="wr-rule">
       <div className="wr-rule-head">
-        <span className="wr-rule-title">{rule.title}</span>
+        <span className="wr-rule-title">
+          <Mixed text={rule.title} />
+        </span>
         {rule.count > 1 && <span className="wr-rule-n tabular">{rule.count}x</span>}
+        {rule.fixed > 0 && <span className="wr-rule-n">{rule.fixed === rule.count ? 'fixed' : `${rule.fixed} fixed`}</span>}
       </div>
       {rep !== undefined ? (
         <p className="wr-rule-ex" lang={LANG_TAGS[lang]} dir={rtl ? 'rtl' : 'ltr'}>
-          {text.slice(start, ex.offset)}
+          {src.slice(start, ex.offset)}
           <mark className="wr-fix">{rep}</mark>
-          {text.slice(ex.offset + ex.length, end)}
+          {src.slice(ex.offset + ex.length, end)}
         </p>
       ) : (
         <p className="wr-rule-ex" lang={LANG_TAGS[lang]} dir={rtl ? 'rtl' : 'ltr'}>
-          {text.slice(start, end)}
+          {src.slice(start, end)}
         </p>
       )}
       {localMsg ? (
@@ -258,13 +273,15 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
           {rep !== undefined && (
             <>
               You wrote{' '}
-              <s lang={LANG_TAGS[lang]} dir={dir}>
+              <s lang={LANG_TAGS[lang]} dir={dir} className={rtl ? 'wp-ar' : undefined}>
                 {ex.text}
               </s>
               .{' '}
             </>
           )}
-          <span lang="en">{message}</span>
+          <span lang="en">
+            <Mixed text={message ?? ''} />
+          </span>
         </p>
       )}
       {explanation && (
@@ -274,7 +291,7 @@ function RuleItem({ rule, text, lang, explainIn }: { rule: RuleLine; text: strin
           </button>
           {open && (
             <p className={`wr-rule-why${reduced ? '' : ' is-anim'}`} lang={localWhy ? LANG_TAGS[lang] : 'en'} dir={localWhy ? dir : undefined}>
-              {explanation}
+              {localWhy ? explanation : <Mixed text={explanation} />}
             </p>
           )}
         </>

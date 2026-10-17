@@ -115,7 +115,7 @@ export function RoundSummary({ pack, result, onAgain }: Props) {
                         <Rich text={hint.text} exampleLang={pack.lang} rtl={hint.lang === 'ar'} />
                       </p>
                     )}
-                    <ul className="gym-revisit-items">
+                    <ul className="gym-revisit-items" dir={hint?.lang === 'ar' ? 'rtl' : undefined}>
                       {group.map((o) => (
                         <li key={o.key}>
                           <Example item={o.item} lang={pack.lang} />

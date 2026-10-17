@@ -139,10 +139,15 @@ export const personaInfo = (lang: Lang, id: string): VoiceInfo | undefined => re
 /** The persona name for English UI copy: the mascot goes by his Latin-script name (Fustuq, not فستق). */
 export const personaName = (lang: Lang, v: VoiceInfo) => (v.mascot ? mascotName(lang) : v.name)
 
-/** The first sentence a persona has a clip for (for "Hear a sample"), or null. */
+/**
+ * A sentence a persona has a clip for (for "Hear a sample"), or null: a full dictation sentence
+ * ("nl-k01") rather than a short minimal-pair line, and none that failed to load this session.
+ */
 export function sampleClip(lang: Lang, persona: string): string | null {
-  for (const [id, personas] of Object.entries(state.manifest?.clips[lang] ?? {})) if (personas.includes(persona)) return id
-  return null
+  const have = Object.entries(state.manifest?.clips[lang] ?? {})
+    .filter(([id, personas]) => personas.includes(persona) && !broken.has(clipUrl(lang, persona, id)))
+    .map(([id]) => id)
+  return have.find((id) => id.startsWith(`${lang}-`)) ?? have[0] ?? null
 }
 
 /* ------------------------------------------------------------------ */

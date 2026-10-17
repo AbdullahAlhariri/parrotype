@@ -54,7 +54,7 @@ export const EN_TEXTS = defineTexts('en', NOTES, [
     title: 'Beach day',
     difficulty: 1,
     source:
-      "[Their>They're#theyre] going to the beach tomorrow, even though it's supposed to rain in the afternoon. [Your>You're#youre] welcome to join us if you're free. We'll leave at nine and take the coast road, because the main road is always busy on Saturdays. Anything is better [then>than#than] staying at home and staring at a screen all day. My brother is bringing the dog, which wagged [it's>its#its] tail for ten minutes when it heard the word beach. Text me tonight and I'll save you a seat.",
+      "My cousins are staying with us this week, and [their>they're#theyre] dying to go to the beach tomorrow, even though it's supposed to rain in the afternoon. [Your>You're#youre] welcome to join us if you're free. We'll leave at nine and take the coast road, because the main road is always busy on Saturdays. Anything is better [then>than#than] staying at home and staring at a screen all day. My brother is bringing the dog, which wagged [it's>its#its] tail for ten minutes when it heard the word beach. Text me tonight and I'll save you a seat.",
   },
   {
     id: 'en-02',

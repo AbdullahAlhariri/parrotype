@@ -1,7 +1,7 @@
 import type { Rule, RuleHit } from '@/types'
 import type { RuleContext } from '@/types'
 import { gapAfter, hitWord, isSentenceStart, isSubjectSlot, lw, matchAt, next, prev } from '../../helpers'
-import { ADJ_BASE, COUNT_NOUNS, FINITE, FINITE_FORMS, INFINITIVES, PREPOSITIONS, THANKS_NOUNS, set } from '../../lexicon/nl'
+import { ADJ_BASE, COUNT_NOUNS, FINITE, FINITE_FORMS, INFINITIVES, PREPOSITIONS, THANKS_NOUNS, isDiminutive, set } from '../../lexicon/nl'
 import { LINKS } from './links'
 import { PERSONAL_SUBJ } from './shared'
 
@@ -14,7 +14,10 @@ import { PERSONAL_SUBJ } from './shared'
 const BARE_NOUNS = set('werk huiswerk bezoek familie mail e-mail')
 /** a noun after "prep + me/jou/u" that must be possessed */
 const ownedNoun = (ctx: RuleContext, n: number, atStart: boolean) =>
-  COUNT_NOUNS.has(lw(ctx, n)) && (atStart || !BARE_NOUNS.has(lw(ctx, n)))
+  (COUNT_NOUNS.has(lw(ctx, n)) && (atStart || !BARE_NOUNS.has(lw(ctx, n)))) || COUNT_NOUNS.has(diminutiveBase(lw(ctx, n)))
+
+/** berichtje -> bericht, fietsje -> fiets ('' when the word is no diminutive) */
+const diminutiveBase = (w: string) => (isDiminutive(w) ? w.replace(/(?:etje|tje|pje|kje|je)$/, '') : '')
 
 /* PRN-01: "Hun hebben gewonnen" -> "Zij hebben" */
 const HUN_VERBS = set(`hebben zijn gaan komen willen kunnen moeten mogen zullen worden doen weten vinden zeggen denken
@@ -101,6 +104,8 @@ function attributiveAhead(ctx: RuleContext, n: number): boolean {
 /* PRN-03: "voor jouw." -> "voor jou."; PRN-04: "met jou fiets" -> "met jouw fiets" */
 /** particles of separable verbs: "Ik ga met jouw mee" can only be jou */
 const JOU_PARTICLES = set('mee toe heen')
+/** "Ik noem jou vriend": jou is the object and the noun a name for it */
+const NAMING_VERBS = set('noem noemt noemde noemden noemen vind vindt vond maak maakt maakte heet')
 const OTHER_POSSESSIVES = set("mijn m'n zijn z'n haar onze ons hun uw jullie")
 
 export const jouwJou: Rule = {
@@ -136,9 +141,9 @@ export const jouwJou: Rule = {
         const n = next(ctx, i)
         if (n < 0) return
         const noun = lw(ctx, n)
-        const thanks = p > 0 && matchAt(ctx, p - 1, [set('bedankt dank dankjewel dankuwel'), 'voor']) && THANKS_NOUNS.has(noun)
+        const thanks = p > 0 && matchAt(ctx, p - 1, [set('bedankt dank dankjewel dankuwel'), 'voor']) && (THANKS_NOUNS.has(noun) || THANKS_NOUNS.has(diminutiveBase(noun)))
         // "Is dit jou jas?": an owned noun that closes the clause can only be jouw + noun
-        const closing = ownedNoun(ctx, n, false) && /^\s*[.?!,;:)]|^\s*$/.test(gapAfter(ctx, n))
+        const closing = ownedNoun(ctx, n, false) && /^\s*[.?!,;:)]|^\s*$/.test(gapAfter(ctx, n)) && !(p >= 0 && NAMING_VERBS.has(lw(ctx, p)))
         if (!thanks && !closing && (p < 0 || !PREPOSITIONS.has(lw(ctx, p)) || !ownedNoun(ctx, n, false))) return
         out.push(
           hitWord(

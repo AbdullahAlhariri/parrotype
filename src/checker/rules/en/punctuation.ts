@@ -1,4 +1,4 @@
-import { LINKS, q, regexRule, type EnRule } from './shared'
+import { inZone, LINKS, q, regexRule, type EnRule } from './shared'
 
 // Punctuation, spacing and doubled words (rules 76, 88-94).
 
@@ -64,12 +64,14 @@ export const spaceBeforePunct = regexRule({
   category: 'punctuation',
   confidence: 'high',
   re: /[ \t]+(?<p>[,.;:!?])(?=\s|$)/g,
+  // "see https://example.com , and ...": the space keeps the comma out of the link
+  when: (f) => !inZone(f.ctx, f.start - 1, f.start),
   fix: (f) => [f.g.p!],
   msg: (f) => ({
     message: `No space before ${q(f.g.p!)}`,
     explanation: `In English , . ! ? : and ; sit right after the word, with one space after them. (French puts a space before ! and ?, English doesn't.)`,
   }),
-  examples: { wrong: 'Hello , how are you ?', flag: ' ,', fix: ',', right: 'Hello, how are you?', ok: ['Wait ... what?', 'Nice :)'] },
+  examples: { wrong: 'Hello , how are you ?', flag: ' ,', fix: ',', right: 'Hello, how are you?', ok: ['Wait ... what?', 'Nice :)', 'See https://example.com , then log in.'] },
 })
 
 export const spaceAfterComma = regexRule({

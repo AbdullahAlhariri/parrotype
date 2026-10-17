@@ -283,6 +283,11 @@
   font-size: var(--fs-sm);
   text-decoration-color: var(--sub);
 }
+/* small Naskh with a 2px strike through the joins is unreadable: a size up, a hairline strike */
+.tr-typed s:lang(ar) {
+  font-size: var(--fs-base);
+  text-decoration-thickness: 1px;
+}
 .tr-kind {
   color: var(--sub);
   font-size: var(--fs-xs);
@@ -299,6 +304,13 @@
 .tr-tip-name {
   color: var(--text);
   font-weight: 600;
+}
+.tr-tip-rtl {
+  display: block;
+  width: fit-content;
+  margin-top: var(--s-1);
+  font-size: var(--fs-base);
+  line-height: 1.7;
 }
 .tr-practise-btn {
   margin-top: var(--s-6);

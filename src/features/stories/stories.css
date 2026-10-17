@@ -201,6 +201,11 @@ body[data-typing]:not([data-focus-mode='off']) .story-reader.is-typing .story-he
 .story-reader .mono-text:not(:lang(ar)) {
   font-feature-settings: 'liga' 0, 'calt' 0, 'clig' 0, 'dlig' 0, 'locl' 0;
 }
+/* Dutch titles and blurbs too: Recursive Sans draws the same ĳ, and here ij is always two letters */
+.stories :lang(nl),
+.story-reader :lang(nl) {
+  font-feature-settings: 'locl' 0;
+}
 
 /* A page is about 60 words: the result keeps the numbers, the chart and the words to practise,
    and drops the details grid (ResultView has no compact prop yet) */

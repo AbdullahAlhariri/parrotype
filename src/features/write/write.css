@@ -6,8 +6,21 @@
   font-feature-settings: 'locl' 0;
 }
 /* Arabic practice text: Naskh for Arabic, Recursive for any Latin word in between (not a serif fallback) */
-.write :lang(ar):not(.we *) {
+.write :lang(ar):not(.we-text, .we-text *) {
   font-family: 'Noto Naskh Arabic', 'Recursive Sans', var(--font-arabic);
+}
+/* Arabic quoted inside English copy: Naskh at the same size as English looks a size smaller */
+.wp-ar {
+  font-size: 1.22em;
+  line-height: 1;
+}
+.wp-ar-quote {
+  white-space: nowrap;
+}
+/* explanations in Arabic (explanations set to the practice language) */
+.write :is(.ip-msg, .ip-rule-body p, .il-msg, .wr-rule-was, .wr-rule-why):lang(ar) {
+  font-size: 1.15em;
+  line-height: 1.6;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1034,7 +1047,7 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
   font-size: 1.75rem;
 }
 .wr-words:lang(ar) .wr-word-wrong {
-  font-size: var(--fs-base);
+  font-size: 1.2rem;
 }
 .wr-word-n {
   color: var(--sub);
@@ -1054,8 +1067,9 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 }
 .wr-rule-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--s-3);
+  gap: 0 var(--s-3);
 }
 .wr-rule-title {
   font-weight: 650;
@@ -1063,6 +1077,7 @@ body[data-typing]:not([data-focus-mode='off']) :is(.wp-bar, .wp-prompt-tools, .w
 .wr-rule-n {
   color: var(--sub);
   font-size: var(--fs-sm);
+  white-space: nowrap;
 }
 .wr-rule-ex {
   font-size: var(--fs-md);
