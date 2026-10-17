@@ -38,6 +38,17 @@ describe('selectSentences', () => {
     expect(out.map((s) => s.id)).not.toContain('d')
   })
 
+  it('with freshFirst, unseen sentences come before recorded ones that were seen', () => {
+    const recorded = new Set(['a', 'b'])
+    const seen = new Set(['a', 'b'])
+    const opts = { level: 1 as const, focus: ['dt'], count: 2, rand: seeded(5), prefer: (id: string) => recorded.has(id), avoid: seen }
+    expect(selectSentences(POOL, opts).map((s) => s.id).sort()).toEqual(['a', 'b'])
+    // h is the only unseen sentence at level 1 with the focus; then a recorded one
+    const fresh = selectSentences(POOL, { ...opts, freshFirst: true }).map((s) => s.id)
+    expect(fresh).toContain('h')
+    expect(fresh.some((id) => recorded.has(id))).toBe(true)
+  })
+
   it('prefers level + focus, then the focus at neighbouring levels', () => {
     const out = selectSentences(POOL, { level: 1, focus: ['dt'], count: 4, rand: seeded(2) })
     expect(out.map((s) => s.id).sort()).toEqual(['a', 'b', 'd', 'h'])

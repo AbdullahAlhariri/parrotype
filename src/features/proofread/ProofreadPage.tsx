@@ -21,7 +21,8 @@ export default function ProofreadPage() {
 
   const asked = query.get('text')
   const fromQuery = asked ? findText(asked) : undefined
-  // texts follow the practice language; a link to a text wins until the header switch is used
+  // texts follow the practice language; a link to a text in another language moves the header
+  // switch to it (useFollowLang), so for that first render the text's own language wins
   const lang = fromQuery?.lang ?? practiceLang
   const texts = TEXTS[lang]
   // the default pick is made once per language, so finishing a text doesn't swap it out underneath you

@@ -24,8 +24,8 @@ export function xTicks(n: number): number[] {
   const out: number[] = []
   for (let s = step; s <= n; s += step) out.push(s - 1)
   if (!out.length || out[out.length - 1] !== n - 1) {
-    // drop a label that would collide with the last one
-    if (out.length && n - 1 - out[out.length - 1] < step / 2) out.pop()
+    // drop a label that would crowd the last one ("10 11", "12 13")
+    if (out.length && n - 1 - out[out.length - 1] <= step / 2) out.pop()
     out.push(n - 1)
   }
   return out

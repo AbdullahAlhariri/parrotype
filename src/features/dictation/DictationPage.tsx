@@ -28,8 +28,12 @@ function weakWords(lang: Lang): Set<string> {
   )
 }
 
-function buildItems(lang: Lang, c: DictationConfig): DictationItem[] {
-  // to listen, sentences with a recorded voice first (the rest fall back to the browser voice)
+/**
+ * A set for this setup. To listen, sentences with a recording come first. When the browser has
+ * its own voice to read the rest, only among sentences not seen lately: variety over the same
+ * few recordings. Without one, the rest would show on screen, so recordings win outright.
+ */
+function buildItems(lang: Lang, c: DictationConfig, browserVoice = false): DictationItem[] {
   const prefer = c.playback === 'listen' ? (id: string) => hasClip(lang, id) : undefined
   if (c.mode === 'pairs') return selectPairItems(PAIRS[lang], c.pairs, c.length, Math.random, prefer)
   return selectSentences(DICTATION[lang], {
@@ -39,6 +43,7 @@ function buildItems(lang: Lang, c: DictationConfig): DictationItem[] {
     avoid: loadRecent(lang),
     boost: weakWords(lang),
     prefer,
+    freshFirst: browserVoice,
   }).map((s) => itemFromSentence(s, lang))
 }
 
@@ -98,6 +103,9 @@ interface Finished {
 export default function DictationPage() {
   const lang = useSettings((s) => s.lang)
   const voice = useDictationVoice(lang)
+  // read when a set is built, without rebuilding the callbacks that build one
+  const browserVoice = useRef(false)
+  browserVoice.current = voice.browser === 'ready'
   const [mascotTalks, setMascotTalks] = useState(false)
   const [config, setConfig] = useState<DictationConfig>(() => {
     const saved = loadConfig(lang)
@@ -113,7 +121,7 @@ export default function DictationPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [finished, setFinished] = useState<Finished | null>(null)
   useEffect(() => {
-    if (audioLoaded) setSession((s) => s ?? { key: 1, items: buildItems(lang, config), config })
+    if (audioLoaded) setSession((s) => s ?? { key: 1, items: buildItems(lang, config, browserVoice.current), config })
   }, [audioLoaded, lang, config])
 
   const canListen = voice.status === 'ready' || voice.status === 'loading'
@@ -123,7 +131,7 @@ export default function DictationPage() {
     (c: DictationConfig, opts: { items?: DictationItem[]; label?: string; autoStart?: boolean } = {}) => {
       setFinished(null)
       setMascotTalks(false)
-      setSession((s) => ({ key: (s?.key ?? 0) + 1, items: opts.items ?? buildItems(lang, c), config: c, label: opts.label, autoStart: opts.autoStart }))
+      setSession((s) => ({ key: (s?.key ?? 0) + 1, items: opts.items ?? buildItems(lang, c, browserVoice.current), config: c, label: opts.label, autoStart: opts.autoStart }))
     },
     [lang],
   )

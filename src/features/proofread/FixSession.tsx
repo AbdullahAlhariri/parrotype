@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { LANG_TAGS, isRtl } from '@/types'
 import type { ProofText } from '@/content/proofread'
 import { useSettings } from '@/state/settings'
@@ -56,6 +56,12 @@ export function FixSession({ text, onNext }: Props) {
   const area = useRef<HTMLTextAreaElement>(null)
   const edits = useMemo(() => countEdits(text.text, value, text.lang), [text.text, text.lang, value])
   const n = text.mistakes.length
+
+  // keyboard first: a new text (also after "Next text") is ready to edit, caret at the start. Not on
+  // touch screens, where focusing would throw the on-screen keyboard over the text before it is read.
+  useEffect(() => {
+    if (window.matchMedia?.('(pointer: fine)').matches) area.current?.focus({ preventScroll: true })
+  }, [])
 
   // the editor grows with its text instead of scrolling inside the page
   useLayoutEffect(() => {

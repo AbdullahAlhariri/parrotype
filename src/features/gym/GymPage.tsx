@@ -9,7 +9,8 @@ import './gym.css'
 export default function GymPage() {
   const id = useQuery().get('pack')
   const pack = id ? findPack(id) : undefined
-  // switching the practice language in the header mid-pack goes back to that language's packs
+  // a link to a pack sets the header to its language; switching the header mid-pack goes back to
+  // that language's packs
   useFollowLang(pack?.lang, () => navigate('/gym'))
   return <div className="page gym">{pack ? <PackSession key={pack.id} pack={pack} /> : <PackPicker missing={id ?? undefined} />}</div>
 }

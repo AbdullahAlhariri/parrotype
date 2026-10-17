@@ -17,6 +17,8 @@ export interface DictationItem {
   /** minimal-pair mode: the pair member in this sentence, and the set it belongs to */
   target?: string
   pairId?: string
+  /** minimal-pair mode: every member of the set, in the set's order (memory mode shows them all) */
+  choices?: string[]
 }
 
 export function itemFromSentence(s: DictationSentence, lang: Lang): DictationItem {
@@ -33,6 +35,7 @@ export function itemsFromPair(p: MinimalPair): DictationItem[] {
     note: p.note,
     target: s.word,
     pairId: p.id,
+    choices: p.words,
   }))
 }
 

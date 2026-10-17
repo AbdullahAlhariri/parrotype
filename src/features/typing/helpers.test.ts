@@ -71,6 +71,9 @@ describe('chart scale', () => {
     expect(t[t.length - 1]).toBe(29)
     expect(xTicks(61).at(-1)).toBe(60)
     expect(xTicks(0)).toEqual([])
+    // the last second never sits right next to a regular label
+    expect(xTicks(11).map((i) => i + 1)).toEqual([2, 4, 6, 8, 11])
+    expect(xTicks(13).map((i) => i + 1)).toEqual([2, 4, 6, 8, 10, 13])
   })
 })
 

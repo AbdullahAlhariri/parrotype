@@ -14,6 +14,8 @@ interface Props {
   onEnter: () => void
   inputRef: Ref<HTMLInputElement>
   label: string
+  /** id of the element that reads out the sentence around the gap */
+  describedBy?: string
   /** the word to show once answered ('done') */
   settled?: string
 }
@@ -25,7 +27,7 @@ const same = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLower
  * mode. 'retype': the right answer as a ghost that the typed letters cover. 'done': the word
  * settles into the sentence.
  */
-export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, label, settled }: Props) {
+export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, label, describedBy, settled }: Props) {
   const rtl = isRtl(lang)
   const ghost = mode === 'retype' ? item.answer : ''
   const width = Math.max(gapWidth(item, value), ghost.length + 1)
@@ -73,6 +75,7 @@ export function Gap({ item, lang, mode, value, onChange, onEnter, inputRef, labe
         }}
         placeholder={mode === 'retype' && rtl ? ghost : undefined}
         aria-label={label}
+        aria-describedby={describedBy}
         aria-invalid={off || undefined}
         lang={LANG_TAGS[lang]}
         dir={rtl ? 'rtl' : 'ltr'}

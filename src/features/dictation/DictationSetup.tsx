@@ -21,7 +21,8 @@ export function DictationSetup({ lang, config: c, onChange, canListen }: Props) 
   const pairs = c.mode === 'pairs'
   const chips = pairs
     ? PAIRS[lang].map((p) => ({ id: p.id, label: p.words.join(' / '), title: p.note.en, lang: LANG_TAGS[lang] }))
-    : Object.entries(FOCUS[lang]).map(([id, f]) => ({ id, label: f.label, title: f.title, lang: undefined }))
+    : // a label in Arabic script ("ض/ظ") gets the Arabic font, the rest ("start hamza") is English
+      Object.entries(FOCUS[lang]).map(([id, f]) => ({ id, label: f.label, title: f.title, lang: /[\u0600-\u06ff]/.test(f.label) ? LANG_TAGS[lang] : undefined }))
   const selected = pairs ? c.pairs : c.focus
   const select = (list: string[]) => set(pairs ? { pairs: list } : { focus: list })
 

@@ -17,9 +17,13 @@
 /* Naskh sits much smaller than Recursive at the same size: Arabic inside English copy (blurbs,
    hints, "you typed") is set up a step so a single letter like ؤ stays readable */
 .gym bdi:lang(ar),
-.gym-typed s:lang(ar),
 .gym-summary-actions .mono-text:lang(ar) {
   font-size: 1.22em;
+  line-height: 1;
+}
+/* the struck-through slip sits in a small line and the strike crosses Naskh's low letters */
+.gym-typed s:lang(ar) {
+  font-size: 1.45em;
   line-height: 1;
 }
 

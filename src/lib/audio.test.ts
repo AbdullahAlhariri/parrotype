@@ -116,6 +116,23 @@ describe('loadManifest', () => {
     expect(await m.loadManifest()).toBeNull()
     expect(m.recordedVoices('nl')).toEqual([])
   })
+
+  it('tries again after a failed load, so voices come back once the network does', async () => {
+    vi.resetModules()
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({ ok: true, json: async () => MANIFEST })
+    vi.stubGlobal('fetch', fetchMock)
+    const m = await import('./audio')
+    expect(await m.loadManifest()).toBeNull()
+    expect(m.hasRecordings('nl')).toBe(false)
+    expect(await m.loadManifest()).not.toBeNull()
+    expect(m.hasRecordings('nl')).toBe(true)
+    // once it is there, it stays: no more fetches
+    await m.loadManifest()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('voice preference', () => {
@@ -321,17 +338,33 @@ describe('playClip', () => {
     expect(a.pickPersona('nl', 'nl-k02', { kind: 'mix' })).toBeNull()
   })
 
-  it('a blocked play() (autoplay) is an error but does not mark the file as broken', async () => {
+  it('a play() blocked by the autoplay policy is "blocked", and the file stays usable', async () => {
     class Blocked extends FakeAudio {
       play() {
-        return Promise.reject(new Error('NotAllowedError'))
+        return Promise.reject(Object.assign(new Error('play() needs a user gesture'), { name: 'NotAllowedError' }))
       }
     }
     vi.stubGlobal('Audio', Blocked)
     const a = await fresh()
     const pb = a.playClip({ lang: 'nl', sentenceId: 'nl-k02', persona: 'lies' })
-    expect(await pb.outcome).toBe('error')
+    expect(await pb.outcome).toBe('blocked')
+    expect(a.audioBusy()).toBe(false)
     expect(a.pickPersona('nl', 'nl-k02', { kind: 'mix' })).toBe('lies')
+  })
+
+  it('a play() that fails on a media error marks the file as broken, even before the error event', async () => {
+    class Unsupported extends FakeAudio {
+      error: { code: number } | null = null
+      play() {
+        this.error = { code: 4 }
+        return Promise.reject(Object.assign(new Error('no supported source'), { name: 'NotSupportedError' }))
+      }
+    }
+    vi.stubGlobal('Audio', Unsupported)
+    const a = await fresh()
+    const pb = a.playClip({ lang: 'nl', sentenceId: 'nl-k02', persona: 'lies' })
+    expect(await pb.outcome).toBe('error')
+    expect(a.pickPersona('nl', 'nl-k02', { kind: 'mix' })).toBeNull()
   })
 
   it('a reaction stays quiet while a clip plays', async () => {

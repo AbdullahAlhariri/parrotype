@@ -134,10 +134,13 @@ export function formatDuration(ms: number): string {
  */
 export function feedbackLine(s: SessionSummary, name: (tag: string) => string, mascot = 'Kees'): string {
   if (!s.items) return ''
+  // a sentence never starts with a digit: "One word off", "3 words off"
+  const count = (n: number, one: string, many: string) => (n === 1 ? `One ${one}` : `${n} ${many}`)
   if (s.targets) {
     if (s.targetsRight === s.targets) return `The right word every time, ${s.targets} out of ${s.targets}.`
     const miss = s.targets - s.targetsRight
-    return `${miss} of ${s.targets} times the other word. ${mascot} will bring those back.`
+    if (miss === 1) return `The other word once in ${s.targets}. ${mascot} will bring that one back.`
+    return `The other word ${miss} times in ${s.targets}. ${mascot} will bring those back.`
   }
   if (!s.mistakes) return 'Every word right on the first try.'
   const tags = new Map<string, number>()
@@ -145,6 +148,6 @@ export function feedbackLine(s: SessionSummary, name: (tag: string) => string, m
   const misses = s.toPractise.reduce((n, w) => n + w.count, 0)
   const [top, n] = [...tags.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
   if (top && n! >= 2 && n! * 2 >= misses) return `${n} of your ${misses} misses were ${name(top).toLowerCase()}. That is the one to drill.`
-  const off = `${s.mistakes} ${s.mistakes === 1 ? 'word' : 'words'} off on the first try`
-  return s.revealed ? `${off}. ${s.revealed} ${s.revealed === 1 ? 'sentence needed' : 'sentences needed'} the answer.` : `${off}, all fixed without the answer.`
+  const off = `${count(s.mistakes, 'word', 'words')} off on the first try`
+  return s.revealed ? `${off}. ${count(s.revealed, 'sentence needed', 'sentences needed')} the answer.` : `${off}, all fixed without the answer.`
 }

@@ -82,7 +82,14 @@ describe('mascot lines', () => {
   it('uses the parrot of the language in the pair-mode line', () => {
     const r = result('Hij wordt boos.', 'Hij word boos.', { item: item('Hij wordt boos.', 'wordt') })
     const s = summarise([r])
-    expect(feedbackLine(s, (t) => t, 'Fustuq')).toBe('1 of 1 times the other word. Fustuq will bring those back.')
+    expect(feedbackLine(s, (t) => t, 'Fustuq')).toBe('The other word once in 1. Fustuq will bring that one back.')
+    const two = summarise([r, r, result('Hij wordt boos.', 'Hij wordt boos.', { item: item('Hij wordt boos.', 'wordt') })])
+    expect(feedbackLine(two, (t) => t, 'Monty')).toBe('The other word 2 times in 3. Monty will bring those back.')
+  })
+
+  it('spells out a count of one at the start of the line', () => {
+    const s = summarise([result('Ik heb twee ideeën.', 'Ik heb twee ideeen.', { hint: 4 })])
+    expect(feedbackLine(s, (t) => t)).toBe('One word off on the first try. One sentence needed the answer.')
   })
 
   it("plays 'perfect' only for a set without a single wrong sentence", () => {

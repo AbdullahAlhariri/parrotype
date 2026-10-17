@@ -51,10 +51,14 @@ const PLACEHOLDER: Record<Lang, { heard: string; saw: string; retype: string }> 
   ar: { heard: 'اكتب ما تسمعه', saw: 'اكتب ما رأيته', retype: 'اكتب الجملة صحيحةً مرة واحدة' },
 }
 
-/** Who reads, for the line under the buttons and the parrot's accessible name. */
-function speakerName(lang: Lang, src: VoiceSource): string {
-  if (src.kind === 'clip') return personaName(lang, src.persona)
-  return 'the browser voice'
+/**
+ * Who reads, for the line under the buttons and the parrot's accessible name. Inside a sentence
+ * ("read by the narrator") a leading "The" of a persona name goes lowercase.
+ */
+function speakerName(lang: Lang, src: VoiceSource, inline = false): string {
+  if (src.kind === 'browser') return inline ? 'the browser voice' : 'The browser voice'
+  const name = personaName(lang, src.persona)
+  return inline ? name.replace(/^The /, 'the ') : name
 }
 
 export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, notice, noticeShort, autoStart = false }: Props) {
@@ -304,7 +308,8 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   /* ---------------- view ---------------- */
 
   const flashing = flashKey !== null
-  const speaker = voice.speaking ? voice.current : source
+  // before anything plays, name the browser voice only once the browser has confirmed it has one
+  const speaker = voice.speaking ? voice.current : source?.kind === 'browser' && voice.browser !== 'ready' ? null : source
   // the parrot talks when he reads (his own recordings, or the browser voice); with another voice he listens along
   const parrotTalks = voice.speaking && (!voice.current || voice.current.kind === 'browser' || !!voice.current.persona.mascot)
   const mood: KeesMood = parrotTalks
@@ -406,16 +411,20 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
         </p>
       </div>
 
-      {!started && (
-        <p className="dict-intro">
-          {memory
-            ? 'Press space and the first sentence shows for a few seconds. Then type it from memory.'
-            : 'Press space to hear the first sentence.'}
-        </p>
-      )}
+      {!started && <Intro showsText={showsText} pairs={!!item.choices} />}
 
       {/* memory mode: the sentence shows where the answer goes, then the field takes its place */}
-      {flashing && <MemoryFlash text={item.text} lang={lang} ms={flashMs(item.text)} flashKey={flashKey} onHidden={onFlashHidden} />}
+      {flashing && (
+        <MemoryFlash
+          text={item.text}
+          lang={lang}
+          ms={flashMs(item.text)}
+          flashKey={flashKey}
+          onHidden={onFlashHidden}
+          target={item.target}
+          choices={item.choices}
+        />
+      )}
       <DictationInput
         ref={inputRef}
         hidden={flashing}
@@ -447,9 +456,22 @@ export function DictationRun({ lang, items, memory, voice, onFinish, onNewSet, n
   )
 }
 
+/** Before the first sentence: how to get it. Touch screens have no space bar to press. */
+function Intro({ showsText, pairs }: { showsText: boolean; pairs: boolean }) {
+  const shown = pairs
+    ? 'the first sentence shows for a few seconds, with both spellings of the sound-alike word. Type it with the right one.'
+    : 'the first sentence shows for a few seconds. Then type it from memory.'
+  return (
+    <p className="dict-intro">
+      <span className="dict-intro-keys">{showsText ? `Press space and ${shown}` : 'Press space to hear the first sentence.'}</span>
+      <span className="dict-intro-touch">{showsText ? `Tap Show it and ${shown}` : 'Tap Hear it for the first sentence.'}</span>
+    </p>
+  )
+}
+
 /** The reader's name; Arabic persona names are Arabic script, so they get their own lang and direction. */
 function SpeakerName({ lang, src }: { lang: Lang; src: VoiceSource }) {
-  const name = speakerName(lang, src)
+  const name = speakerName(lang, src, true)
   const native = src.kind === 'clip' && !src.persona.mascot && isRtl(lang)
   return (
     <bdi className="dict-speaker-name" lang={native ? LANG_TAGS[lang] : undefined}>

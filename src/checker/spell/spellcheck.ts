@@ -64,8 +64,8 @@ const AR_TARGETED: ReadonlySet<string> = new Set(['map', 'hamza', 'hamza-drop', 
  * like a typo. Only a targeted rewrite, or a fix that is a word people write and a small slip away,
  * is sure; a far or rare fix is just a hint.
  */
-function arabicConfidence(best: RankedSuggestion, common: boolean): Issue['confidence'] {
-  if (AR_TARGETED.has(best.kind)) return 'high'
+function arabicConfidence(best: RankedSuggestion, targeted: boolean, common: boolean): Issue['confidence'] {
+  if (targeted) return 'high'
   if (common && best.dist <= 1) return 'high'
   if (common && best.dist < 1.6) return 'medium'
   return 'low'
@@ -273,6 +273,22 @@ export function checkSpelling(
     return arabicRank(w) !== undefined
   }
 
+  /**
+   * A targeted Arabic rewrite that is sure. The frequency list holds the misspellings people make
+   * (انا, هذة, المياة), but always below the right form (أنا, هذه, المياه). So when the typed word is in
+   * the list, its rewrite must be at least as common. A real word Ayaspell lacks fails that test: جبنة,
+   * تمريرة, حفيدة would become "his cheese" (جبنه), الأهرامات takes a hamza seat nobody writes, and
+   * كابتن is no tanween typed as a noon.
+   */
+  function strongArabic(w: string, r: RankedSuggestion): boolean {
+    if (!AR_TARGETED.has(r.kind)) return false
+    if (r.kind === 'map') return true
+    const own = arabicRank(w)
+    if (own === undefined) return true
+    const fix = arabicRank(r.word)
+    return fix !== undefined && fix <= own
+  }
+
   /** bijv., blz., Dr. and other abbreviations the dictionary knows with their dot */
   function abbreviation(tok: Token): boolean {
     if (text[tok.end] !== '.') return false
@@ -310,24 +326,25 @@ export function checkSpelling(
     // Arabic has no capitals to spot names and loanwords by, so the frequency list stands in: a word
     // people write (البيتزا, السوشي) that no targeted rewrite turns into a dictionary word, and that is
     // at least as common as its nearest fix, is left alone. (لاكن is rarer than لكن: still flagged.)
-    if (lang === 'ar' && freq?.has(lookup) && !ranked.some((r) => AR_TARGETED.has(r.kind))) {
-      const own = freq.get(lookup)!
+    const strong = lang === 'ar' && ranked.some((r) => strongArabic(w, r))
+    if (lang === 'ar' && !strong) {
+      const own = arabicRank(w)
       const fix = best ? arabicRank(best.word) : undefined
-      if (fix === undefined || own <= fix) return null
+      if (own !== undefined && (fix === undefined || own <= fix)) return null
     }
 
     // an everyday English word in Dutch text (meeting, slides, next) with no Dutch word close by: a loan
     const loan = loanRank(lookup, shape, ranked)
     if (loan !== undefined && loan < 10_000) return null
     // a name after شارع / السيدة / متجر: no article on it, and no hamza or ة/ى fix that would make it a word
-    if (lang === 'ar' && !/^[وفبل]?ال/.test(lookup) && !ranked.some((r) => AR_TARGETED.has(r.kind)) && arabicName(p.start)) return null
+    if (lang === 'ar' && !/^[وفبل]?ال/.test(lookup) && !strong && arabicName(p.start)) return null
 
     const replacements = ranked.slice(0, max).map((r) => apostropheLike(text, w, r.word))
     const copy = spellCopy(w, best, lang)
     // a capitalised word a whole letter away from its fix may still be a name we do not know (Priya)
     const unsure = shape === 'capital' && best && best.kind !== 'map' && !caseFix && best.dist >= 1
     let confidence: Issue['confidence'] = !replacements.length ? 'low' : unsure ? 'medium' : 'high'
-    if (lang === 'ar' && best) confidence = arabicConfidence(best, commonArabic(best.word))
+    if (lang === 'ar' && best) confidence = arabicConfidence(best, strongArabic(w, best), commonArabic(best.word))
     // a rarer English loan, or chat stretching (sooo, zóóó): a hint, not a mistake
     if (loan !== undefined || (best && STRETCHED.test(lookup) && best.word.toLowerCase() === collapse(lookup.toLowerCase(), best.word))) confidence = 'low'
     return {

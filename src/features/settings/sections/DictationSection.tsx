@@ -136,7 +136,8 @@ function LanguageVoices({ lang, personas, loaded, browserVoices, browserLoaded, 
     s.set('voices', { ...s.voices, [lang]: voiceSetting(p) })
   }
   const choose = (c: Choice) => {
-    if (c === 'mix') set({ kind: 'mix' })
+    // a browser voice picked from the list stays on as the stand-in for sentences without a recording
+    if (c === 'mix') set({ kind: 'mix', browser: browserValue || undefined })
     else if (c === 'browser') set({ kind: 'browser', name: browserValue })
     else set({ kind: 'gemini', id: c.slice('gemini:'.length) })
   }
@@ -313,7 +314,7 @@ export function DictationSection() {
           checked={mascotVoice}
           onChange={(v) => set('mascotVoice', v)}
           label="Mascot voice"
-          hint={`${mascotName('nl')}, ${mascotName('en')} and ${mascotName('ar')} say a short recorded line now and then: hello before the first sentence, a word at the end of a set, a personal best. Never while you type.`}
+          hint={`${mascotName('nl')}, ${mascotName('en')} and ${mascotName('ar')} say a few recorded words now and then: hello before your first dictation, a line when a set or a story is done, one for a personal best. Never while you type.`}
         />
       </div>
       <Row

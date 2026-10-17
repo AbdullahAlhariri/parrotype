@@ -5,29 +5,33 @@ import type { DictationSentence, FocusInfo, MinimalPair } from './types'
 // Every sentence passes the Arabic rule engine and Hunspell with zero flags. Only standard letters
 // (U+0621-U+064A) and Arabic punctuation: no Latin letters, digits or tashkeel inside sentences
 // (bidi caret pain). Tashkeel is ignored when grading anyway.
-// Recorded audio exists for these ids: change a text only to fix a real mistake.
+// Clips in public/audio/ar are keyed by id, and scripts/tts/dictation-jobs.ts deletes a clip
+// whose text (or `say`) changed: once a sentence is recorded, change its text only to fix a
+// real mistake. Pair sentences are keyed by position, so add pair sets and sentences at the end.
 // English notes and titles render left to right: never let punctuation alone separate two Arabic
 // words ("ثلاث سنوات: سنة is"), or bidi joins them into one run and flips their order. Put an
 // English word in between ("In ثلاث سنوات the number..."). ar.test.ts checks this.
 
+// Titles are tooltips, which take their direction from the first letter: each one starts in
+// English so it reads left to right, with the Arabic examples at the end.
 export const FOCUS_AR: Record<string, FocusInfo> = {
-  hamza: { label: 'start hamza', title: 'أ or إ at the start: أنا، إلى، أمس، لأن' },
-  wasl: { label: 'hamzat al-wasl', title: 'A plain alif with no hamza: اسم، ابن، امرأة، استخدم، اجتماع' },
-  'hamza-mid': { label: 'middle hamza', title: 'سأل، سؤال، سئل، تساءل: the vowels pick the seat' },
-  'hamza-end': { label: 'end hamza', title: 'قرأ، شاطئ، تباطؤ، شيء، ماء: the letter before picks the seat' },
-  'taa-marbuta': { label: 'taa marbuta', title: 'ة or ه at the end, and ت before a suffix' },
-  'alif-maqsura': { label: 'alif maqsura', title: 'ى or ي at the end: على، في، مستشفى' },
-  tanween: { label: 'tanween alif', title: 'كتابا، شكرا: the extra alif, but not after ة or اء' },
-  'waw-jamaa': { label: "waw al-jama'a", title: 'كتبوا، ذهبوا: the extra alif, but not in يدعو or أرجو' },
-  lam: { label: 'lam shamsiyya', title: 'الشمس، النور، الليل: the ل you write but do not hear' },
-  'hidden-alif': { label: 'hidden alif', title: 'هذا، ذلك، لكن، هؤلاء: a long a with no alif' },
-  'd-z': { label: 'ض/ظ', title: 'ض or ظ, as in ضاع، الظهر، انتظر، الضوء' },
-  'dh-z': { label: 'ذ/ز/ظ', title: 'ذ or ز or ظ, as in ذهب، زرت، نظرت' },
-  'th-s': { label: 'ث/س', title: 'ث or س, as in ثلاثة، كثير، سنة' },
-  't-t': { label: 'ت/ط', title: 'ت or ط, as in التين، الطين، القطار' },
-  'q-k': { label: 'ق/ك', title: 'ق or ك, as in قلب، كلب، قصة' },
-  phrase: { label: 'set phrases', title: 'إن شاء الله، ما شاء الله، بإذن الله' },
-  numbers: { label: 'numbers in words', title: 'ثلاثة كتب، خمس سيارات: from three to ten the number flips gender' },
+  hamza: { label: 'start hamza', title: 'A written hamza at the start, as in أنا، إلى، أمس، لأن' },
+  wasl: { label: 'hamzat al-wasl', title: 'A plain alif with no hamza, as in اسم، ابن، امرأة، استخدم، اجتماع' },
+  'hamza-mid': { label: 'middle hamza', title: 'The vowels pick the seat, as in سأل، سؤال، سئل، تساءل، مسؤول' },
+  'hamza-end': { label: 'end hamza', title: 'The letter before picks the seat, as in قرأ، شاطئ، تباطؤ، شيء، ماء' },
+  'taa-marbuta': { label: 'taa marbuta', title: 'Final ة or ه, and ت before a suffix' },
+  'alif-maqsura': { label: 'alif maqsura', title: 'Final ى or ي, as in على، في، مستشفى' },
+  tanween: { label: 'tanween alif', title: 'The extra alif, as in كتابا، شكرا, but none after ة or اء' },
+  'waw-jamaa': { label: "waw al-jama'a", title: 'The extra alif, as in كتبوا، ذهبوا, but none in يدعو or أرجو' },
+  lam: { label: 'lam shamsiyya', title: 'The ل you write but do not hear, as in الشمس، النور، الليل' },
+  'hidden-alif': { label: 'hidden alif', title: 'A long a with no alif, as in هذا، ذلك، لكن، هؤلاء' },
+  'd-z': { label: 'ض/ظ', title: 'Spelled with ض or ظ, as in ضاع، الظهر، انتظر، مضبوط' },
+  'dh-z': { label: 'ذ/ز/ظ', title: 'Spelled with ذ or ز or ظ, as in ذهب، زرت، نظرت' },
+  'th-s': { label: 'ث/س', title: 'Spelled with ث or س, as in ثلاثة، كثير، سنة' },
+  't-t': { label: 'ت/ط', title: 'Spelled with ت or ط, as in التين، الطين، القطار' },
+  'q-k': { label: 'ق/ك', title: 'Spelled with ق or ك, as in قلب، كلب، قصة' },
+  phrase: { label: 'set phrases', title: 'Set phrases with الله, as in إن شاء الله، ما شاء الله، بإذن الله' },
+  numbers: { label: 'numbers in words', title: 'From three to ten the number flips gender, as in ثلاثة كتب، خمس سيارات' },
 }
 
 export const DICTATION_AR: DictationSentence[] = [
@@ -68,8 +72,8 @@ export const DICTATION_AR: DictationSentence[] = [
     level: 1,
     focus: ['hamza-mid', 'tanween'],
     note: {
-      en: 'سأل: hamza with fatha sits on alif. سؤالا: after a damma it sits on waw.',
-      local: 'سأل: الهمزة المفتوحة على الألف. سؤالا: بعد الضمة تُكتب على الواو.',
+      en: 'سأل: hamza with fatha sits on alif. سؤالا: after a damma it sits on waw. سؤالا مهما take the tanween alif.',
+      local: 'سأل: الهمزة المفتوحة على الألف. سؤالا: بعد الضمة تُكتب على الواو. وسؤالا مهما يُكتب تنوينهما بألف.',
     },
   },
   {
@@ -138,8 +142,8 @@ export const DICTATION_AR: DictationSentence[] = [
     level: 2,
     focus: ['hamza-mid', 'taa-marbuta'],
     note: {
-      en: 'أصدقائي: the hamza with kasra sits on ئ.',
-      local: 'أصدقائي: الهمزة المكسورة تُكتب على نبرة (ئ).',
+      en: 'أصدقائي: the hamza with kasra sits on ئ. Both اللغة and الهولندية end in ة.',
+      local: 'أصدقائي: الهمزة المكسورة تُكتب على نبرة (ئ). واللغة والهولندية تنتهيان بتاء مربوطة.',
     },
   },
   {
@@ -159,7 +163,7 @@ export const DICTATION_AR: DictationSentence[] = [
     focus: ['alif-maqsura', 'hamza'],
     note: {
       en: 'After لا of prohibition the verb is jussive, so تنسى loses its ى and becomes تنس. The أ of أن keeps its hamza.',
-      local: 'تنس: فعل مجزوم بلا الناهية، فيُحذف حرف العلة من آخره. وأن همزتها همزة قطع.',
+      local: 'تنس أصلها تنسى: فعل مجزوم بلا الناهية، فتُحذف الألف المقصورة من آخره. وأن همزتها همزة قطع.',
     },
   },
   {
@@ -417,6 +421,16 @@ export const DICTATION_AR: DictationSentence[] = [
       local: 'أخبرني وأبي وأن وأشتري وأقل تبدأ بهمزة قطع، ومثلها الأسعار بعد ال. وارتفعت على وزن افتعل فهمزتها همزة وصل. وكثيرا يُكتب تنوينها بألف.',
     },
   },
+  {
+    id: 'ar-f84',
+    text: 'أفضل وقت للمشي هو الصباح، أو بعد العشاء.',
+    level: 2,
+    focus: ['hamza', 'hamza-end'],
+    note: {
+      en: 'أفضل and أو start with a written hamza. They are two of the words people most often type with a bare ا. In العشاء the hamza sits on the line after a long alif.',
+      local: 'أفضل وأو تبدآن بهمزة قطع، وهما من أكثر الكلمات التي تُكتب خطأ بألف بلا همزة. والعشاء: الهمزة على السطر بعد الألف.',
+    },
+  },
 
   /* ---------------- hamzat al-wasl ---------------- */
   {
@@ -502,6 +516,16 @@ export const DICTATION_AR: DictationSentence[] = [
     },
   },
   {
+    id: 'ar-f88',
+    text: 'من المسؤول عن هذه الفوضى؟',
+    level: 1,
+    focus: ['hamza-mid', 'alif-maqsura'],
+    note: {
+      en: 'In مسؤول the hamza has a damma after a silent letter, so it sits on و. You will also see مسئول, a regional spelling. الفوضى ends in ى.',
+      local: 'المسؤول: الهمزة مضمومة بعد حرف ساكن فتُكتب على الواو، وفي بعض البلدان تُكتب مسئول. والفوضى تنتهي بألف مقصورة.',
+    },
+  },
+  {
     id: 'ar-f13',
     text: 'يخاف الطفل من الذئب في القصة.',
     level: 1,
@@ -563,6 +587,26 @@ export const DICTATION_AR: DictationSentence[] = [
       local: 'أربع همزات متطرفة على ثلاثة أشكال: القارئ (قبلها كسرة فعلى النبرة)، ويقرأ وخطأ (قبلها فتحة فعلى الألف)، وببطء (قبلها ساكن فعلى السطر).',
     },
   },
+  {
+    id: 'ar-f86',
+    text: 'فستق بريء، فالكوب سقط وحده.',
+    level: 1,
+    focus: ['hamza-end'],
+    note: {
+      en: 'بريء: after a long ي the final hamza sits on the line, with no seat. بريئ and برئ are common mistakes.',
+      local: 'بريء: الهمزة المتطرفة بعد ياء المد تُكتب على السطر. وكتابتها بريئ أو برئ خطأ شائع.',
+    },
+  },
+  {
+    id: 'ar-f87',
+    text: 'هذا الصندوق مليء بالألعاب القديمة.',
+    level: 1,
+    focus: ['hamza-end', 'hamza'],
+    note: {
+      en: 'مليء: after a long ي the final hamza sits on the line. مليئ and ملئ are common mistakes. In الألعاب the hamza stays after the article: الألعاب, not الالعاب.',
+      local: 'مليء: الهمزة المتطرفة بعد ياء المد على السطر، وكتابتها مليئ أو ملئ خطأ شائع. والألعاب تبقى فيها همزة القطع بعد ال.',
+    },
+  },
 
   /* ---------------- taa marbuta ---------------- */
   {
@@ -593,6 +637,16 @@ export const DICTATION_AR: DictationSentence[] = [
     note: {
       en: 'حقيبة becomes حقيبتي before the suffix. الثقيلة، غرفة، وجبة، خفيفة keep their ة, and الثقيلة is written with ث.',
       local: 'حقيبة تصبح حقيبتي قبل الضمير. والثقيلة وغرفة ووجبة وخفيفة تبقى بتاء مربوطة. والثقيلة تُكتب بالثاء.',
+    },
+  },
+  {
+    id: 'ar-f92',
+    text: 'الحياة في المدينة سريعة، أما في القرية فهادئة.',
+    level: 2,
+    focus: ['taa-marbuta', 'hamza-mid'],
+    note: {
+      en: 'الحياة ends in ة after a long alif: الحياه is a common slip. المدينة، سريعة، القرية end in ة too. In هادئة the hamza comes after a kasra, so it sits on ئ.',
+      local: 'الحياة تنتهي بتاء مربوطة بعد الألف، وكتابتها الحياه خطأ شائع. والمدينة وسريعة والقرية بتاء مربوطة أيضا. وهادئة: الهمزة بعد كسرة فتُكتب على نبرة.',
     },
   },
 
@@ -627,6 +681,16 @@ export const DICTATION_AR: DictationSentence[] = [
       local: 'رأى ومصطفى والمقهى تنتهي بألف مقصورة. أما دعا فتنتهي بألف قائمة لأن أصلها واو (يدعو).',
     },
   },
+  {
+    id: 'ar-f91',
+    text: 'أدرس اللغة العربية لكي أقرأ الشعر القديم.',
+    level: 2,
+    focus: ['alif-maqsura', 'taa-marbuta', 'hamza'],
+    note: {
+      en: 'لكي ends in a dotted ي, because كي is said kay, and a final ى is only for a long a. اللغة and العربية end in ة, and أدرس and أقرأ start with أ.',
+      local: 'لكي = ل + كي، وتنتهي بياء منقوطة لا بألف مقصورة، لأن الألف المقصورة تُنطق ألفا. واللغة والعربية تنتهيان بتاء مربوطة. وأدرس وأقرأ تبدآن بهمزة قطع.',
+    },
+  },
 
   /* ---------------- tanween alif ---------------- */
   {
@@ -655,8 +719,8 @@ export const DICTATION_AR: DictationSentence[] = [
     level: 2,
     focus: ['tanween', 'hamza-end'],
     note: {
-      en: 'ماء gets no extra alif, because it ends in a hamza after a long alif. كثيرا does get one.',
-      local: 'ماء لا تُزاد فيها ألف لأنها تنتهي بهمزة بعد ألف. أما كثيرا فتُزاد.',
+      en: 'ماء gets no tanween alif, because it ends in a hamza on the line after a long alif. كثيرا does get one.',
+      local: 'ماء لا تُزاد فيها ألف التنوين لأنها تنتهي بهمزة على السطر بعد ألف. أما كثيرا فتُزاد.',
     },
   },
   {
@@ -675,8 +739,8 @@ export const DICTATION_AR: DictationSentence[] = [
     level: 3,
     focus: ['tanween', 'hamza-end', 'taa-marbuta'],
     note: {
-      en: 'يوميا and صيفا take the tanween alif. ساعة كاملة take none (they end in ة), and neither does شتاء (it ends in ـاء).',
-      local: 'يوميا وصيفا يُكتب تنوينهما بألف. أما ساعة كاملة فلا (تاء مربوطة)، ولا شتاء (همزة بعد ألف).',
+      en: 'يوميا and صيفا take the tanween alif. ساعة كاملة take none (they end in ة), and neither does شتاء, whose hamza sits on the line after a long alif.',
+      local: 'يوميا وصيفا يُكتب تنوينهما بألف. أما ساعة كاملة فلا (تاء مربوطة)، ولا شتاء، لأن همزتها على السطر بعد ألف.',
     },
   },
   {
@@ -747,8 +811,18 @@ export const DICTATION_AR: DictationSentence[] = [
     level: 2,
     focus: ['waw-jamaa', 'hamza-mid', 'hamza'],
     note: {
-      en: 'قالوا gets the extra alif. سيأتون ends in ن, so no alif. After قال comes إن, with the hamza under.',
-      local: 'قالوا تُكتب بعدها ألف. أما سيأتون فتنتهي بالنون فلا ألف. وبعد القول تأتي إن بهمزة تحت الألف.',
+      en: 'قالوا gets the extra alif. سيأتون ends in ن, so no alif, and its middle hamza sits on alif. After قال comes إن, with the hamza under.',
+      local: 'قالوا تُكتب بعدها ألف. أما سيأتون فتنتهي بالنون فلا ألف، وهمزتها المتوسطة على الألف. وبعد القول تأتي إن بهمزة تحت الألف.',
+    },
+  },
+  {
+    id: 'ar-f85',
+    text: 'كانوا في الحفلة أيضا، لكنهم خرجوا مبكرا.',
+    level: 2,
+    focus: ['waw-jamaa', 'hamza', 'tanween'],
+    note: {
+      en: "كانوا and خرجوا end in waw al-jama'a, so they get the extra alif. أيضا starts with أ and ends in a tanween alif, like مبكرا. And لكنهم has no alif after the ل.",
+      local: 'كانوا وخرجوا تنتهيان بواو الجماعة، فتُكتب بعدها ألف. وأيضا تبدأ بهمزة قطع وتنتهي بألف التنوين مثل مبكرا. ولكنهم لا ألف فيها بعد اللام.',
     },
   },
 
@@ -774,13 +848,14 @@ export const DICTATION_AR: DictationSentence[] = [
     },
   },
   {
-    id: 'ar-f38',
-    text: 'التفاح والزيتون والتين من فواكه الصيف.',
+    // replaces ar-f38 (apples and olives as summer fruit): a new id, so its old clips never play
+    id: 'ar-f93',
+    text: 'التين والتوت والشمام من فواكه الصيف.',
     level: 2,
     focus: ['lam', 'taa-marbuta'],
     note: {
-      en: 'التفاح، الزيتون، التين، الصيف: all sun letters, all with a written ل. The ه at the end of فواكه is a real ه, not ة.',
-      local: 'التفاح والزيتون والتين والصيف: كلها تبدأ بحرف شمسي، واللام فيها مكتوبة. وفواكه تنتهي بهاء أصلية.',
+      en: 'التين، التوت، الشمام، الصيف: all sun letters, all with a written ل. The ه at the end of فواكه is a real ه, not ة.',
+      local: 'التين والتوت والشمام والصيف: كلها تبدأ بحرف شمسي، واللام فيها مكتوبة. وفواكه تنتهي بهاء أصلية.',
     },
   },
   {
@@ -895,6 +970,26 @@ export const DICTATION_AR: DictationSentence[] = [
     note: {
       en: 'أظن and الظلام are spelled with ظ, and الضوء and ضعيف with ض. The ء at the end of الضوء sits on the line after a silent و.',
       local: 'أظن والظلام بالظاء، والضوء وضعيف بالضاد. والضوء تنتهي بهمزة على السطر بعد واو ساكنة.',
+    },
+  },
+  {
+    id: 'ar-f89',
+    text: 'ساعتي مضبوطة، والقطار هو المتأخر.',
+    level: 2,
+    focus: ['d-z', 'taa-marbuta', 'hamza-mid'],
+    note: {
+      en: 'مضبوطة comes from ضبط, so it is spelled with ض, though many dialects say it with ظ. Before the suffix, ساعة becomes ساعتي. In المتأخر the hamza sits on alif.',
+      local: 'مضبوطة من ضبط فتُكتب بالضاد، مع أن لهجات كثيرة تنطقها بالظاء. وساعة تصبح ساعتي قبل الضمير. والمتأخر همزتها على الألف.',
+    },
+  },
+  {
+    id: 'ar-f90',
+    text: 'بسبب الظروف الصعبة، طال انتظارنا في المطار حتى منتصف الليل.',
+    level: 3,
+    focus: ['d-z', 'wasl', 'alif-maqsura'],
+    note: {
+      en: 'الظروف and انتظارنا are spelled with ظ, though many dialects say them with ض. The verbal noun انتظار is form VIII, so it starts with hamzat al-wasl. The word حتى ends in ى.',
+      local: 'الظروف وانتظارنا بالظاء، مع أن لهجات كثيرة تنطقهما بالضاد. وانتظار مصدر على وزن افتعال، فهمزته همزة وصل. وحتى تنتهي بألف مقصورة.',
     },
   },
 
@@ -1206,7 +1301,7 @@ export const DICTATION_AR: DictationSentence[] = [
     focus: ['numbers', 'wasl', 'tanween'],
     note: {
       en: 'Eleven and twelve agree with the noun in both parts: اثنا عشر طالبا and إحدى عشرة طالبة. The noun after them is singular, and طالبا takes the tanween alif. اثنا starts with hamzat al-wasl.',
-      local: 'أحد عشر واثنا عشر يوافقان المعدود في الجزأين: اثنا عشر طالبا، وإحدى عشرة طالبة. والمعدود بعدهما مفرد منصوب. واثنا تبدأ بهمزة وصل.',
+      local: 'أحد عشر واثنا عشر يوافقان المعدود في الجزأين: اثنا عشر طالبا، وإحدى عشرة طالبة. والمعدود بعدهما مفرد منصوب، فطالبا يُكتب تنوينها بألف. واثنا تبدأ بهمزة وصل.',
     },
   },
   {

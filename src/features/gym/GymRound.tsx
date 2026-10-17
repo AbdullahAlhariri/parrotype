@@ -188,13 +188,18 @@ export function GymRound({ pack, items, choose, onFinish, onRestart }: Props) {
           onEnter={onEnter}
           inputRef={inputRef}
           label={phase === 'wrong' ? `Type ${item.answer}` : 'Missing word'}
+          describedBy="gym-question"
           settled={settledForm(item, value, lang)}
         />
         {after}
       </p>
+      {/* the input sits inside the sentence, but a screen reader only hears its label: read it the sentence */}
+      <span id="gym-question" className="sr-only" lang={LANG_TAGS[lang]}>
+        {before.trim()} … {after.trim()}
+      </span>
 
       {picking && (
-        <div className="gym-options" ref={optionsRef} role="group" aria-label="Pick the missing word">
+        <div className="gym-options" ref={optionsRef} role="group" aria-label="Pick the missing word" aria-describedby="gym-question">
           {options.map((o, i) => (
             <button key={o} type="button" className="gym-option" onClick={() => answer(o)} aria-keyshortcuts={String(i + 1)}>
               <Kbd>{i + 1}</Kbd>

@@ -69,21 +69,21 @@ export function FixResult({ text, grade, durationMs, firstPerfect, onNext, onRet
         Check result
       </h2>
       <div className="fix-score-row">
-        <div className="fix-score tabular">
-          {grade.fixed}
-          <span className="fix-score-of">
-            <span className="sr-only"> of </span>
-            <span aria-hidden="true">/</span>
-            {grade.total}
-          </span>
-        </div>
-        <div className="fix-score-side">
-          <p className="fix-score-label">mistakes fixed</p>
-          <div className="fix-stats">
-            <Stat label="missed" value={misses.length} />
-            <Stat label="new mistakes" value={grade.introduced.length} />
-            <Stat label="time" value={formatClock(durationMs)} />
+        <div className="fix-score-main">
+          <div className="fix-score tabular">
+            {grade.fixed}
+            <span className="fix-score-of">
+              <span className="sr-only"> of </span>
+              <span aria-hidden="true">/</span>
+              {grade.total}
+            </span>
           </div>
+          <p className="fix-score-label">mistakes fixed</p>
+        </div>
+        <div className="fix-stats">
+          <Stat label="missed" value={misses.length} />
+          <Stat label="new mistakes" value={grade.introduced.length} />
+          <Stat label="time" value={formatClock(durationMs)} />
         </div>
         <div className="fix-kees" ref={keesRef}>
           <Kees mood={firstPerfect ? 'celebrate' : 'reading'} size={64} />

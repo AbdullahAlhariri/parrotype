@@ -22,13 +22,19 @@ export interface SelectOptions {
   boost?: ReadonlySet<string>
   /** sentences to favour within a tier, e.g. the ones with a recorded voice */
   prefer?: (id: string) => boolean
+  /**
+   * Unseen sentences before preferred ones. For when the rest can still be read (by the
+   * browser's voice): variety then beats hearing the same few recordings again.
+   */
+  freshFirst?: boolean
 }
 
 /**
  * Pick `count` sentences. Order of preference: right level and focus, then the focus at a
  * neighbouring level, then the focus at any level, then the level without the focus, then
- * anything. Within a tier, preferred sentences (recorded) come first, then unseen ones, and
- * sentences containing words the user tends to miss are more likely. The result is shuffled.
+ * anything. Within a tier, preferred sentences (recorded) come first, then unseen ones (the
+ * other way round with `freshFirst`), and sentences containing words the user tends to miss
+ * are more likely. The result is shuffled.
  */
 export function selectSentences(pool: readonly DictationSentence[], o: SelectOptions): DictationSentence[] {
   const rand = o.rand ?? Math.random
@@ -57,7 +63,11 @@ export function selectSentences(pool: readonly DictationSentence[], o: SelectOpt
     // Efraimidis-Spirakis: weighted random order
     key: Math.pow(rand() || Number.EPSILON, 1 / weight(s)),
   }))
-  ranked.sort((a, b) => a.tier - b.tier || a.unpreferred - b.unpreferred || a.seen - b.seen || b.key - a.key)
+  ranked.sort((a, b) =>
+    o.freshFirst
+      ? a.tier - b.tier || a.seen - b.seen || a.unpreferred - b.unpreferred || b.key - a.key
+      : a.tier - b.tier || a.unpreferred - b.unpreferred || a.seen - b.seen || b.key - a.key,
+  )
   return shuffle(
     ranked.slice(0, Math.max(0, o.count)).map((r) => r.s),
     rand,

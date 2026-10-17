@@ -135,7 +135,11 @@ export function TypingSurface(props: TypingSurfaceProps) {
       // text comes from beforeinput/composition, never from key names, so a mobile keyboard
       // that delivers a whole word ("Copy", "Home") is typed, not filtered out as a named key
       const ok = 'text' in op ? session.insertText(op.text, now) : op.back === 'word' ? session.deleteWord(now) : session.input('Backspace', now)
-      if (!ok) return
+      if (!ok) {
+        // a key after the time limit (before the next tick noticed) ends the run without an event
+        if (session.finished) finish()
+        return
+      }
       if (document.body.dataset.typing !== 'true') setTyping(true)
       if (!wasStarted) {
         primeSound()
@@ -187,6 +191,12 @@ export function TypingSurface(props: TypingSurfaceProps) {
       caps: setCaps,
     })
   }, [feed])
+
+  // whatever ended the session (last word, the clock, a key that found the clock run out), the
+  // result follows; finish() runs once per session
+  useEffect(() => {
+    if (snap.finished) finish()
+  }, [snap.finished, finish])
 
   // time limit + once-a-second progress
   useEffect(() => {

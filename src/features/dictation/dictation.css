@@ -8,6 +8,10 @@
   font-variant-ligatures: none;
   font-feature-settings: 'liga' 0, 'clig' 0, 'dlig' 0, 'calt' 0, 'locl' 0;
 }
+/* the parrot repeats the correct word in his bubble: Shantell Sans turns a Dutch IJ into one glyph */
+.dict .kees-bubble:not(:lang(ar)) {
+  font-feature-settings: 'locl' 0;
+}
 
 .dict {
   /* the answer is the hero: the user's typing size, a little smaller on phones */
@@ -75,6 +79,9 @@ body[data-typing]:not([data-focus-mode='off']) .dict-setup:not(:focus-within) {
 }
 .dict-chip:lang(ar) {
   font-family: var(--font-arabic);
+  /* Naskh reads small next to the Latin labels; same line box (1.12 x 1.34 = 1.5) */
+  font-size: 1.12em;
+  line-height: 1.34;
 }
 @media (hover: hover) and (pointer: fine) {
   .dict-chip:hover:not([aria-pressed='true']) {
@@ -215,6 +222,11 @@ body[data-typing]:not([data-focus-mode='off']) .dict-voice:not(:focus-within) {
     border-color: var(--sub);
   }
 }
+@media (pointer: coarse) {
+  .dict-voice-select select {
+    min-height: 2.25rem;
+  }
+}
 .dict-progress {
   grid-area: progress;
   align-self: start;
@@ -230,6 +242,9 @@ body[data-typing]:not([data-focus-mode='off']) .dict-voice:not(:focus-within) {
   margin-bottom: var(--s-4);
   color: var(--sub);
   font-size: var(--fs-md);
+}
+.dict-intro-touch {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ */
@@ -323,6 +338,13 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
 }
 .dict-flash[dir='rtl'] .dict-flash-text {
   line-height: 1.9;
+}
+/* a minimal pair: both spellings where the word goes, pick one */
+.dict-flash-choice {
+  color: var(--main);
+}
+.dict-flash-or {
+  color: var(--sub);
 }
 .dict-flash-timer {
   position: absolute;
@@ -435,6 +457,17 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
 .is-quiet .g-extra {
   color: inherit;
 }
+/*
+ * Arabic: dots and hamza sit under the letters, and a mark right below an alif reads as a
+ * hamza (إ). The lines go lower, clear of them.
+ */
+.dict [dir='rtl'] .w-wrong {
+  text-underline-offset: 0.55em;
+}
+.dict [dir='rtl'] .g-wrong,
+.dict [dir='rtl'] .g-fixed {
+  text-underline-offset: 0.6em;
+}
 
 /* the reveal: corrected letters in --main */
 .g-fixed {
@@ -501,6 +534,8 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
 }
 .dict-rule-word {
   grid-area: word;
+  /* hug the word, on the row's start side: an Arabic word in an English row sits left too */
+  justify-self: start;
   max-width: 16rem;
   font-size: var(--fs-md);
   line-height: 1.5;
@@ -773,6 +808,21 @@ body[data-typing]:not([data-focus-mode='off']) .dict-restart:not(:focus-visible)
   }
   .dict-sum-details {
     gap: var(--s-4) var(--s-6);
+  }
+}
+
+/* a phone or tablet without a keyboard: buttons instead of keys, and no key hints */
+@media (hover: none) and (pointer: coarse) {
+  .dict-intro-keys,
+  .dict-keys,
+  .dict-sum-hint {
+    display: none;
+  }
+  .dict-intro-touch {
+    display: inline;
+  }
+  .dict-restart {
+    margin-inline-start: auto;
   }
 }
 

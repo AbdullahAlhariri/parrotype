@@ -101,6 +101,8 @@ export function loadManifest(): Promise<AudioManifest | null> {
     .catch(() => null)
     .then((m) => {
       clearTimeout(timer)
+      // no manifest (offline, flaky network): browser speech for now, and the next caller tries again
+      if (!m) manifestPromise = null
       state = { manifest: m, loaded: true }
       listeners.forEach((l) => l())
       return m
@@ -212,13 +214,18 @@ export function pickPersona(lang: Lang, sentenceId: string, pref: VoicePreferenc
 export const clipUrl = (lang: Lang, persona: string, sentenceId: string) => `/audio/${lang}/${persona}/${sentenceId}.mp3`
 export const reactionUrl = (lang: Lang, id: ReactionId) => `/audio/${lang}/reactions/${id}.mp3`
 
-export type PlaybackOutcome = 'ended' | 'stopped' | 'error'
+/**
+ * 'error': the file did not load or play (missing, offline, stalled), so callers can fall back.
+ * 'blocked': the browser refused to play without a fresh tap or key (autoplay policy). The file
+ * is fine; the next press of a button plays it, so callers should not fall back.
+ */
+export type PlaybackOutcome = 'ended' | 'stopped' | 'error' | 'blocked'
 
 export interface Playback {
   stop: () => void
   /** resolves when the clip ends, is stopped, or fails */
   ended: Promise<void>
-  /** how it finished: on 'error' (missing file, offline, autoplay blocked) callers can fall back */
+  /** how it finished: on 'error' callers can fall back, on 'blocked' wait for the next press */
   outcome: Promise<PlaybackOutcome>
 }
 
@@ -287,7 +294,12 @@ function play(url: string, rate = 1): Playback {
   a.playbackRate = rate
   a.preservesPitch = true
   timer = setTimeout(() => !started && self.finish('error'), START_TIMEOUT_MS)
-  a.play().catch(() => self.finish('error'))
+  a.play().catch((e: unknown) => {
+    if ((e as { name?: string } | null)?.name === 'NotAllowedError') return self.finish('blocked')
+    // the promise can settle before the 'error' event: a media error still means a bad file
+    if (a.error && current === self) broken.add(url)
+    self.finish('error')
+  })
   return { stop: () => self.finish('stopped'), ended: outcome.then(() => {}), outcome }
 }
 

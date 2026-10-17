@@ -207,8 +207,10 @@ export function useDictationVoice(lang: Lang): DictationVoice {
         cancelRef.current = pb.stop
         pb.outcome.then((o) => {
           if (id !== run.current) return
+          // a missing file: another recorded voice, else the browser voice, else on screen. Not on
+          // 'blocked' (autoplay said no to an auto-advance): the file is fine, and showing the
+          // sentence would give the answer away, so it waits for the next press
           if (o === 'error') {
-            // a missing file: another recorded voice, else the browser voice, else on screen
             const next = sourceFor(clipId)
             if (next?.kind === 'clip' && next.persona.id !== from.persona.id && tries < 3) return playFrom(next, tries + 1)
             if (browser === 'ready') return speakBrowser(text, browserRate, id)
